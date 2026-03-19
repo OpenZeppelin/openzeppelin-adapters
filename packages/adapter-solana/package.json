@@ -1,5 +1,5 @@
 {
-  "name": "@openzeppelin/ui-builder-adapter-solana",
+  "name": "@openzeppelin/adapter-solana",
   "version": "1.0.0",
   "description": "Solana Adapter for UI Builder",
   "keywords": [
@@ -26,11 +26,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenZeppelin/ui-builder.git",
+    "url": "https://github.com/OpenZeppelin/openzeppelin-adapters.git",
     "directory": "packages/adapter-solana"
   },
   "bugs": {
-    "url": "https://github.com/OpenZeppelin/ui-builder/issues"
+    "url": "https://github.com/OpenZeppelin/openzeppelin-adapters/issues"
   },
   "scripts": {
     "build": "tsdown",

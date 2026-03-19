@@ -1,5 +1,5 @@
 {
-  "name": "@openzeppelin/ui-builder-adapter-stellar",
+  "name": "@openzeppelin/adapter-stellar",
   "version": "1.8.2",
   "description": "Stellar Adapter for UI Builder",
   "keywords": [
@@ -26,11 +26,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenZeppelin/ui-builder.git",
+    "url": "https://github.com/OpenZeppelin/openzeppelin-adapters.git",
     "directory": "packages/adapter-stellar"
   },
   "bugs": {
-    "url": "https://github.com/OpenZeppelin/ui-builder/issues"
+    "url": "https://github.com/OpenZeppelin/openzeppelin-adapters/issues"
   },
   "scripts": {
     "build": "tsdown",

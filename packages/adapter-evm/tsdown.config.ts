@@ -10,7 +10,7 @@ export default defineConfig({
   ],
   format: ['esm', 'cjs'],
   dts: {
-    resolve: ['@openzeppelin/ui-builder-adapter-evm-core'],
+    resolve: ['@openzeppelin/adapter-evm-core'],
     compilerOptions: {
       composite: false,
       incremental: false,
@@ -18,5 +18,5 @@ export default defineConfig({
   },
   sourcemap: true,
   clean: true,
-  noExternal: ['@openzeppelin/ui-builder-adapter-evm-core'],
+  noExternal: ['@openzeppelin/adapter-evm-core'],
 });
