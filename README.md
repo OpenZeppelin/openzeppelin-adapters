@@ -36,6 +36,18 @@ pnpm build
 pnpm test
 ```
 
+## Available Scripts
+
+- `pnpm build` - Build all adapter packages
+- `pnpm test` - Run tests
+- `pnpm lint` - Run ESLint
+- `pnpm lint:adapters` - Validate adapter implementations against the ContractAdapter interface
+- `pnpm lint:fix` - Fix ESLint issues
+- `pnpm format` - Format code with Prettier
+- `pnpm format:check` - Check formatting without making changes
+- `pnpm typecheck` - Type check all packages
+- `pnpm fix-all` - Run Prettier and ESLint fix
+
 ## Documentation
 
 - [DEVOPS_SETUP.md](docs/DEVOPS_SETUP.md) – Release credentials, provenance, and CI setup

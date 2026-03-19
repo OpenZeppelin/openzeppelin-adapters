@@ -9,23 +9,27 @@
   "scripts": {
     "clean": "pnpm -r clean",
     "install-deps": "pnpm install --frozen-lockfile --ignore-scripts --prefer-offline",
-    "build": "pnpm -r build",
+    "sync-patches": "node scripts/sync-patches-to-adapters.js",
+    "validate:vite-configs": "node scripts/validate-adapter-vite-configs.cjs",
+    "build": "pnpm clean && pnpm sync-patches && pnpm validate:vite-configs && NODE_OPTIONS='--max-old-space-size=8192' pnpm -r build",
     "test": "pnpm -r test",
     "test:watch": "pnpm -r test:watch",
     "coverage": "pnpm -r coverage",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
+    "lint:adapters": "pnpm --filter='./packages/adapter-*' lint:adapters",
     "typecheck": "pnpm -r typecheck",
-    "format": "pnpm -r format",
-    "format:check": "pnpm -r format:check",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,css}\" \"scripts/**/*.js\" \"*.cjs\" --config .prettierrc.cjs",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,jsx,css}\" \"scripts/**/*.js\" \"*.cjs\" --config .prettierrc.cjs",
     "fix-all": "pnpm format && pnpm lint:fix",
+    "postinstall": "node scripts/remove-midnight-sourcemaps.js",
     "prepare": "husky install",
     "preinstall": "npx only-allow pnpm",
     "commit": "git-cz",
     "changeset": "changeset"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,cjs,mjs}": "pnpm fix-all"
+    "*.{js,jsx,ts,tsx,cjs,mjs}": ["prettier --write", "eslint --fix"]
   },
   "config": {
     "commitizen": {
@@ -36,13 +40,40 @@
     "node": ">=20.19.0"
   },
   "packageManager": "pnpm@10.28.2",
+  "pnpm": {
+    "patchedDependencies": {
+      "@midnight-ntwrk/compact-runtime@0.9.0": "patches/@midnight-ntwrk__compact-runtime@0.9.0.patch",
+      "@midnight-ntwrk/midnight-js-contracts@2.0.2": "patches/@midnight-ntwrk__midnight-js-contracts@2.0.2.patch",
+      "@midnight-ntwrk/midnight-js-http-client-proof-provider@2.0.2": "patches/@midnight-ntwrk__midnight-js-http-client-proof-provider@2.0.2.patch",
+      "@midnight-ntwrk/midnight-js-indexer-public-data-provider@2.0.2": "patches/@midnight-ntwrk__midnight-js-indexer-public-data-provider@2.0.2.patch",
+      "@midnight-ntwrk/midnight-js-network-id@2.0.2": "patches/@midnight-ntwrk__midnight-js-network-id@2.0.2.patch",
+      "@midnight-ntwrk/midnight-js-types@2.0.2": "patches/@midnight-ntwrk__midnight-js-types@2.0.2.patch",
+      "@midnight-ntwrk/midnight-js-utils@2.0.2": "patches/@midnight-ntwrk__midnight-js-utils@2.0.2.patch"
+    }
+  },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
+    "@ianvs/prettier-plugin-sort-imports": "4.5.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
     "commitizen": "^4.3.1",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
-    "only-allow": "^1.1.1"
+    "only-allow": "^1.1.1",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "0.6.14",
+    "tsdown": "^0.19.0"
   }
 }

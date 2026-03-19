@@ -20,6 +20,11 @@ if [ "$node_version" -lt 20 ]; then
 fi
 
 pnpm fix-all
+
+# Check adapter pattern compliance
+echo "🔍 Checking adapter pattern compliance..."
+pnpm lint:adapters
+
 pnpm typecheck
 pnpm test
 

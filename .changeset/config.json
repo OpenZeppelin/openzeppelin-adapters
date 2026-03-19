@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    {
+      "repo": "OpenZeppelin/openzeppelin-adapters"
+    }
+  ],
+  "commit": false,
+  "fixed": [],
+  "linked": [
+    [
+      "@openzeppelin/adapter-evm",
+      "@openzeppelin/adapter-midnight",
+      "@openzeppelin/adapter-polkadot",
+      "@openzeppelin/adapter-solana",
+      "@openzeppelin/adapter-stellar"
+    ]
+  ],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}
