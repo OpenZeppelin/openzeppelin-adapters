@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+.pnpm-debug.log*
+.pnpm-store/
+.packed-packages/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# IDE - IntelliJ/WebStorm/etc
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea_modules/
+
+# Logs
+logs
+*.log
+
+# Debug
+.DS_Store
+Thumbs.db
+
+# Testing
+/coverage
+.nyc_output
+
+# Misc
+.cache/
+.eslintcache
+.turbo
+.husky/_/
+
+# Temporary directories
+.temp/
+.tmp/
+
+.config/
+.npm_token

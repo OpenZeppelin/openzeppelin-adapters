@@ -1,0 +1,48 @@
+{
+  "name": "openzeppelin-adapters-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "clean": "pnpm -r clean",
+    "install-deps": "pnpm install --frozen-lockfile --ignore-scripts --prefer-offline",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:watch": "pnpm -r test:watch",
+    "coverage": "pnpm -r coverage",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "format": "pnpm -r format",
+    "format:check": "pnpm -r format:check",
+    "fix-all": "pnpm format && pnpm lint:fix",
+    "prepare": "husky install",
+    "preinstall": "npx only-allow pnpm",
+    "commit": "git-cz",
+    "changeset": "changeset"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,cjs,mjs}": "pnpm fix-all"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/cz-commitlint": "^19.8.1",
+    "commitizen": "^4.3.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "only-allow": "^1.1.1"
+  }
+}
