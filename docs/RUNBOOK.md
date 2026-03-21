@@ -11,14 +11,13 @@ This runbook covers day-to-day release operations, recovery procedures, and vali
 
 ### RC Publication
 
-**Trigger**: Merge to `main` branch
+**Trigger**: Manual — GitHub Actions → **Release RC** → Run workflow (against `main` or the branch you select)
 
 **Flow**:
 
-1. CI runs (lint, typecheck, test, build)
-2. Changesets updates release state
-3. RC workflow publishes linked adapter set to npm `rc` tag
-4. Consumers can resolve latest RC via `npm install @openzeppelin/adapter-evm@rc`
+1. Ensure the target commit is merged to `main` (or run the workflow from the intended ref).
+2. **Release RC** runs the full SLSA + publish pipeline (same shape as stable `publish.yml`) and executes `changeset publish --tag rc`.
+3. Consumers resolve the RC line via `npm install @openzeppelin/adapter-evm@rc` (or `dist-tags.rc`).
 
 **Verification**:
 
@@ -47,10 +46,10 @@ npm view @openzeppelin/adapter-evm provenance
 ### Creating a Release
 
 1. Make changes, add Changesets via `pnpm changeset`
-2. Merge to `main` – RC is published automatically
-3. Validate RC in staging (via ui-builder or consumer)
+2. Merge to `main` – `.github/workflows/publish.yml` opens or updates the version PR. To publish the npm `rc` dist-tag, run **Release RC** manually (`.github/workflows/publish-rc.yml`, `workflow_dispatch`) after the commit you want staged is on `main`.
+3. Validate RC in staging (via ui-builder or another consumer); see ui-builder `docs/LOCAL_DEVELOPMENT.md`
 4. Merge the auto-generated release PR when ready for stable
-5. Stable packages publish; consumers can upgrade
+5. Stable packages publish via `publish.yml`; consumers can upgrade
 
 ## Defective Release Recovery
 
@@ -73,9 +72,11 @@ npm deprecate @openzeppelin/adapter-evm@1.2.3 "Defective release; use 1.2.4"
 
 Consumer repositories (ui-builder, openzeppelin-ui, role-manager, rwa-wizard) MUST NOT merge their cutover PRs until:
 
-1. The initial adapter package set (1.0.0) has been published from this repo
-2. At least one consumer has validated installability from published npm
-3. The rollout gate is explicitly satisfied per migration documentation
+1. The initial `@openzeppelin/adapter-*` set has been published from this repo (baseline `1.0.0` or the current linked set on `main`).
+2. At least one consumer has validated installability from published npm (`pnpm install` / CI using registry versions, not workspace-only paths).
+3. The rollout gate is explicitly satisfied per migration documentation and the **Release** workflow notice in `publish.yml` has been acknowledged for the train in question.
+
+**Focused gate (automation reminder)**: After a successful stable publish job, GitHub Actions emits a notice referencing this gate. It does not replace human verification—confirm `npm view @openzeppelin/adapter-evm version` and `dist-tags` before approving downstream cutover PRs.
 
 ### Post-Migration Closeout
 

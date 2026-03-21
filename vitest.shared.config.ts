@@ -1,4 +1,3 @@
-import path from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
@@ -13,7 +12,6 @@ export const sharedVitestConfig = defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: [path.resolve(__dirname, './test/setup.ts')],
     passWithNoTests: true,
     coverage: {
       provider: 'v8',
