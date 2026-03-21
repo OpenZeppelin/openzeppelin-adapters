@@ -14,14 +14,14 @@ This repository contains the extracted adapter packages previously maintained in
 
 ## Packages
 
-| Package | Description |
-| ------- | ----------- |
-| `@openzeppelin/adapter-evm` | EVM-compatible chains (Ethereum, Polygon, etc.) |
-| `@openzeppelin/adapter-evm-core` | Shared EVM core (internal, bundled) |
-| `@openzeppelin/adapter-midnight` | Midnight Network |
-| `@openzeppelin/adapter-polkadot` | Polkadot ecosystem |
-| `@openzeppelin/adapter-solana` | Solana (scaffolding only) |
-| `@openzeppelin/adapter-stellar` | Stellar |
+| Package                          | Description                                     |
+| -------------------------------- | ----------------------------------------------- |
+| `@openzeppelin/adapter-evm`      | EVM-compatible chains (Ethereum, Polygon, etc.) |
+| `@openzeppelin/adapter-evm-core` | Shared EVM core (internal, bundled)             |
+| `@openzeppelin/adapter-midnight` | Midnight Network                                |
+| `@openzeppelin/adapter-polkadot` | Polkadot ecosystem                              |
+| `@openzeppelin/adapter-solana`   | Solana (scaffolding only)                       |
+| `@openzeppelin/adapter-stellar`  | Stellar                                         |
 
 ## Prerequisites
 
@@ -35,6 +35,20 @@ pnpm install
 pnpm build
 pnpm test
 ```
+
+## Local Development From Consumer Repos
+
+Consumer repos should point at a sibling `openzeppelin-adapters` checkout through `LOCAL_ADAPTERS_PATH`.
+
+```bash
+LOCAL_ADAPTERS_PATH=/path/to/openzeppelin-adapters pnpm dev:local
+```
+
+Compatibility notes:
+
+- `LOCAL_ADAPTERS_PATH` is the canonical env var across `ui-builder`, `openzeppelin-ui`, `role-manager`, and `rwa-wizard`.
+- `LOCAL_UI_BUILDER_PATH` remains supported as a temporary compatibility alias in consumer `.pnpmfile.cjs` hooks and helper scripts.
+- When the configured path is wrong, consumer pnpm hooks should now fail with a direct error that names the resolved path and the env vars to update.
 
 ## Available Scripts
 

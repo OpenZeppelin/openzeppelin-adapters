@@ -14,8 +14,8 @@
   "homepage": "https://github.com/OpenZeppelin/ui-builder#readme",
   "license": "MIT",
   "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
   "type": "module",
   "files": [
     "dist",
@@ -83,28 +83,43 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "types": {
+        "import": "./dist/index.d.mts",
+        "require": "./dist/index.d.cts"
+      },
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./metadata": {
-      "types": "./dist/metadata.d.ts",
-      "import": "./dist/metadata.js",
+      "types": {
+        "import": "./dist/metadata.d.mts",
+        "require": "./dist/metadata.d.cts"
+      },
+      "import": "./dist/metadata.mjs",
       "require": "./dist/metadata.cjs"
     },
     "./networks": {
-      "types": "./dist/networks.d.ts",
-      "import": "./dist/networks.js",
+      "types": {
+        "import": "./dist/networks.d.mts",
+        "require": "./dist/networks.d.cts"
+      },
+      "import": "./dist/networks.mjs",
       "require": "./dist/networks.cjs"
     },
     "./dist/config.js": {
-      "types": "./dist/config.d.ts",
-      "import": "./dist/config.js",
+      "types": {
+        "import": "./dist/config.d.mts",
+        "require": "./dist/config.d.cts"
+      },
+      "import": "./dist/config.mjs",
       "require": "./dist/config.cjs"
     },
     "./vite-config": {
-      "types": "./dist/vite-config.d.ts",
-      "import": "./dist/vite-config.js",
+      "types": {
+        "import": "./dist/vite-config.d.mts",
+        "require": "./dist/vite-config.d.cts"
+      },
+      "import": "./dist/vite-config.mjs",
       "require": "./dist/vite-config.cjs"
     }
   },

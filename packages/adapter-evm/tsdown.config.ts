@@ -18,5 +18,13 @@ export default defineConfig({
   },
   sourcemap: true,
   clean: true,
+  external: [
+    'react',
+    'react-dom',
+    '@rainbow-me/rainbowkit',
+    '@openzeppelin/ui-components',
+    '@openzeppelin/ui-react',
+    'lucide-react',
+  ],
   noExternal: ['@openzeppelin/adapter-evm-core'],
 });
