@@ -67,6 +67,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Lint
+        run: pnpm lint
+
+      - name: Adapter pattern compliance
+        run: pnpm lint:adapters
+
       - name: Build all packages
         run: pnpm build
         env:
@@ -77,4 +83,3 @@ jobs:
 
       - name: Test
         run: pnpm test
-        continue-on-error: true

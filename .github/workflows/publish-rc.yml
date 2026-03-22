@@ -101,6 +101,9 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
 
+      - name: Sync publish-time adapter patches
+        run: pnpm run sync-patches
+
       - name: Guard against disallowed file modes (executables/symlinks)
         run: pnpm run check-file-modes
 

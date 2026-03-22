@@ -14,7 +14,7 @@
     "wagmi"
   ],
   "author": "Aleksandr Pasevin <aleksandr.pasevin@openzeppelin.com>",
-  "homepage": "https://github.com/OpenZeppelin/ui-builder#readme",
+  "homepage": "https://github.com/OpenZeppelin/openzeppelin-adapters#readme",
   "license": "AGPL-3.0",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

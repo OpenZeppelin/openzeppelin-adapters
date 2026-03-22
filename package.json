@@ -13,7 +13,7 @@
     "check-file-modes": "node scripts/check-file-modes.cjs",
     "sync-patches": "node scripts/sync-patches-to-adapters.js",
     "validate:vite-configs": "node scripts/validate-adapter-vite-configs.cjs",
-    "build": "pnpm clean && pnpm sync-patches && pnpm validate:vite-configs && NODE_OPTIONS='--max-old-space-size=8192' pnpm -r build",
+    "build": "pnpm clean && pnpm validate:vite-configs && NODE_OPTIONS='--max-old-space-size=8192' pnpm -r build",
     "test": "pnpm -r test",
     "test:watch": "pnpm -r test:watch",
     "coverage": "pnpm -r coverage",

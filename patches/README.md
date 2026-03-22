@@ -43,7 +43,7 @@ Patches are maintained in this root directory as the **single source of truth** 
    };
    ```
 
-3. Run sync script (or it will run automatically on build):
+3. Run sync script when preparing a publishable adapter package:
    ```bash
    pnpm sync-patches
    ```
@@ -87,10 +87,10 @@ All patches fix browser compatibility issues in Midnight SDK v2.0.2:
 
 ## Automation
 
-The sync script runs automatically:
+The sync script runs automatically only for publish preparation:
 
-- Before building the monorepo: `pnpm build`
-- Before publishing an adapter: `pnpm publish` (via `prepublishOnly`)
+- In release workflows before `changeset publish`
+- Before publishing an adapter locally via `prepublishOnly`
 
 Manual sync: `pnpm sync-patches`
 
@@ -103,23 +103,11 @@ Manual sync: `pnpm sync-patches`
 - ✅ Users don't need to manage patches manually
 - ✅ Easy to add patches for other adapters
 
-## Expected Warnings
+## Development Notes
 
-When running the sync script or building, you may see:
-
-```
-WARN  The field "pnpm.patchedDependencies" was found in /path/to/packages/adapter-*/package.json.
-This will not take effect. You should configure "pnpm.patchedDependencies" at the root of the workspace instead.
-```
-
-**This warning is expected and safe to ignore.** Here's why:
-
-- During monorepo development, patches are applied from the root `package.json` (working correctly)
-- The `patchedDependencies` field in adapter packages is **only** needed when published to npm
-- pnpm shows this warning to inform you the field is ignored during development
-- End users who install the published adapter from npm will have patches applied correctly
-
-The warning doesn't indicate a problem - it's pnpm's way of saying "this field won't do anything in the monorepo, but we see you have it here for publishing purposes."
+- During monorepo development, Midnight patches are applied from the workspace root `package.json`
+- Publish-only patch metadata is injected into adapter manifests by `pnpm sync-patches`
+- Normal `pnpm install`, `pnpm test`, and `pnpm build` should stay free of package-level `pnpm.patchedDependencies` warnings
 
 ## Notes
 

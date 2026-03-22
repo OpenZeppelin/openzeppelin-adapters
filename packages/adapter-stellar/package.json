@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapter-stellar",
-  "version": "1.8.2",
+  "version": "1.0.0",
   "description": "Stellar Adapter for UI Builder",
   "keywords": [
     "openzeppelin",
@@ -11,7 +11,7 @@
     "stellar"
   ],
   "author": "Aleksandr Pasevin <aleksandr.pasevin@openzeppelin.com>",
-  "homepage": "https://github.com/OpenZeppelin/ui-builder#readme",
+  "homepage": "https://github.com/OpenZeppelin/openzeppelin-adapters#readme",
   "license": "MIT",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

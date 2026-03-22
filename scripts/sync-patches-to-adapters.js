@@ -9,7 +9,7 @@
  * 3. Copies patches to the appropriate adapter's patches/ directory
  * 4. Updates the adapter's package.json with pnpm.patchedDependencies
  *
- * Run before publishing adapters to ensure patches are bundled correctly.
+ * Run only when preparing published adapters so workspace builds stay clean.
  */
 import fs from 'fs';
 import path from 'path';

@@ -11,7 +11,7 @@
     "midnight"
   ],
   "author": "Aleksandr Pasevin <aleksandr.pasevin@openzeppelin.com>",
-  "homepage": "https://github.com/OpenZeppelin/ui-builder#readme",
+  "homepage": "https://github.com/OpenZeppelin/openzeppelin-adapters#readme",
   "license": "MIT",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -121,17 +121,6 @@
       },
       "import": "./dist/vite-config.mjs",
       "require": "./dist/vite-config.cjs"
-    }
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "@midnight-ntwrk/compact-runtime@0.9.0": "patches/@midnight-ntwrk__compact-runtime@0.9.0.patch",
-      "@midnight-ntwrk/midnight-js-contracts@2.0.2": "patches/@midnight-ntwrk__midnight-js-contracts@2.0.2.patch",
-      "@midnight-ntwrk/midnight-js-http-client-proof-provider@2.0.2": "patches/@midnight-ntwrk__midnight-js-http-client-proof-provider@2.0.2.patch",
-      "@midnight-ntwrk/midnight-js-indexer-public-data-provider@2.0.2": "patches/@midnight-ntwrk__midnight-js-indexer-public-data-provider@2.0.2.patch",
-      "@midnight-ntwrk/midnight-js-network-id@2.0.2": "patches/@midnight-ntwrk__midnight-js-network-id@2.0.2.patch",
-      "@midnight-ntwrk/midnight-js-types@2.0.2": "patches/@midnight-ntwrk__midnight-js-types@2.0.2.patch",
-      "@midnight-ntwrk/midnight-js-utils@2.0.2": "patches/@midnight-ntwrk__midnight-js-utils@2.0.2.patch"
     }
   }
 }
