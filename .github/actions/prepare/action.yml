@@ -7,6 +7,9 @@ inputs:
   token:
     description: GitHub token for checkout and authentication
     required: true
+  npm-token:
+    description: Optional npm token for registry authentication
+    required: false
 
 runs:
   using: composite
@@ -25,6 +28,12 @@ runs:
       with:
         node-version: 22.18.0
         cache: 'pnpm'
+
+    - name: Configure npm authentication for npm registry
+      if: ${{ inputs.npm-token != '' }}
+      run: |
+        echo "//registry.npmjs.org/:_authToken=${{ inputs.npm-token }}" >> ~/.npmrc
+      shell: bash
 
     - name: Install dependencies
       run: |

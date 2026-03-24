@@ -55,6 +55,7 @@ jobs:
         uses: ./.github/actions/prepare
         with:
           token: ${{ steps.gh-app-token.outputs.token }}
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
       - name: Verify dependencies
         run: pnpm audit
