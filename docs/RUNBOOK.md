@@ -16,7 +16,7 @@ This runbook covers day-to-day release operations, recovery procedures, and vali
 **Flow**:
 
 1. Ensure the target commit is merged to `main` (or run the workflow from the intended ref).
-2. **Release RC** runs the full SLSA + publish pipeline (same shape as stable `publish.yml`) and executes `changeset publish --tag rc`.
+2. **Release RC** runs the full SLSA + publish pipeline (same shape as stable `publish.yml`), enters Changesets prerelease mode with the `rc` dist-tag, versions the pending release set, and publishes those prerelease versions to npm.
 3. Consumers resolve the RC line via `npm install @openzeppelin/adapter-evm@rc` (or `dist-tags.rc`).
 
 **Verification**:
@@ -50,6 +50,8 @@ npm view @openzeppelin/adapter-evm provenance
 3. Validate RC in staging (via ui-builder or another consumer); see ui-builder `docs/LOCAL_DEVELOPMENT.md`
 4. Merge the auto-generated release PR when ready for stable
 5. Stable packages publish via `publish.yml`; consumers can upgrade
+
+**Initial release note**: Until the first stable release PR is merged, unpublished adapter packages remain at `0.0.0` in-repo so the first Changesets versioning pass produces `1.0.0` instead of skipping directly to `2.0.0`.
 
 ## Defective Release Recovery
 
@@ -99,6 +101,8 @@ Before declaring migration complete:
 - Verify `NPM_TOKEN` is set and has publish scope
 - Check npm registry connectivity
 - Ensure no version conflicts (linked packages must version together)
+- RC prereleases are published by `publish-rc.yml` using Changesets prerelease mode; do not reuse the stable release-PR path for RC validation
+- After any RC run, confirm `npm view @openzeppelin/adapter-evm dist-tags.rc` returns a value before treating the run as successful
 
 ### Consumer Resolution Issues
 

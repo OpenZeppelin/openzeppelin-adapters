@@ -1,7 +1,9 @@
 # RC npm release workflow (parity with publish.yml + npm dist-tag `rc`)
 # =====================================================================
 # Same SLSA provenance, tarball unpack, check-file-modes, and attestations as
-# publish.yml; publish step uses `changeset publish --tag rc`.
+# publish.yml. RC publication uses Changesets prerelease mode directly instead
+# of changesets/action so it publishes prerelease versions from main rather than
+# refreshing the stable release PR.
 # Triggered manually only—avoids a second full SLSA run on every main push.
 
 name: Release RC
@@ -115,15 +117,16 @@ jobs:
           # Find and make any other executable files non-executable (except in .husky/)
           find . -type f -executable ! -path "./.husky/*" ! -path "./node_modules/*" ! -path "./.git/*" -exec chmod -x {} \; 2>/dev/null || true
 
-      - name: Create Release Pull Request or Publish RC to npm
-        id: changesets
-        uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
-        with:
-          publish: pnpm changeset publish --tag rc --no-git-checks
-          # Use conventional commit format to satisfy commitlint when a version PR is created.
-          commit: "chore(release): version packages"
-          title: "chore(release): version packages"
-          commitMode: "github-api"
+      - name: Prepare RC versions
+        run: |
+          set -euo pipefail
+          pnpm changeset pre enter rc
+          pnpm changeset version
+        env:
+          GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
+
+      - name: Publish RC packages to npm
+        run: pnpm changeset publish --tag rc --no-git-checks
         env:
           GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -131,6 +134,32 @@ jobs:
           TARBALL: ${{ needs.provenance.outputs.package-name }}
           NPM_CONFIG_ACCESS: public
           SKIP_PUBLISH_BUILD: true
+
+      - name: Verify RC dist-tags are available
+        run: |
+          set -euo pipefail
+
+          for package in \
+            "@openzeppelin/adapter-evm" \
+            "@openzeppelin/adapter-midnight" \
+            "@openzeppelin/adapter-polkadot" \
+            "@openzeppelin/adapter-solana" \
+            "@openzeppelin/adapter-stellar"; do
+            for attempt in 1 2 3 4 5 6; do
+              rc_version=$(npm view "$package" dist-tags.rc --json 2>/dev/null | tr -d '"')
+              if [ -n "$rc_version" ] && [ "$rc_version" != "null" ]; then
+                echo "$package rc -> $rc_version"
+                break
+              fi
+
+              if [ "$attempt" -eq 6 ]; then
+                echo "RC dist-tag not available for $package after publish"
+                exit 1
+              fi
+
+              sleep 5
+            done
+          done
 
       - name: Extract version from package.json
         id: extract_version
