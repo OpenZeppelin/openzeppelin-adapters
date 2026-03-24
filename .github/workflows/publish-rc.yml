@@ -57,6 +57,7 @@ jobs:
         uses: ./.github/actions/prepare
         with:
           token: ${{ steps.gh-app-token.outputs.token }}
+          npm-token: ${{ secrets.NPM_TOKEN }}
 
       - name: Verify dependencies
         run: pnpm audit
@@ -124,6 +125,28 @@ jobs:
           pnpm changeset version
         env:
           GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
+
+      - name: Guard against first-release RC publishes
+        run: |
+          set -euo pipefail
+
+          unpublished_packages=()
+          for package in \
+            "@openzeppelin/adapter-evm" \
+            "@openzeppelin/adapter-midnight" \
+            "@openzeppelin/adapter-polkadot" \
+            "@openzeppelin/adapter-solana" \
+            "@openzeppelin/adapter-stellar"; do
+            if ! npm view "$package" version >/dev/null 2>&1; then
+              unpublished_packages+=("$package")
+            fi
+          done
+
+          if [ "${#unpublished_packages[@]}" -gt 0 ]; then
+            echo "::error title=Initial RC publish blocked::Changesets prerelease mode publishes first-time packages to the latest dist-tag instead of rc. Publish the first stable adapter release before using the RC workflow."
+            printf 'Unpublished package: %s\n' "${unpublished_packages[@]}"
+            exit 1
+          fi
 
       - name: Publish RC packages to npm
         # In prerelease mode, Changesets derives the dist-tag from `pre enter rc`.
