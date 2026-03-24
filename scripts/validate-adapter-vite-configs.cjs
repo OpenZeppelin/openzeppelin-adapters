@@ -5,8 +5,6 @@
  * - package.json export for vite-config
  * - tsdown.config.ts or tsup.config.ts entry including vite-config.ts
  * - Valid export function
- *
- * Supports both @openzeppelin/adapter-* and legacy @openzeppelin/ui-builder-adapter-* names.
  */
 
 const path = require('path');
@@ -33,14 +31,12 @@ function findAdapterPackages() {
     const adapterPath = path.join(packagesDir, packageName);
     const packageJsonPath = path.join(adapterPath, 'package.json');
 
-    // Verify it's actually an adapter package (supports both namespaces)
+    // Verify it's actually an adapter package from the extracted namespace
     if (fs.existsSync(packageJsonPath)) {
       try {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
         const name = packageJson.name || '';
-        const isAdapter =
-          name.includes('adapter-') &&
-          (name.includes('@openzeppelin/adapter-') || name.includes('ui-builder-adapter'));
+        const isAdapter = name.startsWith('@openzeppelin/adapter-');
         if (isAdapter) {
           adapters.push({
             name: packageJson.name,
@@ -77,7 +73,7 @@ function validateAdapter(adapter) {
   const viteConfigContent = fs.readFileSync(viteConfigPath, 'utf8');
   // Convert hyphenated adapter name to PascalCase (e.g., "evm-core" -> "EvmCore")
   const adapterName = (name || '')
-    .replace(/@openzeppelin\/(ui-builder-)?adapter-/, '')
+    .replace('@openzeppelin/adapter-', '')
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');

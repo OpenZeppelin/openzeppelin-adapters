@@ -87,6 +87,7 @@ Before declaring migration complete:
 - No maintained consumer references `@openzeppelin/ui-builder-adapter-*`
 - All in-scope consumers use `@openzeppelin/adapter-*` and updated local-dev paths
 - Legacy adapter source directories removed from ui-builder
+- Run a closeout grep such as `rg -n "ui-builder-adapter" . ../ui-builder ../openzeppelin-ui ../role-manager ../rwa-wizard` and keep the result limited to historical/spec-only references before approving final migration closeout
 
 ## Troubleshooting
 
