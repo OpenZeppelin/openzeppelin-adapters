@@ -126,7 +126,8 @@ jobs:
           GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
 
       - name: Publish RC packages to npm
-        run: pnpm changeset publish --tag rc --no-git-checks
+        # In prerelease mode, Changesets derives the dist-tag from `pre enter rc`.
+        run: pnpm changeset publish --no-git-checks
         env:
           GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
