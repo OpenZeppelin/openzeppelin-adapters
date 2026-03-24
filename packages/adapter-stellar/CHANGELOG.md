@@ -1,5 +1,11 @@
 # @openzeppelin/transaction-form-adapter-stellar
 
+## 1.0.0
+
+### Major Changes
+
+- [`ec7fb58`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/ec7fb58c4b729da5e68eec8a093f4092a3d8f40e) Thanks [@pasevin](https://github.com/pasevin)! - Initial release baseline for extracted adapter packages under the `@openzeppelin/adapter-*` namespace.
+
 ## 1.8.2
 
 ### Patch Changes
