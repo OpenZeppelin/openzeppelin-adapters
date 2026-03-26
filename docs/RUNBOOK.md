@@ -43,6 +43,32 @@ npm view @openzeppelin/adapter-evm version
 npm view @openzeppelin/adapter-evm provenance
 ```
 
+### First Release Readiness
+
+Use this checklist for the initial `1.0.0` publish and for any release train where you need to prove installability and same-day consumer readiness.
+
+1. Confirm the published public package set appears on npm:
+
+```bash
+npm view @openzeppelin/adapter-evm version
+npm view @openzeppelin/adapter-midnight version
+npm view @openzeppelin/adapter-polkadot version
+npm view @openzeppelin/adapter-solana version
+npm view @openzeppelin/adapter-stellar version
+```
+
+2. Run a clean install smoke test against the published set within 5 minutes of the first public release:
+
+```bash
+tmpdir="$(mktemp -d)"
+cd "$tmpdir"
+printf '{"name":"adapter-install-check","private":true}\n' > package.json
+pnpm add @openzeppelin/adapter-evm@1.0.0 @openzeppelin/adapter-midnight@1.0.0 @openzeppelin/adapter-polkadot@1.0.0 @openzeppelin/adapter-solana@1.0.0 @openzeppelin/adapter-stellar@1.0.0
+```
+
+3. Validate the internal `@openzeppelin/adapter-evm-core` package through this repo's quality gates (`pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`) rather than npm install smoke tests, because it is intentionally bundled and not published as a standalone runtime package.
+4. Treat the release as same-day ready for consumers only after the npm checks above pass, the CI/publish workflows finish successfully, and at least one consumer repo completes its own install/build/test verification without waiting for a `ui-builder` app release.
+
 ### Creating a Release
 
 1. Make changes, add Changesets via `pnpm changeset`

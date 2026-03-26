@@ -1,4 +1,4 @@
-import { trimEnd } from 'lodash';
+import trimEnd from 'lodash-es/trimEnd.js';
 
 import { UserExplorerConfig } from '@openzeppelin/ui-types';
 import { appConfigService, logger, userNetworkServiceConfigService } from '@openzeppelin/ui-utils';

@@ -130,6 +130,8 @@ Consumer repos should point at a sibling `openzeppelin-adapters` checkout throug
 LOCAL_ADAPTERS_PATH=/path/to/openzeppelin-adapters pnpm dev:local
 ```
 
+The local-switch workflow is driven by `LOCAL_ADAPTERS_PATH`, `pnpm dev:adapters:local`, and `pnpm dev:npm`.
+
 Compatibility notes:
 
 - `LOCAL_ADAPTERS_PATH` is the canonical env var across `ui-builder`, `openzeppelin-ui`, `role-manager`, and `rwa-wizard`.
