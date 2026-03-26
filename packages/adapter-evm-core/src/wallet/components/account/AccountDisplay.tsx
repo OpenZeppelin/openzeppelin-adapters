@@ -1,10 +1,10 @@
 import { LogOut } from 'lucide-react';
 import React from 'react';
 
-import { Button } from '@openzeppelin/ui-components';
+import { AddressDisplay, Button } from '@openzeppelin/ui-components';
 import { useDerivedAccountStatus, useDerivedDisconnect } from '@openzeppelin/ui-react';
 import type { BaseComponentProps } from '@openzeppelin/ui-types';
-import { cn, getWalletAccountDisplaySizeProps, truncateMiddle } from '@openzeppelin/ui-utils';
+import { cn, getWalletAccountDisplaySizeProps } from '@openzeppelin/ui-utils';
 
 import { SafeWagmiComponent } from '../SafeWagmiComponent';
 
@@ -49,10 +49,17 @@ const AccountDisplayContent: React.FC<BaseComponentProps> = ({
 
   return (
     <div className={cn('flex items-center gap-2', fullWidth && 'w-full', className)}>
-      <div className={cn('flex flex-col', fullWidth && 'flex-1')}>
-        <span className={cn(sizeProps.textSize, 'font-medium')}>
-          {truncateMiddle(address, 4, 4)}
-        </span>
+      <div className={cn('group flex flex-col', fullWidth && 'flex-1')}>
+        <AddressDisplay
+          address={address}
+          variant="inline"
+          startChars={4}
+          endChars={4}
+          showTooltip
+          showCopyButton
+          showCopyButtonOnHover
+          className={cn(sizeProps.textSize, 'font-medium')}
+        />
         <span className={cn(sizeProps.subTextSize, 'text-muted-foreground -mt-0.5')}>
           {chainId ? `Chain ID: ${chainId}` : 'Chain ID: N/A'}
         </span>
