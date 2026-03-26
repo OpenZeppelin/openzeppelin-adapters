@@ -100,12 +100,12 @@ All adapters follow the same high-level model, so apps can stay mostly chain-agn
 ```mermaid
 flowchart TD
     App[Consumer app] --> Interface[ContractAdapter interface]
-    Interface --> EVM[@openzeppelin/adapter-evm]
-    Interface --> Polkadot[@openzeppelin/adapter-polkadot]
-    Interface --> Stellar[@openzeppelin/adapter-stellar]
-    Interface --> Midnight[@openzeppelin/adapter-midnight]
-    Interface --> Solana[@openzeppelin/adapter-solana]
-    EVM --> Core[@openzeppelin/adapter-evm-core]
+    Interface --> EVM["@openzeppelin/adapter-evm"]
+    Interface --> Polkadot["@openzeppelin/adapter-polkadot"]
+    Interface --> Stellar["@openzeppelin/adapter-stellar"]
+    Interface --> Midnight["@openzeppelin/adapter-midnight"]
+    Interface --> Solana["@openzeppelin/adapter-solana"]
+    EVM --> Core["@openzeppelin/adapter-evm-core"]
     Polkadot --> Core
 ```
 
