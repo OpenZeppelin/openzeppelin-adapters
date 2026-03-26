@@ -1,5 +1,5 @@
 import { xdr } from '@stellar/stellar-sdk';
-import { startCase } from 'lodash';
+import startCase from 'lodash-es/startCase.js';
 
 import type {
   ContractSchema,
