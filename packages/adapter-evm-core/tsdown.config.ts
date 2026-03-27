@@ -17,6 +17,8 @@ export default defineConfig({
     '@rainbow-me/rainbowkit',
     '@openzeppelin/ui-components',
     '@openzeppelin/ui-react',
+    '@openzeppelin/ui-types',
+    '@openzeppelin/ui-utils',
     'lucide-react',
   ],
 });
