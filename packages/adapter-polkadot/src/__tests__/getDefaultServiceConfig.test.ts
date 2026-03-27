@@ -5,12 +5,6 @@ import { appConfigService } from '@openzeppelin/ui-utils';
 import { getPolkadotDefaultServiceConfig } from '../evm/configuration/network-services';
 import type { TypedPolkadotNetworkConfig } from '../types';
 
-/**
- * Tests for getPolkadotDefaultServiceConfig function.
- *
- * Note: We test the pure function directly instead of instantiating PolkadotAdapter
- * to avoid loading heavy dependencies which can cause memory issues during test execution.
- */
 describe('getPolkadotDefaultServiceConfig', () => {
   const createMockNetworkConfig = (
     overrides: Partial<TypedPolkadotNetworkConfig> = {}
