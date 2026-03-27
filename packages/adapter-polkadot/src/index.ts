@@ -7,12 +7,27 @@
  * @packageDocumentation
  */
 
+import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
 import type { EcosystemExport } from '@openzeppelin/ui-types';
+import { VERSION as UI_UTILS_V, validatePeerVersions } from '@openzeppelin/ui-utils';
 
 import { PolkadotAdapter } from './adapter';
 import { polkadotAdapterConfig } from './config';
 import { ecosystemMetadata } from './metadata';
 import { polkadotNetworks } from './networks';
+
+declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
+
+validatePeerVersions('@openzeppelin/adapter-polkadot', {
+  '@openzeppelin/ui-types': {
+    installed: UI_TYPES_V,
+    minimum: __OZ_PEER_MINIMUMS__['@openzeppelin/ui-types'],
+  },
+  '@openzeppelin/ui-utils': {
+    installed: UI_UTILS_V,
+    minimum: __OZ_PEER_MINIMUMS__['@openzeppelin/ui-utils'],
+  },
+});
 
 export { ecosystemMetadata } from './metadata';
 export { PolkadotAdapter } from './adapter';

@@ -1,4 +1,13 @@
+import { readFileSync } from 'fs';
 import { defineConfig } from 'tsdown';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+const ozPeerMinimums: Record<string, string> = {};
+for (const [name, range] of Object.entries(pkg.peerDependencies ?? {})) {
+  if (name.startsWith('@openzeppelin/')) {
+    ozPeerMinimums[name] = (range as string).replace(/^\^/, '');
+  }
+}
 
 export default defineConfig({
   entry: ['src/index.ts', 'src/metadata.ts', 'src/networks.ts', 'src/vite-config.ts'],
@@ -20,4 +29,7 @@ export default defineConfig({
     '@openzeppelin/ui-react',
     'lucide-react',
   ],
+  define: {
+    __OZ_PEER_MINIMUMS__: JSON.stringify(ozPeerMinimums),
+  },
 });
