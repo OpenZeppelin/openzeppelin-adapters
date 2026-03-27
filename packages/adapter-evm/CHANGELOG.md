@@ -1,5 +1,30 @@
 # @openzeppelin/transaction-form-adapter-evm
 
+## 1.1.0
+
+### Minor Changes
+
+- [#12](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/12) [`fca08be`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fca08bef5ebbe8f539087a93d9ccc7c0973720ec) Thanks [@pasevin](https://github.com/pasevin)! - Add runtime peer version validation that throws at module load if installed `@openzeppelin/ui-*` packages are below the adapter's minimum required versions. This replaces silent visual degradation with an immediate, actionable error message including the exact fix command.
+
+### Patch Changes
+
+- [#9](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/9) [`2f6b1fc`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/2f6b1fc004d0d64a9adee20953f8867a09044354) Thanks [@pasevin](https://github.com/pasevin)! - Use AddressDisplay in AccountDisplay for tooltip and copy support
+
+  Replace the plain truncated address `<span>` in AccountDisplay with the
+  upstream `AddressDisplay` component across EVM, Midnight, and Stellar
+  adapters, enabling:
+  - Full-address tooltip on hover
+  - Copy-to-clipboard button on hover
+  - Inline variant (no chip background) to match existing layout
+
+  Polkadot already inherits the fix via `adapter-evm-core`.
+
+  Bump `@openzeppelin/ui-components` peer/dev dependency to `^1.6.0`.
+
+- [#7](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/7) [`7d91492`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/7d91492cb7d383b7fc4942cf25699dfc36689dab) Thanks [@pasevin](https://github.com/pasevin)! - Move shared host runtime packages to peer plus dev dependencies, switch adapter lodash usage to
+  `lodash-es`, and validate the host dependency policy during builds to avoid duplicate runtime
+  installs in consumer applications.
+
 ## 1.0.0
 
 ### Major Changes
