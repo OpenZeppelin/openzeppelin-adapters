@@ -60,7 +60,7 @@ const AccountDisplayContent: React.FC<BaseComponentProps> = ({
           showTooltip
           showCopyButton
           showCopyButtonOnHover
-          className={cn(sizeProps.textSize, 'font-medium')}
+          className={cn(sizeProps.textSize, 'font-sans font-medium')}
         />
         <span className={cn(sizeProps.subTextSize, 'text-muted-foreground -mt-0.5')}>
           Midnight Network
