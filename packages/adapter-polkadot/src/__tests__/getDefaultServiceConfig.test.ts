@@ -1,19 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as evmCore from '@openzeppelin/adapter-evm-core';
+import { appConfigService } from '@openzeppelin/ui-utils';
 
 import { getPolkadotDefaultServiceConfig } from '../evm/configuration/network-services';
 import type { TypedPolkadotNetworkConfig } from '../types';
-
-vi.mock('@openzeppelin/adapter-evm-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof evmCore>();
-  return {
-    ...actual,
-    resolveExplorerApiKeyFromAppConfig: vi.fn(() => undefined),
-  };
-});
-
-const mockResolveApiKey = vi.mocked(evmCore.resolveExplorerApiKeyFromAppConfig);
 
 describe('getPolkadotDefaultServiceConfig', () => {
   const createMockNetworkConfig = (
@@ -40,6 +30,11 @@ describe('getPolkadotDefaultServiceConfig', () => {
       decimals: 18,
     },
     ...overrides,
+  });
+
+  beforeEach(() => {
+    vi.spyOn(appConfigService, 'getGlobalServiceConfig').mockReturnValue(undefined);
+    vi.spyOn(appConfigService, 'getExplorerApiKey').mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -80,8 +75,10 @@ describe('getPolkadotDefaultServiceConfig', () => {
       });
     });
 
-    it('should include API key when resolveExplorerApiKeyFromAppConfig returns one', () => {
-      mockResolveApiKey.mockReturnValue('test-v2-api-key');
+    it('should include global V2 API key for V2-compatible networks', () => {
+      vi.spyOn(appConfigService, 'getGlobalServiceConfig').mockReturnValue({
+        apiKey: 'test-v2-api-key',
+      });
 
       const networkConfig = createMockNetworkConfig({
         supportsEtherscanV2: true,
@@ -95,11 +92,13 @@ describe('getPolkadotDefaultServiceConfig', () => {
         apiUrl: 'https://api.etherscan.io/v2/api',
         apiKey: 'test-v2-api-key',
       });
-      expect(mockResolveApiKey).toHaveBeenCalledWith(networkConfig);
+      expect(appConfigService.getGlobalServiceConfig).toHaveBeenCalledWith('etherscanv2');
     });
 
-    it('should include API key for Hub networks', () => {
-      mockResolveApiKey.mockReturnValue('test-routescan-key');
+    it('should include app API key from globalServiceConfigs for Hub networks (routescan)', () => {
+      vi.spyOn(appConfigService, 'getGlobalServiceConfig').mockReturnValue({
+        apiKey: 'test-routescan-key',
+      });
 
       const networkConfig = createMockNetworkConfig({
         supportsEtherscanV2: false,
@@ -114,10 +113,12 @@ describe('getPolkadotDefaultServiceConfig', () => {
         apiUrl: 'https://api.etherscan.io/v2/api',
         apiKey: 'test-routescan-key',
       });
+      expect(appConfigService.getGlobalServiceConfig).toHaveBeenCalledWith('routescan');
     });
 
-    it('should omit apiKey when resolver returns undefined', () => {
-      mockResolveApiKey.mockReturnValue(undefined);
+    it('should fallback to getExplorerApiKey when globalServiceConfig has no apiKey', () => {
+      vi.spyOn(appConfigService, 'getGlobalServiceConfig').mockReturnValue(undefined);
+      vi.spyOn(appConfigService, 'getExplorerApiKey').mockReturnValue('fallback-api-key');
 
       const networkConfig = createMockNetworkConfig({
         supportsEtherscanV2: false,
@@ -129,7 +130,9 @@ describe('getPolkadotDefaultServiceConfig', () => {
       expect(result).toEqual({
         explorerUrl: 'https://moonbeam.moonscan.io',
         apiUrl: 'https://api.etherscan.io/v2/api',
+        apiKey: 'fallback-api-key',
       });
+      expect(appConfigService.getExplorerApiKey).toHaveBeenCalledWith('blockscout');
     });
 
     it('should return null when explorerUrl is missing and no API key configured', () => {
@@ -144,7 +147,9 @@ describe('getPolkadotDefaultServiceConfig', () => {
     });
 
     it('should return config with API key when explorerUrl is missing but API key is available', () => {
-      mockResolveApiKey.mockReturnValue('test-api-key-only');
+      vi.spyOn(appConfigService, 'getGlobalServiceConfig').mockReturnValue({
+        apiKey: 'test-api-key-only',
+      });
 
       const networkConfig = createMockNetworkConfig({
         explorerUrl: undefined,
