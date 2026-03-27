@@ -58,9 +58,9 @@
     "lucide-react": "^0.510.0"
   },
   "devDependencies": {
-    "@openzeppelin/ui-components": "^1.6.0",
-    "@openzeppelin/ui-types": "^1.11.1",
-    "@openzeppelin/ui-utils": "^1.3.0",
+    "@openzeppelin/ui-components": "^1.7.0",
+    "@openzeppelin/ui-types": "^1.12.0",
+    "@openzeppelin/ui-utils": "^1.4.0",
     "@types/lodash-es": "^4.17.12",
     "eslint": "^9.32.0",
     "react": "^19.0.0",
@@ -70,9 +70,9 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@openzeppelin/ui-components": "^1.6.0",
-    "@openzeppelin/ui-types": "^1.11.1",
-    "@openzeppelin/ui-utils": "^1.3.0",
+    "@openzeppelin/ui-components": "^1.7.0",
+    "@openzeppelin/ui-types": "^1.12.0",
+    "@openzeppelin/ui-utils": "^1.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.62.0"
