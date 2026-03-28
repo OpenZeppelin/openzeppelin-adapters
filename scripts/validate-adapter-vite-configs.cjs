@@ -93,7 +93,7 @@ function validateAdapter(adapter) {
 
     if (!exports['./vite-config']) {
       errors.push(
-        `${name}: package.json must export './vite-config' (see ADAPTER_ARCHITECTURE.md § 11.2.2)`
+        `${name}: package.json must export './vite-config' (see docs/ADAPTER_ARCHITECTURE.md)`
       );
     } else {
       // Validate export structure
@@ -162,9 +162,7 @@ function validateAllAdapters() {
   if (allErrors.length > 0) {
     console.error('❌ Validation failed with the following errors:\n');
     allErrors.forEach((error) => console.error(`  ${error}`));
-    console.error(
-      '\nSee docs/ADAPTER_ARCHITECTURE.md § 11.2 for the required vite-config pattern.'
-    );
+    console.error('\nSee docs/ADAPTER_ARCHITECTURE.md for the required vite-config pattern.');
     process.exit(1);
   }
 

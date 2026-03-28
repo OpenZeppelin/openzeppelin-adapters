@@ -16,6 +16,7 @@ This repository contains the extracted adapter packages previously maintained in
 
 | Package                          | Description                                     |
 | -------------------------------- | ----------------------------------------------- |
+| `@openzeppelin/adapters-vite`    | Shared Vite/Vitest integration helpers          |
 | `@openzeppelin/adapter-evm`      | EVM-compatible chains (Ethereum, Polygon, etc.) |
 | `@openzeppelin/adapter-evm-core` | Shared EVM core (internal, bundled)             |
 | `@openzeppelin/adapter-midnight` | Midnight Network                                |
@@ -122,6 +123,31 @@ pnpm build
 pnpm test
 ```
 
+## Build-Time Integration
+
+Applications that consume multiple adapter packages should use
+`@openzeppelin/adapters-vite` to load and merge adapter-owned Vite fragments from
+`@openzeppelin/adapter-*/vite-config`.
+
+```ts
+import { loadOpenZeppelinAdapterViteConfig } from '@openzeppelin/adapters-vite';
+
+const adapterConfigs = await loadOpenZeppelinAdapterViteConfig({
+  ecosystems: ['evm', 'stellar', 'polkadot'],
+});
+```
+
+This package centralizes:
+
+- adapter `plugins`
+- `resolve.dedupe`
+- `optimizeDeps.include` / `optimizeDeps.exclude`
+- `ssr.noExternal`
+- Vitest adapter-package resolution helpers for installed exports
+
+Adapters remain the source of truth for their own build requirements; consumer
+apps only choose which ecosystems they support.
+
 ## Local Development From Consumer Repos
 
 Consumer repos should point at a sibling `openzeppelin-adapters` checkout through `LOCAL_ADAPTERS_PATH`.
@@ -152,6 +178,7 @@ Compatibility notes:
 
 ## Documentation
 
+- [ADAPTER_ARCHITECTURE.md](docs/ADAPTER_ARCHITECTURE.md) – Package structure, build-time integration, and adapter conventions
 - [DEVOPS_SETUP.md](docs/DEVOPS_SETUP.md) – Release credentials, provenance, and CI setup
 - [RUNBOOK.md](docs/RUNBOOK.md) – Release operations and troubleshooting
 

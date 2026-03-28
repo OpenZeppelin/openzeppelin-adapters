@@ -197,7 +197,7 @@ pnpm dev
 4. **Execute Transaction**: Connect Lace wallet and submit a transaction
 5. **Verify Offline**: Artifacts load instantly without network requests
 
-For more on the export architecture, see [`docs/ADAPTER_ARCHITECTURE.md § 11.6`](../../docs/ADAPTER_ARCHITECTURE.md#116-including-adapter-artifacts-in-exported-apps).
+For more on export hooks and bundled adapter artifacts, see the [Adapter Architecture Guide](../../docs/ADAPTER_ARCHITECTURE.md#export-bootstrap-files).
 
 ## Documentation
 
