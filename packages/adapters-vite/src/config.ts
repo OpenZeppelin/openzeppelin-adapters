@@ -1,4 +1,4 @@
-import type { PluginOption } from 'vite';
+import type { PluginOption, UserConfig } from 'vite';
 
 import {
   getAdapterRegistryEntry,
@@ -10,6 +10,8 @@ import type {
   LoadOpenZeppelinAdapterViteConfigOptions,
   OpenZeppelinAdapterViteConfig,
 } from './types';
+
+type SsrNoExternalValue = NonNullable<NonNullable<UserConfig['ssr']>['noExternal']>;
 
 function appendPlugins(target: PluginOption[], plugins: AdapterViteConfigFragment['plugins']) {
   if (!plugins) {
@@ -33,6 +35,32 @@ function appendStringValues(target: Set<string>, value: string | string[] | unde
   }
 }
 
+function appendNoExternalValues(
+  target: Array<string | RegExp>,
+  seenStrings: Set<string>,
+  value: SsrNoExternalValue | undefined
+) {
+  if (!value || value === true) {
+    return;
+  }
+
+  const values = Array.isArray(value) ? value : [value];
+
+  for (const entry of values) {
+    if (typeof entry === 'string') {
+      if (!seenStrings.has(entry)) {
+        seenStrings.add(entry);
+        target.push(entry);
+      }
+      continue;
+    }
+
+    if (entry instanceof RegExp) {
+      target.push(entry);
+    }
+  }
+}
+
 export async function loadOpenZeppelinAdapterViteConfig(
   options: LoadOpenZeppelinAdapterViteConfigOptions
 ): Promise<OpenZeppelinAdapterViteConfig> {
@@ -41,12 +69,13 @@ export async function loadOpenZeppelinAdapterViteConfig(
   const dedupe = new Set<string>();
   const optimizeDepsInclude = new Set<string>();
   const optimizeDepsExclude = new Set<string>();
-  const ssrNoExternal = new Set<string>();
+  const ssrNoExternal: Array<string | RegExp> = [];
+  const seenSsrNoExternalStrings = new Set<string>();
   const packageNames = getOpenZeppelinAdapterPackageNames(ecosystems);
 
   for (const packageName of packageNames) {
     optimizeDepsExclude.add(packageName);
-    ssrNoExternal.add(packageName);
+    appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, packageName);
   }
 
   for (const ecosystem of ecosystems) {
@@ -68,14 +97,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
     appendStringValues(optimizeDepsExclude, fragment.optimizeDeps?.exclude);
     appendStringValues(optimizeDepsExclude, entry.extraOptimizeDepsExclude);
 
-    const noExternal =
-      fragment.ssr?.noExternal === true || fragment.ssr?.noExternal === undefined
-        ? undefined
-        : fragment.ssr.noExternal;
-
-    if (typeof noExternal === 'string' || Array.isArray(noExternal)) {
-      appendStringValues(ssrNoExternal, noExternal);
-    }
+    appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, fragment.ssr?.noExternal);
   }
 
   return {
@@ -88,7 +110,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
       exclude: [...optimizeDepsExclude],
     },
     ssr: {
-      noExternal: [...ssrNoExternal],
+      noExternal: ssrNoExternal,
     },
     packageNames,
   };
