@@ -517,6 +517,36 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(jiti@2.6.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(terser@5.46.1)(yaml@2.8.2)
 
+  packages/adapters-vite:
+    devDependencies:
+      '@openzeppelin/adapter-evm':
+        specifier: workspace:*
+        version: link:../adapter-evm
+      '@openzeppelin/adapter-midnight':
+        specifier: workspace:*
+        version: link:../adapter-midnight
+      '@openzeppelin/adapter-polkadot':
+        specifier: workspace:*
+        version: link:../adapter-polkadot
+      '@openzeppelin/adapter-solana':
+        specifier: workspace:*
+        version: link:../adapter-solana
+      '@openzeppelin/adapter-stellar':
+        specifier: workspace:*
+        version: link:../adapter-stellar
+      eslint:
+        specifier: ^9.32.0
+        version: 9.39.4(jiti@2.6.1)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vite:
+        specifier: ^7.2.2
+        version: 7.3.1(@types/node@25.5.0)(jiti@2.6.1)(terser@5.46.1)(yaml@2.8.2)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(jiti@2.6.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(terser@5.46.1)(yaml@2.8.2)
+
 packages:
 
   '@adobe/css-tools@4.4.4':
