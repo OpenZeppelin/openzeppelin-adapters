@@ -70,7 +70,9 @@ function resolveInstalledExportEntry(
   const target = getImportTarget(packageJson.exports?.[exportPath]);
 
   if (!target) {
-    throw new Error(`Missing import export "${exportPath}" in ${packageName}/package.json`);
+    throw new Error(
+      `Missing export "${exportPath}" in ${packageName}/package.json (required "import" condition)`
+    );
   }
 
   return path.resolve(packageDirectory, target);

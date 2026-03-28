@@ -5,48 +5,40 @@ import {
   getOpenZeppelinAdapterPackageNames,
   loadOpenZeppelinAdapterViteConfig,
 } from '../index';
+import type { AdapterViteConfigFragment } from '../types';
 
-vi.mock('@openzeppelin/adapter-evm/vite-config', () => ({
-  getEvmViteConfig: () => ({
-    plugins: [{ name: 'evm-plugin' }],
-    resolve: {
-      dedupe: ['viem', 'wagmi'],
-    },
-    optimizeDeps: {
-      include: ['viem', '@tanstack/react-query'],
-      exclude: ['wagmi'],
-    },
-  }),
+const mockGetEvmViteConfig = vi.fn<() => AdapterViteConfigFragment>(() => ({
+  plugins: [{ name: 'evm-plugin' }],
+  resolve: {
+    dedupe: ['viem', 'wagmi'],
+  },
+  optimizeDeps: {
+    include: ['viem', '@tanstack/react-query'],
+    exclude: ['wagmi'],
+  },
 }));
 
-vi.mock('@openzeppelin/adapter-stellar/vite-config', () => ({
-  getStellarViteConfig: () => ({
-    resolve: {
-      dedupe: ['@stellar/stellar-sdk'],
-    },
-    optimizeDeps: {
-      include: ['@stellar/stellar-sdk'],
-      exclude: [],
-    },
-  }),
+const mockGetStellarViteConfig = vi.fn<() => AdapterViteConfigFragment>(() => ({
+  resolve: {
+    dedupe: ['@stellar/stellar-sdk'],
+  },
+  optimizeDeps: {
+    include: ['@stellar/stellar-sdk'],
+    exclude: [],
+  },
 }));
 
-vi.mock('@openzeppelin/adapter-polkadot/vite-config', () => ({
-  getPolkadotViteConfig: () => ({
-    optimizeDeps: {
-      include: ['viem'],
-    },
-    ssr: {
-      noExternal: ['viem'],
-    },
-  }),
+const mockGetPolkadotViteConfig = vi.fn<() => AdapterViteConfigFragment>(() => ({
+  optimizeDeps: {
+    include: ['viem'],
+  },
+  ssr: {
+    noExternal: ['viem'],
+  },
 }));
 
-vi.mock('@openzeppelin/adapter-midnight/vite-config', () => ({
-  getMidnightViteConfig: (plugins: {
-    wasm: () => { name: string };
-    topLevelAwait: () => { name: string };
-  }) => ({
+const mockGetMidnightViteConfig = vi.fn(
+  (plugins: { wasm: () => { name: string }; topLevelAwait: () => { name: string } }) => ({
     plugins: [plugins.wasm(), plugins.topLevelAwait()],
     resolve: {
       dedupe: ['@midnight-ntwrk/midnight-js-network-id'],
@@ -55,7 +47,33 @@ vi.mock('@openzeppelin/adapter-midnight/vite-config', () => ({
       include: ['buffer'],
       exclude: ['@midnight-ntwrk/onchain-runtime'],
     },
-  }),
+  })
+);
+
+const mockGetSolanaViteConfig = vi.fn<() => AdapterViteConfigFragment>(() => ({
+  ssr: {
+    noExternal: [/^@solana\//],
+  },
+}));
+
+vi.mock('@openzeppelin/adapter-evm/vite-config', () => ({
+  getEvmViteConfig: mockGetEvmViteConfig,
+}));
+
+vi.mock('@openzeppelin/adapter-stellar/vite-config', () => ({
+  getStellarViteConfig: mockGetStellarViteConfig,
+}));
+
+vi.mock('@openzeppelin/adapter-polkadot/vite-config', () => ({
+  getPolkadotViteConfig: mockGetPolkadotViteConfig,
+}));
+
+vi.mock('@openzeppelin/adapter-midnight/vite-config', () => ({
+  getMidnightViteConfig: mockGetMidnightViteConfig,
+}));
+
+vi.mock('@openzeppelin/adapter-solana/vite-config', () => ({
+  getSolanaViteConfig: mockGetSolanaViteConfig,
 }));
 
 describe('@openzeppelin/adapters-vite', () => {
@@ -117,6 +135,29 @@ describe('@openzeppelin/adapters-vite', () => {
       '@openzeppelin/adapter-midnight',
       '@midnight-ntwrk/onchain-runtime',
     ]);
+  });
+
+  it('preserves regexp ssr.noExternal entries from adapter fragments', async () => {
+    const config = await loadOpenZeppelinAdapterViteConfig({
+      ecosystems: ['solana'],
+    });
+
+    expect(config.ssr.noExternal).toHaveLength(2);
+    expect(config.ssr.noExternal).toEqual(['@openzeppelin/adapter-solana', /^@solana\//]);
+  });
+
+  it('returns ssr.noExternal true when any adapter requires full bundling', async () => {
+    mockGetStellarViteConfig.mockReturnValueOnce({
+      ssr: {
+        noExternal: true,
+      },
+    });
+
+    const config = await loadOpenZeppelinAdapterViteConfig({
+      ecosystems: ['stellar'],
+    });
+
+    expect(config.ssr.noExternal).toBe(true);
   });
 
   it('returns deduplicated package names and import specifiers', () => {

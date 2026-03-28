@@ -39,9 +39,13 @@ function appendNoExternalValues(
   target: Array<string | RegExp>,
   seenStrings: Set<string>,
   value: SsrNoExternalValue | undefined
-) {
-  if (!value || value === true) {
-    return;
+): boolean {
+  if (!value) {
+    return false;
+  }
+
+  if (value === true) {
+    return true;
   }
 
   const values = Array.isArray(value) ? value : [value];
@@ -59,6 +63,8 @@ function appendNoExternalValues(
       target.push(entry);
     }
   }
+
+  return false;
 }
 
 export async function loadOpenZeppelinAdapterViteConfig(
@@ -71,11 +77,14 @@ export async function loadOpenZeppelinAdapterViteConfig(
   const optimizeDepsExclude = new Set<string>();
   const ssrNoExternal: Array<string | RegExp> = [];
   const seenSsrNoExternalStrings = new Set<string>();
+  let ssrNoExternalAll = false;
   const packageNames = getOpenZeppelinAdapterPackageNames(ecosystems);
 
   for (const packageName of packageNames) {
     optimizeDepsExclude.add(packageName);
-    appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, packageName);
+    ssrNoExternalAll =
+      appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, packageName) ||
+      ssrNoExternalAll;
   }
 
   for (const ecosystem of ecosystems) {
@@ -86,7 +95,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
       fragment = await entry.loadConfig(options);
     } catch (error) {
       throw new Error(
-        `Failed to load ${entry.packageName} Vite configuration. Ensure the package is installed and exports ./vite-config. ` +
+        `Failed to load ${entry.packageName} Vite configuration. ` +
           `Original error: ${error instanceof Error ? error.message : String(error)}`
       );
     }
@@ -97,7 +106,9 @@ export async function loadOpenZeppelinAdapterViteConfig(
     appendStringValues(optimizeDepsExclude, fragment.optimizeDeps?.exclude);
     appendStringValues(optimizeDepsExclude, entry.extraOptimizeDepsExclude);
 
-    appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, fragment.ssr?.noExternal);
+    ssrNoExternalAll =
+      appendNoExternalValues(ssrNoExternal, seenSsrNoExternalStrings, fragment.ssr?.noExternal) ||
+      ssrNoExternalAll;
   }
 
   return {
@@ -110,7 +121,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
       exclude: [...optimizeDepsExclude],
     },
     ssr: {
-      noExternal: ssrNoExternal,
+      noExternal: ssrNoExternalAll ? true : ssrNoExternal,
     },
     packageNames,
   };
