@@ -1,5 +1,12 @@
 # @openzeppelin/adapters-vite
 
+## 1.3.2
+
+### Patch Changes
+
+- [#21](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/21) [`b39b9c0`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/b39b9c0103b5c4e41b54a9c4c09ac9dbc90cceb1) Thanks [@pasevin](https://github.com/pasevin)! - Fix Vite compatibility for relayer-backed adapters by aliasing `@openzeppelin/relayer-sdk`
+  to its ESM build and preserving app-level alias overrides when configs are merged.
+
 ## 1.3.1
 
 ### Patch Changes
