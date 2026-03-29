@@ -27,6 +27,20 @@ export interface LoadOpenZeppelinAdapterViteConfigOptions {
   pluginFactories?: OpenZeppelinAdapterPluginFactories;
 }
 
+export interface OpenZeppelinAdapterIntegrationOptions extends LoadOpenZeppelinAdapterViteConfigOptions {
+  importMetaUrl?: string;
+  exportPaths?: readonly OpenZeppelinAdapterExportPath[];
+}
+
+export interface DefineOpenZeppelinAdapterViteConfigOptions extends LoadOpenZeppelinAdapterViteConfigOptions {
+  config?: UserConfig;
+}
+
+export interface DefineOpenZeppelinAdapterVitestConfigOptions extends OpenZeppelinAdapterIntegrationOptions {
+  config?: UserConfig;
+  importMetaUrl: string;
+}
+
 export interface ResolveInstalledOpenZeppelinAdapterEntriesOptions {
   ecosystems: readonly OpenZeppelinAdapterEcosystem[];
   importMetaUrl: string;
@@ -52,6 +66,11 @@ export interface OpenZeppelinAdapterViteConfig {
   optimizeDeps: OpenZeppelinAdapterOptimizeDepsConfig;
   ssr: OpenZeppelinAdapterSsrConfig;
   packageNames: string[];
+}
+
+export interface OpenZeppelinAdapterIntegration {
+  vite(config?: UserConfig): Promise<UserConfig>;
+  vitest(config?: UserConfig): Promise<UserConfig>;
 }
 
 export type AdapterViteConfigFragment = Partial<

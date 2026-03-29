@@ -129,13 +129,61 @@ Applications that consume multiple adapter packages should use
 `@openzeppelin/adapters-vite` to load and merge adapter-owned Vite fragments from
 `@openzeppelin/adapter-*/vite-config`.
 
-```ts
-import { loadOpenZeppelinAdapterViteConfig } from '@openzeppelin/adapters-vite';
+For most apps, use the high-level helpers:
 
-const adapterConfigs = await loadOpenZeppelinAdapterViteConfig({
+```ts
+import { defineOpenZeppelinAdapterViteConfig } from '@openzeppelin/adapters-vite';
+
+export default defineOpenZeppelinAdapterViteConfig({
   ecosystems: ['evm', 'stellar', 'polkadot'],
+  config: {
+    plugins: [react()],
+  },
 });
 ```
+
+```ts
+import { defineOpenZeppelinAdapterVitestConfig } from '@openzeppelin/adapters-vite';
+import { mergeConfig } from 'vitest/config';
+
+export default mergeConfig(
+  sharedVitestConfig,
+  await defineOpenZeppelinAdapterVitestConfig({
+    ecosystems: ['evm', 'stellar', 'polkadot'],
+    importMetaUrl: import.meta.url,
+    config: {
+      test: {
+        environment: 'jsdom',
+      },
+    },
+  })
+);
+```
+
+If a repo wants one shared integration entry point for both tools, it can use
+the builder API:
+
+```ts
+import { createOpenZeppelinAdapterIntegration } from '@openzeppelin/adapters-vite';
+
+const adapters = createOpenZeppelinAdapterIntegration({
+  ecosystems: ['evm', 'stellar', 'polkadot'],
+  importMetaUrl: import.meta.url,
+});
+
+export const viteConfig = await adapters.vite({
+  plugins: [react()],
+});
+
+export const vitestConfig = await adapters.vitest({
+  test: {
+    environment: 'jsdom',
+  },
+});
+```
+
+The lower-level `loadOpenZeppelinAdapterViteConfig()` helper remains available
+for consumers that need direct access to the merged adapter fragment.
 
 This package centralizes:
 
