@@ -1,5 +1,12 @@
 # @openzeppelin/adapters-vite
 
+## 1.3.1
+
+### Patch Changes
+
+- [#19](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/19) [`cc80c2f`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/cc80c2ffdb3943a9d2eaaa1af1c9577e0c3d0196) Thanks [@pasevin](https://github.com/pasevin)! - Fix the default Vitest adapter export alias order so `metadata` and `networks`
+  subpath imports resolve before the broader package root alias.
+
 ## 1.3.0
 
 ### Minor Changes
