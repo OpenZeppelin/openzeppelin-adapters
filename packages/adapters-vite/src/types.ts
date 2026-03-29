@@ -33,11 +33,24 @@ export interface ResolveInstalledOpenZeppelinAdapterEntriesOptions {
   exportPaths?: readonly OpenZeppelinAdapterExportPath[];
 }
 
+export interface OpenZeppelinAdapterResolvedConfig {
+  dedupe: string[];
+}
+
+export interface OpenZeppelinAdapterOptimizeDepsConfig {
+  include: string[];
+  exclude: string[];
+}
+
+export interface OpenZeppelinAdapterSsrConfig {
+  noExternal: true | Array<string | RegExp>;
+}
+
 export interface OpenZeppelinAdapterViteConfig {
   plugins: PluginOption[];
-  resolve: NonNullable<UserConfig['resolve']>;
-  optimizeDeps: NonNullable<UserConfig['optimizeDeps']>;
-  ssr: NonNullable<UserConfig['ssr']>;
+  resolve: OpenZeppelinAdapterResolvedConfig;
+  optimizeDeps: OpenZeppelinAdapterOptimizeDepsConfig;
+  ssr: OpenZeppelinAdapterSsrConfig;
   packageNames: string[];
 }
 
