@@ -1,5 +1,13 @@
 # @openzeppelin/adapters-vite
 
+## 1.2.1
+
+### Patch Changes
+
+- [#15](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/15) [`e124e7f`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/e124e7f6ca92758b68f41e39510a315cb6f34e1c) Thanks [@pasevin](https://github.com/pasevin)! - Tighten the public `loadOpenZeppelinAdapterViteConfig` return type so consumers
+  can rely on concrete arrays for merged adapter config fields without adding
+  defensive defaults in each app.
+
 ## 1.2.0
 
 ### Minor Changes
