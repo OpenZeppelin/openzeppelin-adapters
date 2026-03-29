@@ -48,6 +48,7 @@ export interface ResolveInstalledOpenZeppelinAdapterEntriesOptions {
 }
 
 export interface OpenZeppelinAdapterResolvedConfig {
+  alias?: Record<string, string>;
   dedupe: string[];
 }
 

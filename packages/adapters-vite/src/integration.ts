@@ -111,6 +111,37 @@ function mergeResolveAlias(
   };
 }
 
+function mergeResolveAliasLayers(
+  adapterAliasEntries: Record<string, string> | undefined,
+  baseAlias: NonNullable<NonNullable<UserConfig['resolve']>['alias']> | undefined,
+  extraAliasEntries: Record<string, string>
+): NonNullable<NonNullable<UserConfig['resolve']>['alias']> | undefined {
+  const mergedBaseAlias = mergeResolveAlias(baseAlias, extraAliasEntries);
+
+  if (!adapterAliasEntries || Object.keys(adapterAliasEntries).length === 0) {
+    return mergedBaseAlias;
+  }
+
+  if (!mergedBaseAlias) {
+    return adapterAliasEntries;
+  }
+
+  if (Array.isArray(mergedBaseAlias)) {
+    return [
+      ...mergedBaseAlias,
+      ...Object.entries(adapterAliasEntries).map(([find, replacement]) => ({
+        find,
+        replacement,
+      })),
+    ];
+  }
+
+  return {
+    ...adapterAliasEntries,
+    ...mergedBaseAlias,
+  };
+}
+
 function mergeOpenZeppelinAdapterConfig(
   baseConfig: UserConfig,
   adapterConfig: OpenZeppelinAdapterViteConfig,
@@ -131,7 +162,11 @@ function mergeOpenZeppelinAdapterConfig(
     ],
     resolve: {
       ...baseConfig.resolve,
-      alias: mergeResolveAlias(baseConfig.resolve?.alias, extraAliasEntries),
+      alias: mergeResolveAliasLayers(
+        adapterConfig.resolve.alias,
+        baseConfig.resolve?.alias,
+        extraAliasEntries
+      ),
       dedupe: mergeUniqueStrings(baseConfig.resolve?.dedupe, adapterConfig.resolve.dedupe),
     },
     optimizeDeps: {

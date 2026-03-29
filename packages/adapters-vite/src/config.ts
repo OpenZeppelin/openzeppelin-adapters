@@ -8,10 +8,16 @@ import {
 import type {
   AdapterViteConfigFragment,
   LoadOpenZeppelinAdapterViteConfigOptions,
+  OpenZeppelinAdapterEcosystem,
   OpenZeppelinAdapterViteConfig,
 } from './types';
 
 type SsrNoExternalValue = NonNullable<NonNullable<UserConfig['ssr']>['noExternal']>;
+
+const RELAYER_COMPAT_ECOSYSTEMS = new Set<OpenZeppelinAdapterEcosystem>(['evm', 'stellar']);
+// Temporary Vite workaround until the upstream package exposes proper ESM exports:
+// https://github.com/OpenZeppelin/openzeppelin-relayer-sdk/issues/254
+const RELAYER_SDK_ESM_ALIAS = '@openzeppelin/relayer-sdk/dist/esm/index.js';
 
 function appendPlugins(target: PluginOption[], plugins: AdapterViteConfigFragment['plugins']) {
   if (!plugins) {
@@ -33,6 +39,20 @@ function appendStringValues(target: Set<string>, value: string | string[] | unde
       target.add(entry);
     }
   }
+}
+
+function getSharedAliasEntries(
+  ecosystems: readonly OpenZeppelinAdapterEcosystem[]
+): Record<string, string> {
+  if (!ecosystems.some((ecosystem) => RELAYER_COMPAT_ECOSYSTEMS.has(ecosystem))) {
+    return {};
+  }
+
+  // Remove this alias once relayer-sdk resolves the upstream ESM packaging issue:
+  // https://github.com/OpenZeppelin/openzeppelin-relayer-sdk/issues/254
+  return {
+    '@openzeppelin/relayer-sdk': RELAYER_SDK_ESM_ALIAS,
+  };
 }
 
 function appendNoExternalValues(
@@ -71,6 +91,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
   options: LoadOpenZeppelinAdapterViteConfigOptions
 ): Promise<OpenZeppelinAdapterViteConfig> {
   const ecosystems = normalizeEcosystems(options.ecosystems);
+  const alias = getSharedAliasEntries(ecosystems);
   const plugins: PluginOption[] = [];
   const dedupe = new Set<string>();
   const optimizeDepsInclude = new Set<string>();
@@ -114,6 +135,7 @@ export async function loadOpenZeppelinAdapterViteConfig(
   return {
     plugins,
     resolve: {
+      alias,
       dedupe: [...dedupe],
     },
     optimizeDeps: {

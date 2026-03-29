@@ -83,6 +83,9 @@ describe('@openzeppelin/adapters-vite', () => {
     });
 
     expect(config.plugins).toHaveLength(1);
+    expect(config.resolve.alias).toEqual({
+      '@openzeppelin/relayer-sdk': '@openzeppelin/relayer-sdk/dist/esm/index.js',
+    });
     expect(config.resolve.dedupe).toEqual(['viem', 'wagmi', '@stellar/stellar-sdk']);
     expect(config.optimizeDeps.include).toEqual([
       'viem',
@@ -158,6 +161,14 @@ describe('@openzeppelin/adapters-vite', () => {
     });
 
     expect(config.ssr.noExternal).toBe(true);
+  });
+
+  it('does not inject relayer-sdk alias when no relayer-backed adapter is used', async () => {
+    const config = await loadOpenZeppelinAdapterViteConfig({
+      ecosystems: ['solana'],
+    });
+
+    expect(config.resolve.alias).toEqual({});
   });
 
   it('returns deduplicated package names and import specifiers', () => {
