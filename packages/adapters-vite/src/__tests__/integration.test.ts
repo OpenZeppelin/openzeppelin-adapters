@@ -16,6 +16,9 @@ const {
     async () => ({
       plugins: [{ name: 'adapter-plugin' }],
       resolve: {
+        alias: {
+          '@openzeppelin/relayer-sdk': '@openzeppelin/relayer-sdk/dist/esm/index.js',
+        },
         dedupe: ['viem', 'react'],
       },
       optimizeDeps: {
@@ -66,6 +69,9 @@ describe('high-level adapters-vite integration helpers', () => {
     });
 
     expect(config.plugins).toEqual([{ name: 'adapter-plugin' }, { name: 'app-plugin' }]);
+    expect(config.resolve?.alias).toEqual({
+      '@openzeppelin/relayer-sdk': '@openzeppelin/relayer-sdk/dist/esm/index.js',
+    });
     expect(config.resolve?.dedupe).toEqual(['react', 'react-dom', 'viem']);
     expect(config.optimizeDeps?.include).toEqual(['react', 'viem']);
     expect(config.optimizeDeps?.exclude).toEqual(['legacy-dep', '@openzeppelin/adapter-evm']);
@@ -92,6 +98,7 @@ describe('high-level adapters-vite integration helpers', () => {
       { name: 'resolver-plugin' },
     ]);
     expect(config.resolve?.alias).toEqual({
+      '@openzeppelin/relayer-sdk': '@openzeppelin/relayer-sdk/dist/esm/index.js',
       '@': '/workspace/apps/builder/src',
       '@openzeppelin/adapter-evm': '/virtual/adapter-evm/index.mjs',
       '@openzeppelin/adapter-evm/metadata': '/virtual/adapter-evm/metadata.mjs',
