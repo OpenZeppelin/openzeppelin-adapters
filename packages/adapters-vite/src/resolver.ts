@@ -12,6 +12,12 @@ import type {
   ResolveInstalledOpenZeppelinAdapterEntriesOptions,
 } from './types';
 
+const DEFAULT_RESOLVED_ADAPTER_EXPORT_PATHS: readonly OpenZeppelinAdapterExportPath[] = [
+  './metadata',
+  './networks',
+  '.',
+];
+
 type PackageExportEntry =
   | string
   | {
@@ -81,7 +87,7 @@ function resolveInstalledExportEntry(
 export function resolveInstalledOpenZeppelinAdapterEntries(
   options: ResolveInstalledOpenZeppelinAdapterEntriesOptions
 ): Record<string, string> {
-  const exportPaths = options.exportPaths ?? ['.', './metadata', './networks'];
+  const exportPaths = options.exportPaths ?? DEFAULT_RESOLVED_ADAPTER_EXPORT_PATHS;
   const entries: Record<string, string> = {};
 
   for (const packageName of getOpenZeppelinAdapterPackageNames(options.ecosystems)) {
