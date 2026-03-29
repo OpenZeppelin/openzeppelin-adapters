@@ -1,5 +1,13 @@
 # @openzeppelin/adapters-vite
 
+## 1.3.0
+
+### Minor Changes
+
+- [#17](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/17) [`517c976`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/517c976cd72f54787f0e14f8fce38e3375335ee1) Thanks [@pasevin](https://github.com/pasevin)! - Add higher-level Vite and Vitest integration helpers, including a shared
+  builder API that lets consumer apps reuse one adapters integration entry point
+  across both tools.
+
 ## 1.2.1
 
 ### Patch Changes
