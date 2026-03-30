@@ -1,0 +1,35 @@
+---
+description: Project Development Guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# openzeppelin-adapters Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-03-31
+
+## Active Technologies
+
+- TypeScript ^5.9.x (strict mode), ES2020 target, ESM packages + wagmi/viem/RainbowKit (EVM), @stellar/stellar-sdk + stellar-wallets-kit (Stellar), React 19, @openzeppelin/relayer-sdk (001-capability-adapters)
+
+## Project Structure
+
+```text
+src/
+tests/
+```
+
+## Commands
+
+npm test && npm run lint
+
+## Code Style
+
+TypeScript ^5.9.x (strict mode), ES2020 target, ESM packages: Follow standard conventions
+
+## Recent Changes
+
+- 001-capability-adapters: Added TypeScript ^5.9.x (strict mode), ES2020 target, ESM packages + wagmi/viem/RainbowKit (EVM), @stellar/stellar-sdk + stellar-wallets-kit (Stellar), React 19, @openzeppelin/relayer-sdk
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
