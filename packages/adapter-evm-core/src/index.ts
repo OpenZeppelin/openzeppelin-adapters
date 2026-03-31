@@ -283,3 +283,34 @@ export {
   type EvmProxyInfo,
   type EvmTransactionData,
 } from './types';
+
+// ============================================================================
+// Capability Module - capability factory builders
+// ============================================================================
+export {
+  createAccessControl,
+  createAddressing,
+  createContractLoading,
+  createExecution,
+  createExplorer,
+  createNetworkCatalog,
+  createQuery,
+  createRelayer,
+  createSchema,
+  createTypeMapping,
+  createUiKit,
+  createUiLabels,
+  createWallet,
+} from './capabilities';
+
+// ============================================================================
+// Profile Module - runtime composition helpers
+// ============================================================================
+export {
+  createComposerRuntime,
+  createDeclarativeRuntime,
+  createOperatorRuntime,
+  createRuntime,
+  createTransactorRuntime,
+  createViewerRuntime,
+} from './profiles';

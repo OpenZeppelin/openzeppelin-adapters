@@ -78,64 +78,64 @@
 
 ### adapter-evm-core Implementation
 
-- [ ] T028 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/addressing.ts` — wrap `../validation/` into `createAddressing(config?) => AddressingCapability`
-- [ ] T029 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/explorer.ts` — wrap explorer URL generation into `createExplorer(config?) => ExplorerCapability`
-- [ ] T030 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/network-catalog.ts` — wrap network list into `createNetworkCatalog() => NetworkCatalogCapability`
-- [ ] T031 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/ui-labels.ts` — wrap label generation into `createUiLabels() => UiLabelsCapability`
-- [ ] T032 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/contract-loading.ts` — wrap `../abi/`, `../proxy/`, `../configuration/` into `createContractLoading(config) => ContractLoadingCapability` (if `getExportBootstrapFiles` is required, add it to `ContractLoadingCapability` in ui-types first — see Phase 2 follow-up above)
-- [ ] T033 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/schema.ts` — wrap `../transform/` into `createSchema(config) => SchemaCapability`, include `isViewFunction` from ContractStateCapabilities
-- [ ] T034 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
-- [ ] T035 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`, include `queryViewFunction` + `formatFunctionResult`
-- [ ] T036 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/execution.ts` — wrap `../transaction/` into `createExecution(config) => ExecutionCapability`
-- [ ] T037 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/wallet.ts` — wrap `../wallet/` into `createWallet(config) => WalletCapability`
-- [ ] T038 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/ui-kit.ts` — wrap UI kit logic into `createUiKit(config) => UiKitCapability`
-- [ ] T039 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/relayer.ts` — wrap relayer/network service logic into `createRelayer(config) => RelayerCapability`
-- [ ] T040 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/access-control.ts` — wrap `../access-control/service.ts` into `createAccessControl(config) => AccessControlCapability`
-- [ ] T041 [US3] Create capabilities barrel in `packages/adapter-evm-core/src/capabilities/index.ts` — re-export all 13 factory functions
-- [ ] T042 [US3] Update `packages/adapter-evm-core/src/index.ts` — export capabilities and profile factories. Remove monolithic adapter re-exports
-- [ ] T043 [US3] Update `packages/adapter-evm-core/tsdown.config.ts` — add 13 capability entry points under `src/capabilities/` and 5 profile entry points under `src/profiles/`
-- [ ] T044 [US3] Update `packages/adapter-evm-core/package.json` — add 18 sub-path exports (13 capabilities + 5 profiles) with dual ESM/CJS + types pattern. Note: `adapter-evm-core` is a private package — sub-path exports serve internal build resolution and `adapter-evm` re-exports, not direct consumer imports
+- [X] T028 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/addressing.ts` — wrap `../validation/` into `createAddressing(config?) => AddressingCapability`
+- [X] T029 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/explorer.ts` — wrap explorer URL generation into `createExplorer(config?) => ExplorerCapability`
+- [X] T030 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/network-catalog.ts` — wrap network list into `createNetworkCatalog() => NetworkCatalogCapability`
+- [X] T031 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/ui-labels.ts` — wrap label generation into `createUiLabels() => UiLabelsCapability`
+- [X] T032 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/contract-loading.ts` — wrap `../abi/`, `../proxy/`, `../configuration/` into `createContractLoading(config) => ContractLoadingCapability` (if `getExportBootstrapFiles` is required, add it to `ContractLoadingCapability` in ui-types first — see Phase 2 follow-up above)
+- [X] T033 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/schema.ts` — wrap `../transform/` into `createSchema(config) => SchemaCapability`, include `isViewFunction` from ContractStateCapabilities
+- [X] T034 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
+- [X] T035 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`, include `queryViewFunction` + `formatFunctionResult`
+- [X] T036 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/execution.ts` — wrap `../transaction/` into `createExecution(config) => ExecutionCapability`
+- [X] T037 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/wallet.ts` — wrap `../wallet/` into `createWallet(config) => WalletCapability`
+- [X] T038 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/ui-kit.ts` — wrap UI kit logic into `createUiKit(config) => UiKitCapability`
+- [X] T039 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/relayer.ts` — wrap relayer/network service logic into `createRelayer(config) => RelayerCapability`
+- [X] T040 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/access-control.ts` — wrap `../access-control/service.ts` into `createAccessControl(config) => AccessControlCapability`
+- [X] T041 [US3] Create capabilities barrel in `packages/adapter-evm-core/src/capabilities/index.ts` — re-export all 13 factory functions
+- [X] T042 [US3] Update `packages/adapter-evm-core/src/index.ts` — export capabilities and profile factories. Remove monolithic adapter re-exports
+- [X] T043 [US3] Update `packages/adapter-evm-core/tsdown.config.ts` — add 13 capability entry points under `src/capabilities/` and 5 profile entry points under `src/profiles/`
+- [X] T044 [US3] Update `packages/adapter-evm-core/package.json` — add 18 sub-path exports (13 capabilities + 5 profiles) with dual ESM/CJS + types pattern. Note: `adapter-evm-core` is a private package — sub-path exports serve internal build resolution and `adapter-evm` re-exports, not direct consumer imports
 
 ### adapter-evm Re-export Layer
 
-- [ ] T045 [US3] Create re-export modules in `packages/adapter-evm/src/capabilities/` — one file per capability, each re-exporting from `@openzeppelin/adapter-evm-core`'s corresponding module
-- [ ] T046 [US3] Create re-export modules in `packages/adapter-evm/src/profiles/` — one file per profile, each re-exporting from `@openzeppelin/adapter-evm-core`
-- [ ] T047 [US3] Update `packages/adapter-evm/tsdown.config.ts` — add 18 new entry points matching adapter-evm-core's capability/profile entries
-- [ ] T048 [US3] Update `packages/adapter-evm/package.json` — add 18 sub-path exports with dual ESM/CJS + types. Ensure `noExternal: ['@openzeppelin/adapter-evm-core']` still works
-- [ ] T049 [US3] Remove monolithic adapter class from `packages/adapter-evm/src/adapter.ts` — delete file or remove `EvmAdapter` class
-- [ ] T050 [US3] Update `packages/adapter-evm/src/index.ts` — export `ecosystemDefinition` with new `EcosystemExport` shape (capabilities map + createRuntime, no createAdapter)
+- [X] T045 [US3] Create re-export modules in `packages/adapter-evm/src/capabilities/` — one file per capability, each re-exporting from `@openzeppelin/adapter-evm-core`'s corresponding module
+- [X] T046 [US3] Create re-export modules in `packages/adapter-evm/src/profiles/` — one file per profile, each re-exporting from `@openzeppelin/adapter-evm-core`
+- [X] T047 [US3] Update `packages/adapter-evm/tsdown.config.ts` — add 18 new entry points matching adapter-evm-core's capability/profile entries
+- [X] T048 [US3] Update `packages/adapter-evm/package.json` — add 18 sub-path exports with dual ESM/CJS + types. Ensure `noExternal: ['@openzeppelin/adapter-evm-core']` still works
+- [X] T049 [US3] Remove monolithic adapter class from `packages/adapter-evm/src/adapter.ts` — delete file or remove `EvmAdapter` class
+- [X] T050 [US3] Update `packages/adapter-evm/src/index.ts` — export `ecosystemDefinition` with new `EcosystemExport` shape (capabilities map + createRuntime, no createAdapter)
 
 ### adapter-stellar Implementation
 
-- [ ] T051 [P] [US3] Create `packages/adapter-stellar/src/capabilities/addressing.ts` — wrap `../validation/` into `createAddressing(config?) => AddressingCapability`
-- [ ] T052 [P] [US3] Create `packages/adapter-stellar/src/capabilities/explorer.ts` — wrap explorer logic into `createExplorer(config?) => ExplorerCapability`
-- [ ] T053 [P] [US3] Create `packages/adapter-stellar/src/capabilities/network-catalog.ts` — `createNetworkCatalog() => NetworkCatalogCapability`
-- [ ] T054 [P] [US3] Create `packages/adapter-stellar/src/capabilities/ui-labels.ts` — `createUiLabels() => UiLabelsCapability`
-- [ ] T055 [P] [US3] Create `packages/adapter-stellar/src/capabilities/contract-loading.ts` — wrap `../contract/` into `createContractLoading(config) => ContractLoadingCapability` (same `getExportBootstrapFiles` note as T032 — Phase 2 follow-up)
-- [ ] T056 [P] [US3] Create `packages/adapter-stellar/src/capabilities/schema.ts` — wrap schema logic + `isViewFunction` into `createSchema(config) => SchemaCapability`
-- [ ] T057 [P] [US3] Create `packages/adapter-stellar/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
-- [ ] T058 [P] [US3] Create `packages/adapter-stellar/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`
-- [ ] T059 [P] [US3] Create `packages/adapter-stellar/src/capabilities/execution.ts` — wrap `../transaction/` into `createExecution(config) => ExecutionCapability`
-- [ ] T060 [P] [US3] Create `packages/adapter-stellar/src/capabilities/wallet.ts` — wrap `../wallet/` into `createWallet(config) => WalletCapability`
-- [ ] T061 [P] [US3] Create `packages/adapter-stellar/src/capabilities/ui-kit.ts` — `createUiKit(config) => UiKitCapability`
-- [ ] T062 [P] [US3] Create `packages/adapter-stellar/src/capabilities/relayer.ts` — `createRelayer(config) => RelayerCapability`
-- [ ] T063 [P] [US3] Create `packages/adapter-stellar/src/capabilities/access-control.ts` — wrap `../access-control/` into `createAccessControl(config) => AccessControlCapability`
-- [ ] T064 [US3] Create capabilities barrel in `packages/adapter-stellar/src/capabilities/index.ts`
-- [ ] T065 [US3] Update `packages/adapter-stellar/tsdown.config.ts` — add 18 new entry points
-- [ ] T066 [US3] Update `packages/adapter-stellar/package.json` — add 18 sub-path exports
-- [ ] T067 [US3] Remove monolithic adapter class from `packages/adapter-stellar/src/adapter.ts`
-- [ ] T068 [US3] Update `packages/adapter-stellar/src/index.ts` — export `ecosystemDefinition` with new `EcosystemExport` shape
+- [X] T051 [P] [US3] Create `packages/adapter-stellar/src/capabilities/addressing.ts` — wrap `../validation/` into `createAddressing(config?) => AddressingCapability`
+- [X] T052 [P] [US3] Create `packages/adapter-stellar/src/capabilities/explorer.ts` — wrap explorer logic into `createExplorer(config?) => ExplorerCapability`
+- [X] T053 [P] [US3] Create `packages/adapter-stellar/src/capabilities/network-catalog.ts` — `createNetworkCatalog() => NetworkCatalogCapability`
+- [X] T054 [P] [US3] Create `packages/adapter-stellar/src/capabilities/ui-labels.ts` — `createUiLabels() => UiLabelsCapability`
+- [X] T055 [P] [US3] Create `packages/adapter-stellar/src/capabilities/contract-loading.ts` — wrap `../contract/` into `createContractLoading(config) => ContractLoadingCapability` (same `getExportBootstrapFiles` note as T032 — Phase 2 follow-up)
+- [X] T056 [P] [US3] Create `packages/adapter-stellar/src/capabilities/schema.ts` — wrap schema logic + `isViewFunction` into `createSchema(config) => SchemaCapability`
+- [X] T057 [P] [US3] Create `packages/adapter-stellar/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
+- [X] T058 [P] [US3] Create `packages/adapter-stellar/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`
+- [X] T059 [P] [US3] Create `packages/adapter-stellar/src/capabilities/execution.ts` — wrap `../transaction/` into `createExecution(config) => ExecutionCapability`
+- [X] T060 [P] [US3] Create `packages/adapter-stellar/src/capabilities/wallet.ts` — wrap `../wallet/` into `createWallet(config) => WalletCapability`
+- [X] T061 [P] [US3] Create `packages/adapter-stellar/src/capabilities/ui-kit.ts` — `createUiKit(config) => UiKitCapability`
+- [X] T062 [P] [US3] Create `packages/adapter-stellar/src/capabilities/relayer.ts` — `createRelayer(config) => RelayerCapability`
+- [X] T063 [P] [US3] Create `packages/adapter-stellar/src/capabilities/access-control.ts` — wrap `../access-control/` into `createAccessControl(config) => AccessControlCapability`
+- [X] T064 [US3] Create capabilities barrel in `packages/adapter-stellar/src/capabilities/index.ts`
+- [X] T065 [US3] Update `packages/adapter-stellar/tsdown.config.ts` — add 18 new entry points
+- [X] T066 [US3] Update `packages/adapter-stellar/package.json` — add 18 sub-path exports
+- [X] T067 [US3] Remove monolithic adapter class from `packages/adapter-stellar/src/adapter.ts`
+- [X] T068 [US3] Update `packages/adapter-stellar/src/index.ts` — export `ecosystemDefinition` with new `EcosystemExport` shape
 
 ### Capability Wrapper Tests
 
-- [ ] T069a [P] [US3] Create unit tests for EVM-core capability wrappers in `packages/adapter-evm-core/src/capabilities/__tests__/` — each factory function (`createAddressing`, `createExplorer`, etc.) MUST have at least one test verifying it returns an object satisfying the corresponding capability interface
-- [ ] T069b [P] [US3] Create unit tests for Stellar capability wrappers in `packages/adapter-stellar/src/capabilities/__tests__/` — same coverage as EVM-core
+- [X] T069a [P] [US3] Create unit tests for EVM-core capability wrappers in `packages/adapter-evm-core/src/capabilities/__tests__/` — each factory function (`createAddressing`, `createExplorer`, etc.) MUST have at least one test verifying it returns an object satisfying the corresponding capability interface
+- [X] T069b [P] [US3] Create unit tests for Stellar capability wrappers in `packages/adapter-stellar/src/capabilities/__tests__/` — same coverage as EVM-core
 
 ### CI & Build Verification
 
-- [ ] T069 [US3] Update or temporarily disable `lint:adapters` CI check — it will break when `ContractAdapter` is removed
-- [ ] T070 [US3] Run `pnpm build` across all adapter packages — verify all 23 entry points compile per package
-- [ ] T071 [US3] Run `pnpm test` across all adapter packages — fix any broken tests due to removed adapter classes
+- [X] T069 [US3] Update or temporarily disable `lint:adapters` CI check — it will break when `ContractAdapter` is removed
+- [X] T070 [US3] Run `pnpm build` across all adapter packages — verify all 23 entry points compile per package
+- [X] T071 [US3] Run `pnpm test` across all adapter packages — fix any broken tests due to removed adapter classes
 
 **Checkpoint**: All capabilities individually importable via sub-path exports. Monolithic adapter classes removed. `pnpm build && pnpm test` pass.
 

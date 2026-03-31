@@ -1,5 +1,10 @@
 /**
- * Script to run ESLint against adapter files to check for interface compliance
+ * Legacy adapter compliance entrypoint.
+ *
+ * The capability-architecture migration removes monolithic `src/adapter.ts`
+ * implementations in favor of per-capability modules. Until a dedicated
+ * capability-conformance check replaces this script, packages without
+ * `src/adapter.ts` should skip successfully.
  */
 
 const { ESLint } = require('eslint');
@@ -38,8 +43,8 @@ async function lintAdapters() {
     const adapterFiles = findAdapterFiles();
 
     if (adapterFiles.length === 0) {
-      console.error('No adapter files found. Check the src directory for adapter.ts file.');
-      process.exit(1);
+      console.log('No legacy adapter.ts file found. Skipping legacy adapter compliance lint.');
+      process.exit(0);
     }
 
     console.log(`Found ${adapterFiles.length} adapter implementations to check:`);

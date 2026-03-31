@@ -2,13 +2,13 @@ import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
 import { VERSION as UI_COMPONENTS_V } from '@openzeppelin/ui-components';
 import { VERSION as UI_REACT_V } from '@openzeppelin/ui-react';
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
-import type { EcosystemExport } from '@openzeppelin/ui-types';
+import type { CapabilityFactoryMap, EcosystemExport } from '@openzeppelin/ui-types';
 import { VERSION as UI_UTILS_V, validatePeerVersions } from '@openzeppelin/ui-utils';
 
-import { EvmAdapter } from './adapter';
 import { evmAdapterConfig } from './config';
 import { ecosystemMetadata } from './metadata';
 import { evmNetworks } from './networks';
+import { capabilityFactories, createRuntime } from './profiles';
 
 declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
 
@@ -32,12 +32,17 @@ validatePeerVersions('@openzeppelin/adapter-evm', {
 });
 
 export { ecosystemMetadata } from './metadata';
-export { EvmAdapter } from './adapter';
+export * from './capabilities';
+export * from './profiles';
+
+export const capabilities: CapabilityFactoryMap = capabilityFactories;
 
 export const ecosystemDefinition: EcosystemExport = {
   ...ecosystemMetadata,
   networks: evmNetworks,
-  createAdapter: (config) => new EvmAdapter(config as TypedEvmNetworkConfig),
+  capabilities,
+  createRuntime: (profile, config, options) =>
+    createRuntime(profile, config as TypedEvmNetworkConfig, options),
   adapterConfig: evmAdapterConfig,
 };
 

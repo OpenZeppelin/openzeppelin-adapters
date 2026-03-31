@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import {
   EVM_TYPE_TO_FIELD_TYPE,
@@ -8,7 +8,7 @@ import type { ContractFunction, FunctionParameter } from '@openzeppelin/ui-types
 
 import { mockEvmNetworkConfig } from './mocks/mock-network-configs';
 
-import { EvmAdapter } from '../adapter';
+import { createQuery, createTypeMapping } from '../capabilities';
 
 // Mock FunctionParameter type helper
 const createParam = (
@@ -347,13 +347,8 @@ describe('EvmAdapter Input Parsing', () => {
 });
 
 // --- Output Formatting Tests ---
-describe('EvmAdapter Output Formatting', () => {
-  let adapter: EvmAdapter;
-
-  beforeEach(() => {
-    // Instantiate adapter WITH shared mock config
-    adapter = new EvmAdapter(mockEvmNetworkConfig);
-  });
+describe('EVM Query Capability Output Formatting', () => {
+  const query = createQuery(mockEvmNetworkConfig);
 
   // Helper to call formatFunctionResult
   const formatResult = (result: unknown, outputs: FunctionParameter[]) => {
@@ -368,7 +363,7 @@ describe('EvmAdapter Output Formatting', () => {
       modifiesState: false,
       stateMutability: 'view',
     };
-    return adapter.formatFunctionResult(result, mockFunctionDetails);
+    return query.formatFunctionResult(result, mockFunctionDetails);
   };
 
   it('should format simple types correctly', () => {
@@ -459,7 +454,7 @@ describe('EvmAdapter Output Formatting', () => {
       modifiesState: false,
       stateMutability: 'view',
     };
-    expect(adapter.formatFunctionResult('some value', mockFunctionDetails)).toBe(
+    expect(query.formatFunctionResult('some value', mockFunctionDetails)).toBe(
       '[Error: Output ABI definition missing]'
     );
   });
@@ -468,15 +463,11 @@ describe('EvmAdapter Output Formatting', () => {
 });
 
 // --- getTypeMappingInfo Tests ---
-describe('EvmAdapter getTypeMappingInfo', () => {
-  let adapter: EvmAdapter;
-
-  beforeEach(() => {
-    adapter = new EvmAdapter(mockEvmNetworkConfig);
-  });
+describe('EVM Type Mapping Capability getTypeMappingInfo', () => {
+  const typeMapping = createTypeMapping(mockEvmNetworkConfig);
 
   it('should return TypeMappingInfo with primitives and dynamicPatterns', () => {
-    const info = adapter.getTypeMappingInfo();
+    const info = typeMapping.getTypeMappingInfo();
     expect(info).toHaveProperty('primitives');
     expect(info).toHaveProperty('dynamicPatterns');
     expect(typeof info.primitives).toBe('object');
@@ -484,13 +475,13 @@ describe('EvmAdapter getTypeMappingInfo', () => {
   });
 
   it('should return primitives matching EVM_TYPE_TO_FIELD_TYPE constant', () => {
-    const info = adapter.getTypeMappingInfo();
+    const info = typeMapping.getTypeMappingInfo();
     const expectedTypes = Object.keys(EVM_TYPE_TO_FIELD_TYPE);
     expect(Object.keys(info.primitives)).toEqual(expectedTypes);
   });
 
   it('should include expected EVM primitive types in primitives', () => {
-    const { primitives } = adapter.getTypeMappingInfo();
+    const { primitives } = typeMapping.getTypeMappingInfo();
     // Core EVM primitive types
     expect(primitives).toHaveProperty('address');
     expect(primitives).toHaveProperty('bool');
@@ -503,7 +494,7 @@ describe('EvmAdapter getTypeMappingInfo', () => {
   });
 
   it('should NOT include dynamic types in primitives', () => {
-    const { primitives } = adapter.getTypeMappingInfo();
+    const { primitives } = typeMapping.getTypeMappingInfo();
     Object.keys(primitives).forEach((type) => {
       expect(type).not.toMatch(/\[\]$/); // No array types
       expect(type).not.toMatch(/^tuple/); // No tuple types
@@ -511,7 +502,7 @@ describe('EvmAdapter getTypeMappingInfo', () => {
   });
 
   it('should include dynamic patterns for arrays and tuples', () => {
-    const { dynamicPatterns } = adapter.getTypeMappingInfo();
+    const { dynamicPatterns } = typeMapping.getTypeMappingInfo();
     const patternNames = dynamicPatterns.map((p) => p.name);
     expect(patternNames).toContain('array');
     expect(patternNames).toContain('tuple');
@@ -519,7 +510,7 @@ describe('EvmAdapter getTypeMappingInfo', () => {
   });
 
   it('should have properly structured dynamic patterns', () => {
-    const { dynamicPatterns } = adapter.getTypeMappingInfo();
+    const { dynamicPatterns } = typeMapping.getTypeMappingInfo();
     dynamicPatterns.forEach((pattern) => {
       expect(pattern).toHaveProperty('name');
       expect(pattern).toHaveProperty('syntax');

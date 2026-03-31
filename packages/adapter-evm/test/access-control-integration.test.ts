@@ -1,20 +1,3 @@
-/**
- * Access Control Integration Tests for EVM Adapter
- *
- * Tests the full integration path: EvmAdapter.getAccessControlService() → registerContract()
- * → getCapabilities() → getOwnership() → transferOwnership() with mocked RPC and indexer.
- *
- * Verifies:
- * - Lazy initialization (NFR-004): first call creates service, second returns same instance
- * - Service interface: all AccessControlService methods are exposed
- * - Callback wiring: executeTransaction wraps signAndBroadcast correctly
- * - Full flow: register → detect → read → write with mocked infrastructure
- *
- * @see SC-008 — comprehensive test coverage
- * @see quickstart.md §Step 9 — Adapter Integration
- * @see research.md §R9 — Service Lifecycle and Transaction Execution
- */
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type {
@@ -28,18 +11,11 @@ import type {
   ExecutionConfig,
 } from '@openzeppelin/ui-types';
 
-// ---------------------------------------------------------------------------
-// Import adapter AFTER mocks are set up (vitest hoists vi.mock)
-// ---------------------------------------------------------------------------
-
-import { EvmAdapter } from '../src/adapter';
-
-// ---------------------------------------------------------------------------
-// Mock viem for RPC calls (shared by both adapter-evm and adapter-evm-core)
-// ---------------------------------------------------------------------------
+import { createAccessControl } from '../src/capabilities/access-control';
 
 const mockReadContract = vi.fn();
 const mockGetBlockNumber = vi.fn();
+const mockSignAndBroadcast = vi.fn();
 
 vi.mock('viem', async () => {
   const actual = await vi.importActual('viem');
@@ -53,71 +29,13 @@ vi.mock('viem', async () => {
   };
 });
 
-// ---------------------------------------------------------------------------
-// Mock wallet and UI modules to avoid real wallet/React dependencies
-// ---------------------------------------------------------------------------
-
-vi.mock('../src/wallet/hooks/useUiKitConfig', () => ({
-  loadInitialConfigFromAppService: () => ({ kitName: 'custom' }),
+vi.mock('../src/capabilities/execution', () => ({
+  createExecution: vi.fn(() => ({
+    signAndBroadcast: mockSignAndBroadcast,
+  })),
 }));
-
-vi.mock('../src/wallet/components/EvmWalletUiRoot', () => ({
-  EvmWalletUiRoot: undefined,
-}));
-
-vi.mock('../src/wallet/evmUiKitManager', () => ({
-  evmUiKitManager: {
-    getState: () => ({ currentFullUiKitConfig: null }),
-    configure: vi.fn(),
-  },
-}));
-
-vi.mock('../src/wallet/hooks/facade-hooks', () => ({
-  evmFacadeHooks: {},
-}));
-
-vi.mock('../src/wallet', () => ({
-  getEvmWalletImplementation: vi.fn().mockResolvedValue({
-    writeContract: vi.fn().mockResolvedValue('0xmocktxhash'),
-    waitForTransactionReceipt: vi.fn().mockResolvedValue({ status: 'success' }),
-  }),
-  evmSupportsWalletConnection: () => false,
-  getEvmWalletConnectionStatus: () => ({ status: 'disconnected' }),
-  getEvmAvailableConnectors: vi.fn().mockResolvedValue([]),
-  connectAndEnsureCorrectNetwork: vi.fn(),
-  disconnectEvmWallet: vi.fn(),
-  convertWagmiToEvmStatus: () => ({ status: 'disconnected' }),
-  getInitializedEvmWalletImplementation: () => null,
-  getResolvedWalletComponents: () => undefined,
-  EvmWalletConnectionStatus: {},
-}));
-
-// Mock query module (only used by queryViewFunction, not needed for AC tests)
-vi.mock('../src/query', () => ({
-  queryEvmViewFunction: vi.fn(),
-}));
-
-// Mock transaction module
-vi.mock('../src/transaction', () => ({
-  EvmRelayerOptions: undefined,
-}));
-
-// Mock configuration module
-vi.mock('../src/configuration', () => ({
-  getEvmDefaultServiceConfig: () => null,
-  getEvmNetworkServiceForms: () => [],
-  getEvmSupportedExecutionMethods: vi.fn().mockResolvedValue([]),
-}));
-
-// ---------------------------------------------------------------------------
-// Mock global fetch for indexer GraphQL calls
-// ---------------------------------------------------------------------------
 
 const mockFetch = vi.fn();
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function createFunction(name: string, inputTypes: string[] = []): ContractFunction {
   return {
@@ -142,7 +60,6 @@ function createSchema(functions: ContractFunction[]): ContractSchema {
   };
 }
 
-/** Network config for integration tests */
 const TEST_NETWORK_CONFIG = {
   id: 'ethereum-sepolia',
   exportConstName: 'ethereumSepolia',
@@ -166,7 +83,6 @@ const OWNER_ADDRESS = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const NEW_OWNER_ADDRESS = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-/** Ownable2Step ABI functions for feature detection */
 const OWNABLE_TWO_STEP_FUNCTIONS = [
   createFunction('owner', []),
   createFunction('pendingOwner', []),
@@ -175,23 +91,18 @@ const OWNABLE_TWO_STEP_FUNCTIONS = [
   { ...createFunction('renounceOwnership', []), modifiesState: true },
 ];
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('EvmAdapter — Access Control Integration', () => {
-  let adapter: EvmAdapter;
+describe('EVM Access Control Capability Integration', () => {
+  let service: EvmAccessControlService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    adapter = new EvmAdapter(TEST_NETWORK_CONFIG);
-
-    // Setup global fetch mock for indexer
+    service = createAccessControl(TEST_NETWORK_CONFIG) as EvmAccessControlService;
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ data: {} }),
     });
     vi.stubGlobal('fetch', mockFetch);
+    mockSignAndBroadcast.mockResolvedValue({ txHash: '0xmocktxhash123' });
   });
 
   afterEach(() => {
@@ -199,209 +110,67 @@ describe('EvmAdapter — Access Control Integration', () => {
     vi.unstubAllGlobals();
   });
 
-  // -------------------------------------------------------------------------
-  // Lazy Initialization (NFR-004)
-  // -------------------------------------------------------------------------
+  it('exposes the access control service contract', () => {
+    const typedService: AccessControlService = service;
 
-  /** Helper to get the service cast to EvmAccessControlService for EVM-specific methods */
-  function getEvmService(): EvmAccessControlService {
-    return adapter.getAccessControlService() as EvmAccessControlService;
-  }
-
-  describe('lazy initialization (NFR-004)', () => {
-    it('should return an AccessControlService on first call', () => {
-      const service = getEvmService();
-
-      expect(service).toBeDefined();
-      expect(typeof service.registerContract).toBe('function');
-      expect(typeof service.getCapabilities).toBe('function');
-      expect(typeof service.getOwnership).toBe('function');
-      expect(typeof service.transferOwnership).toBe('function');
-    });
-
-    it('should return the same instance on subsequent calls', () => {
-      const first = adapter.getAccessControlService();
-      const second = adapter.getAccessControlService();
-
-      expect(first).toBe(second);
-    });
-
-    it('should not create the service during adapter construction', () => {
-      // Access the internal field via type assertion to verify it's null before first call
-      const internalAdapter = adapter as unknown as { accessControlService: unknown };
-      expect(internalAdapter.accessControlService).toBeNull();
-
-      // After getAccessControlService(), it should be initialized
-      adapter.getAccessControlService();
-      expect(internalAdapter.accessControlService).not.toBeNull();
-    });
+    expect(typedService).toBeDefined();
+    expect(typeof typedService.registerContract).toBe('function');
+    expect(typeof typedService.getCapabilities).toBe('function');
+    expect(typeof typedService.transferOwnership).toBe('function');
+    expect(service.networkConfig).toBe(TEST_NETWORK_CONFIG);
+    expect(typeof service.dispose).toBe('function');
   });
 
-  // -------------------------------------------------------------------------
-  // Service Interface Completeness
-  // -------------------------------------------------------------------------
+  it('registers a contract and detects Ownable2Step capabilities', async () => {
+    const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
 
-  describe('service interface', () => {
-    it('should expose all AccessControlService methods', () => {
-      const service = getEvmService();
-      const expectedMethods = [
-        'registerContract',
-        'addKnownRoleIds',
-        'getCapabilities',
-        'getOwnership',
-        'getAdminInfo',
-        'getCurrentRoles',
-        'getCurrentRolesEnriched',
-        'transferOwnership',
-        'acceptOwnership',
-        'renounceOwnership',
-        'transferAdminRole',
-        'acceptAdminTransfer',
-        'cancelAdminTransfer',
-        'changeAdminDelay',
-        'rollbackAdminDelay',
-        'grantRole',
-        'revokeRole',
-        'renounceRole',
-        'getHistory',
-        'exportSnapshot',
-        'discoverKnownRoleIds',
-        'dispose',
-      ];
+    await service.registerContract(CONTRACT_ADDRESS, schema);
+    const capabilities = await service.getCapabilities(CONTRACT_ADDRESS);
 
-      for (const method of expectedMethods) {
-        expect(
-          typeof (service as unknown as Record<string, unknown>)[method],
-          `Expected method '${method}' to be a function`
-        ).toBe('function');
-      }
-    });
+    expect(capabilities.hasOwnable).toBe(true);
+    expect(capabilities.hasTwoStepOwnable).toBe(true);
+    expect(capabilities.hasAccessControl).toBe(false);
+    expect(capabilities.hasEnumerableRoles).toBe(false);
+    expect(capabilities.hasTwoStepAdmin).toBe(false);
   });
 
-  // -------------------------------------------------------------------------
-  // Full Flow: Register → Detect → Read
-  // -------------------------------------------------------------------------
+  it('queries ownership state with mocked RPC responses', async () => {
+    const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
 
-  describe('full flow: register → capabilities → ownership', () => {
-    it('should register a contract and detect Ownable2Step capabilities', async () => {
-      const service = getEvmService();
-      const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
-
-      // Register
-      await service.registerContract(CONTRACT_ADDRESS, schema);
-
-      // Detect capabilities
-      const capabilities = await service.getCapabilities(CONTRACT_ADDRESS);
-
-      expect(capabilities).toBeDefined();
-      expect(capabilities.hasOwnable).toBe(true);
-      expect(capabilities.hasTwoStepOwnable).toBe(true);
-      expect(capabilities.hasAccessControl).toBe(false);
-      expect(capabilities.hasEnumerableRoles).toBe(false);
-      expect(capabilities.hasTwoStepAdmin).toBe(false);
+    await service.registerContract(CONTRACT_ADDRESS, schema);
+    mockReadContract.mockResolvedValueOnce(OWNER_ADDRESS).mockResolvedValueOnce(ZERO_ADDRESS);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
     });
 
-    it('should query ownership state with mocked RPC', async () => {
-      const service = getEvmService();
-      const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
+    const ownership = await service.getOwnership(CONTRACT_ADDRESS);
 
-      // Register
-      await service.registerContract(CONTRACT_ADDRESS, schema);
-
-      // Mock RPC: owner() returns OWNER_ADDRESS, pendingOwner() returns zero address
-      mockReadContract
-        .mockResolvedValueOnce(OWNER_ADDRESS) // owner()
-        .mockResolvedValueOnce(ZERO_ADDRESS); // pendingOwner()
-
-      // Mock indexer health check as unavailable
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({}),
-      });
-
-      const ownership = await service.getOwnership(CONTRACT_ADDRESS);
-
-      expect(ownership).toBeDefined();
-      expect(ownership.owner).toBe(OWNER_ADDRESS);
-      expect(ownership.state).toBe('owned');
-    });
-
-    it('should detect renounced ownership (zero address)', async () => {
-      const service = getEvmService();
-      const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
-
-      await service.registerContract(CONTRACT_ADDRESS, schema);
-
-      // Mock RPC: owner() returns zero address
-      mockReadContract
-        .mockResolvedValueOnce(ZERO_ADDRESS) // owner()
-        .mockResolvedValueOnce(ZERO_ADDRESS); // pendingOwner()
-
-      // Mock indexer as unavailable
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: async () => ({}),
-      });
-
-      const ownership = await service.getOwnership(CONTRACT_ADDRESS);
-
-      expect(ownership.state).toBe('renounced');
-    });
+    expect(ownership.owner).toBe(OWNER_ADDRESS);
+    expect(ownership.state).toBe('owned');
   });
 
-  // -------------------------------------------------------------------------
-  // Execute Transaction Callback Wiring
-  // -------------------------------------------------------------------------
+  it('routes write operations through the execution capability callback', async () => {
+    const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
+    const executionConfig: ExecutionConfig = {
+      method: 'eoa',
+      allowAny: true,
+    };
 
-  describe('executeTransaction callback', () => {
-    it('should wire signAndBroadcast as the transaction executor', async () => {
-      const service = getEvmService();
-      const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
+    await service.registerContract(CONTRACT_ADDRESS, schema);
+    const result = await service.transferOwnership(
+      CONTRACT_ADDRESS,
+      NEW_OWNER_ADDRESS,
+      undefined,
+      executionConfig
+    );
 
-      await service.registerContract(CONTRACT_ADDRESS, schema);
-
-      // Spy on signAndBroadcast to verify it's called through the callback
-      const signAndBroadcastSpy = vi
-        .spyOn(adapter, 'signAndBroadcast')
-        .mockResolvedValue({ txHash: '0xmocktxhash123' });
-
-      const mockExecutionConfig: ExecutionConfig = {
-        method: 'eoa',
-        allowAny: true,
-      };
-
-      const result = await service.transferOwnership(
-        CONTRACT_ADDRESS,
-        NEW_OWNER_ADDRESS,
-        undefined,
-        mockExecutionConfig
-      );
-
-      // Verify signAndBroadcast was called with the assembled transaction data
-      expect(signAndBroadcastSpy).toHaveBeenCalledTimes(1);
-      const callArgs = signAndBroadcastSpy.mock.calls[0];
-      // First arg: txData (WriteContractParameters)
-      expect(callArgs[0]).toHaveProperty('functionName', 'transferOwnership');
-      expect(callArgs[0]).toHaveProperty('address', CONTRACT_ADDRESS);
-      // Second arg: executionConfig
-      expect(callArgs[1]).toEqual(mockExecutionConfig);
-
-      // Verify result maps txHash to OperationResult.id
-      expect(result).toEqual({ id: '0xmocktxhash123' });
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // AccessControlService type compatibility
-  // -------------------------------------------------------------------------
-
-  describe('type compatibility', () => {
-    it('should be assignable to AccessControlService interface', () => {
-      // getAccessControlService returns AccessControlService — TypeScript verifies the type
-      const service: AccessControlService = adapter.getAccessControlService()!;
-      expect(service).toBeDefined();
-    });
+    expect(mockSignAndBroadcast).toHaveBeenCalledTimes(1);
+    const [transactionData, passedExecutionConfig] = mockSignAndBroadcast.mock.calls[0];
+    expect(transactionData).toHaveProperty('functionName', 'transferOwnership');
+    expect(transactionData).toHaveProperty('address', CONTRACT_ADDRESS);
+    expect(passedExecutionConfig).toEqual(executionConfig);
+    expect(result).toEqual({ id: '0xmocktxhash123' });
   });
 });

@@ -10,13 +10,31 @@ for (const [name, range] of Object.entries(pkg.peerDependencies ?? {})) {
 }
 
 export default defineConfig({
-  entry: [
-    'src/index.ts',
-    'src/metadata.ts',
-    'src/networks.ts',
-    'src/config.ts',
-    'src/vite-config.ts',
-  ],
+  entry: {
+    index: 'src/index.ts',
+    metadata: 'src/metadata.ts',
+    networks: 'src/networks.ts',
+    config: 'src/config.ts',
+    'vite-config': 'src/vite-config.ts',
+    addressing: 'src/capabilities/addressing.ts',
+    explorer: 'src/capabilities/explorer.ts',
+    'network-catalog': 'src/capabilities/network-catalog.ts',
+    'ui-labels': 'src/capabilities/ui-labels.ts',
+    'contract-loading': 'src/capabilities/contract-loading.ts',
+    schema: 'src/capabilities/schema.ts',
+    'type-mapping': 'src/capabilities/type-mapping.ts',
+    query: 'src/capabilities/query.ts',
+    execution: 'src/capabilities/execution.ts',
+    wallet: 'src/capabilities/wallet.ts',
+    'ui-kit': 'src/capabilities/ui-kit.ts',
+    relayer: 'src/capabilities/relayer.ts',
+    'access-control': 'src/capabilities/access-control.ts',
+    declarative: 'src/profiles/declarative.ts',
+    viewer: 'src/profiles/viewer.ts',
+    transactor: 'src/profiles/transactor.ts',
+    composer: 'src/profiles/composer.ts',
+    operator: 'src/profiles/operator.ts',
+  },
   format: ['esm', 'cjs'],
   dts: {
     compilerOptions: {
