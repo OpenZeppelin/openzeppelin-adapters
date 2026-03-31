@@ -139,6 +139,39 @@ The implementation must follow this dependency order. Each phase produces artifa
 
 ---
 
+### Phase F: Follow-On Adapter Package Migration
+
+**Scope**: Migrate `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` to the same `capabilities` + `createRuntime` package surface as the initial adapter wave.
+
+**Depends on**: Phases A, B, and E. This is a follow-on wave, not a blocker for the initial consumer-app migration release.
+
+**Key work**:
+
+1. **`adapter-polkadot`**:
+   - Replace `PolkadotAdapter` with capability factories under `src/capabilities/`
+   - Add `src/profiles/` runtime factories for the currently supported EVM-backed networks
+   - Preserve the existing substrate TODO boundary by rejecting unsupported execution paths explicitly
+
+2. **`adapter-solana`**:
+   - Lift logic from `src/adapter.ts` into capability modules backed by `configuration/`, `definition/`, `mapping/`, `query/`, `transaction/`, `wallet/`, and `utils/`
+   - Add profile factories for the capability sets Solana actually supports
+   - Reject unsupported profiles at runtime with `UnsupportedProfileError`
+
+3. **`adapter-midnight`**:
+   - Lift logic from `src/adapter.ts` into capability modules backed by `validation/`, `configuration/`, `contract/`, `mapping/`, `query/`, `transaction/`, `wallet/`, `analysis/`, and `export/`
+   - Add profile factories for the supported capability sets
+   - Keep Tier 1 imports free of browser bootstrap side effects by isolating `browser-init` to Tier 2/3 entry points only
+
+4. **Validation**:
+   - Add Tier 1 isolation tests for all three follow-on packages
+   - Verify `ecosystemDefinition` exposes `capabilities` + `createRuntime`
+   - Verify no package still exports `createAdapter` or a public monolithic adapter class
+   - Run `pnpm build && pnpm test && pnpm lint:adapters` for all three packages
+
+**Verification**: The three follow-on packages expose the same capability-based package surface as the initial wave, and unsupported profiles fail explicitly rather than degrading at call time.
+
+---
+
 ### Cross-Repository Publish Sequence
 
 ```
@@ -155,9 +188,13 @@ The implementation must follow this dependency order. Each phase produces artifa
 4. ui-builder app                    (ui-builder)         — Composer profile
    role-manager app                  (role-manager)       — Operator profile
    rwa-wizard app                    (rwa-wizard)         — Declarative profile
+   ↓
+5. @openzeppelin/adapter-polkadot    (openzeppelin-adapters) — follow-on capability migration
+   @openzeppelin/adapter-solana      (openzeppelin-adapters) — follow-on capability migration
+   @openzeppelin/adapter-midnight    (openzeppelin-adapters) — follow-on capability migration
 ```
 
-PRs for steps 1–3 are prepared in parallel but merged and published in sequence. Consumer apps (step 4) update after all packages are available on npm.
+PRs for steps 1–3 are prepared in parallel but merged and published in sequence. Consumer apps (step 4) update after all packages are available on npm. Step 5 is a separate follow-on migration wave after the initial ecosystem release is stable.
 
 ## Decision Log
 

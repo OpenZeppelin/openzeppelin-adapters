@@ -1,6 +1,6 @@
 import type { AddressingCapability } from '@openzeppelin/ui-types';
 
-import { isValidAddress, type StellarAddressType } from '../validation';
+import { isValidAddress, type StellarAddressType } from '../validation/address';
 
 export function createAddressing(): AddressingCapability {
   return {

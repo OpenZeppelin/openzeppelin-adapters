@@ -9,7 +9,7 @@
 import { NetworkConfig } from '@openzeppelin/ui-types';
 import type { UserExplorerConfig } from '@openzeppelin/ui-types';
 
-import { isValidContractAddress } from '../validation';
+import { isValidContractAddress } from '../validation/address';
 
 /**
  * Gets a blockchain explorer URL for an address on Stellar.

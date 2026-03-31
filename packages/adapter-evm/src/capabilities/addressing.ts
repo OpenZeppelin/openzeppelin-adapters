@@ -1,1 +1,1 @@
-export { createAddressing } from '@openzeppelin/adapter-evm-core';
+export { createAddressing } from '@openzeppelin/adapter-evm-core/addressing';

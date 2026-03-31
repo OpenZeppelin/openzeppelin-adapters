@@ -25,6 +25,7 @@ const baseConfig = [
   {
     ignores: [
       'dist/**',
+      'build/**',
       'node_modules/**',
       '**/*.d.ts',
       '**/*.min.js',

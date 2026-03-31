@@ -25,7 +25,7 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:adapters": "node -e \"console.log('Skipping - core package has no adapter.ts'); process.exit(0)\"",
+    "lint:adapters": "node ../../lint-adapters.cjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -5,7 +5,7 @@
 
 ## Summary
 
-Decompose the monolithic `ContractAdapter` interface into 13 composable capability interfaces organized in 3 tiers, with 5 pre-composed profiles for common app archetypes. Capability interfaces are defined in `@openzeppelin/ui-types` (single source of truth), implemented in adapter packages under `src/capabilities/` with physical isolation via sub-path exports, and consumed directly or through profile runtimes with dispose-and-recreate lifecycle. This is a coordinated breaking change across the ecosystem — no backward compatibility.
+Decompose the monolithic `ContractAdapter` interface into 13 composable capability interfaces organized in 3 tiers, with 5 pre-composed profiles for common app archetypes. Capability interfaces are defined in `@openzeppelin/ui-types` (single source of truth), implemented in adapter packages under `src/capabilities/` with physical isolation via sub-path exports, and consumed directly or through profile runtimes with dispose-and-recreate lifecycle. This is a coordinated breaking change across the ecosystem — no backward compatibility. After the initial rollout lands, a follow-on wave migrates `adapter-polkadot`, `adapter-solana`, and `adapter-midnight` to the same package surface.
 
 ## Technical Context
 
@@ -18,7 +18,7 @@ Decompose the monolithic `ContractAdapter` interface into 13 composable capabili
 **Build**: tsdown (dual ESM .mjs / CJS .cjs + .d.mts/.d.cts), per-adapter Vite config exports  
 **Performance Goals**: Tier 1 imports must not pull Tier 2/3 dependencies — zero-cost abstraction for lightweight consumers  
 **Constraints**: Physical sub-path isolation (not tree-shaking-dependent); dispose-and-recreate on network switch (no mutable state)  
-**Scale/Scope**: 3 adapter packages restructured (adapter-evm-core, adapter-evm, adapter-stellar), 1 types package updated, 3 consumer apps migrated (UI Builder, Role Manager, RWA Wizard), shared UI component packages updated
+**Scale/Scope**: 6 adapter packages across two waves (initial: adapter-evm-core, adapter-evm, adapter-stellar; follow-on: adapter-polkadot, adapter-solana, adapter-midnight), 1 types package updated, 3 consumer apps migrated (UI Builder, Role Manager, RWA Wizard), shared UI component packages updated
 
 ## Constitution Check
 
@@ -139,7 +139,7 @@ packages/adapter-stellar/src/
 └── adapter.ts                 # REMOVED — monolithic StellarAdapter deleted
 ```
 
-**Structure Decision**: Multi-package monorepo with pnpm workspaces. Changes span two repositories (openzeppelin-ui for types, openzeppelin-adapters for implementations). Each adapter package gains `src/capabilities/` and `src/profiles/` directories. Existing internal modules are preserved and wrapped by capability implementations.
+**Structure Decision**: Multi-package monorepo with pnpm workspaces. Changes span two repositories (openzeppelin-ui for types, openzeppelin-adapters for implementations). Each adapter package gains `src/capabilities/` and `src/profiles/` directories. Existing internal modules are preserved and wrapped by capability implementations. The same directory pattern is applied in a follow-on migration wave to `adapter-polkadot`, `adapter-solana`, and `adapter-midnight`, with partial capability support allowed where profiles are not fully implementable yet.
 
 ## Complexity Tracking
 

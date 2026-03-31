@@ -1,6 +1,6 @@
 import type { ExplorerCapability, StellarNetworkConfig } from '@openzeppelin/ui-types';
 
-import { getStellarExplorerAddressUrl, getStellarExplorerTxUrl } from '../configuration';
+import { getStellarExplorerAddressUrl, getStellarExplorerTxUrl } from '../configuration/explorer';
 import { asStellarNetworkConfig } from './helpers';
 
 export function createExplorer(config?: StellarNetworkConfig): ExplorerCapability {

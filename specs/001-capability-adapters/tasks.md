@@ -149,9 +149,9 @@
 
 ### Implementation
 
-- [ ] T072 [US1] Create tier isolation verification test in `packages/adapter-evm/src/__tests__/tier-isolation.test.ts` — dynamically import each Tier 1 sub-path and assert transitive dependencies don't include wallet/transaction/access-control modules
-- [ ] T073 [P] [US1] Create tier isolation verification test in `packages/adapter-stellar/src/__tests__/tier-isolation.test.ts` — same assertions for Stellar adapter
-- [ ] T074 [US1] Verify Declarative profile runtime creation — test that `createRuntime('declarative', networkConfig)` returns only Tier 1 capabilities with no Tier 2/3 initialization
+- [X] T072 [US1] Create tier isolation verification test in `packages/adapter-evm/src/__tests__/tier-isolation.test.ts` — dynamically import each Tier 1 sub-path and assert transitive dependencies don't include wallet/transaction/access-control modules
+- [X] T073 [P] [US1] Create tier isolation verification test in `packages/adapter-stellar/src/__tests__/tier-isolation.test.ts` — same assertions for Stellar adapter
+- [X] T074 [US1] Verify Declarative profile runtime creation — test that `createRuntime('declarative', networkConfig)` returns only Tier 1 capabilities with no Tier 2/3 initialization
 
 **Checkpoint**: Tier isolation verified for both EVM and Stellar adapters. Declarative profile works without Tier 2/3 dependencies.
 
@@ -301,6 +301,42 @@
 
 ---
 
+## Phase 10: US8 — Follow-On Adapter Package Migration (Priority: P3)
+
+**Goal**: Migrate `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` to the same `capabilities` + `createRuntime` package surface as the initial adapter wave.
+
+**Independent Test**: Each follow-on package exports `ecosystemDefinition.capabilities` + `createRuntime`, no longer exports `createAdapter`, and its Tier 1 sub-paths pass the isolation validator.
+
+### adapter-polkadot Follow-On Migration
+
+- [ ] T132 [US8] Create `packages/adapter-polkadot/src/capabilities/` modules for the currently supported EVM-backed feature set — wrap `src/evm/`, `src/wallet/`, `src/networks.ts`, and shared EVM-core helpers into capability factories. Keep unsupported Substrate-only behavior out of the initial capability map
+- [ ] T133 [US8] Create `packages/adapter-polkadot/src/profiles/` runtime factories and `createRuntime` — support profiles backed by the currently implemented EVM capability set and throw `UnsupportedProfileError` for unsupported execution types or missing Substrate-specific capabilities
+- [ ] T134 [US8] Update `packages/adapter-polkadot/src/index.ts`, `packages/adapter-polkadot/package.json`, and `packages/adapter-polkadot/tsdown.config.ts` — replace `createAdapter` with `capabilities` + `createRuntime`, add capability/profile sub-path exports, and remove the public `PolkadotAdapter` export
+- [ ] T135 [US8] Add verification in `packages/adapter-polkadot/src/__tests__/` — Tier 1 isolation, declarative runtime creation, and unsupported-profile / unsupported-execution assertions
+
+### adapter-solana Follow-On Migration
+
+- [ ] T136 [US8] Create `packages/adapter-solana/src/capabilities/` modules — lift logic from `src/adapter.ts`, `src/configuration/`, `src/definition/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, and `src/utils/` into capability factories
+- [ ] T137 [US8] Create `packages/adapter-solana/src/profiles/` runtime factories and `createRuntime` — support only profiles whose required capabilities are implemented, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
+- [ ] T138 [US8] Update `packages/adapter-solana/src/index.ts`, `packages/adapter-solana/package.json`, and `packages/adapter-solana/tsdown.config.ts` — replace `createAdapter`, add capability/profile sub-path exports, and remove the public `SolanaAdapter` export
+- [ ] T139 [US8] Add verification in `packages/adapter-solana/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, and package build/test coverage for the migrated surface
+
+### adapter-midnight Follow-On Migration
+
+- [ ] T140 [US8] Create `packages/adapter-midnight/src/capabilities/` modules — lift logic from `src/validation/`, `src/configuration/`, `src/contract/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, `src/analysis/`, and `src/export/` into capability factories
+- [ ] T141 [US8] Create `packages/adapter-midnight/src/profiles/` runtime factories and `createRuntime` — support only profiles backed by the implemented Midnight capability set, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
+- [ ] T142 [US8] Update `packages/adapter-midnight/src/index.ts`, `packages/adapter-midnight/package.json`, `packages/adapter-midnight/tsdown.config.ts`, and `packages/adapter-midnight/src/browser-init.ts` handling — add capability/profile sub-path exports while keeping Tier 1 imports free of heavyweight browser bootstrap side effects
+- [ ] T143 [US8] Add verification in `packages/adapter-midnight/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, browser-init isolation checks, and build/test coverage for the migrated surface
+
+### Cross-Adapter Verification
+
+- [ ] T144 [US8] Update capability conformance validation / `lint:adapters` expectations for `packages/adapter-polkadot`, `packages/adapter-solana`, and `packages/adapter-midnight` — remove reliance on legacy `src/adapter.ts` compliance once each package migrates
+- [ ] T145 [US8] Run `pnpm build && pnpm test && pnpm lint:adapters` for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` — verify no `createAdapter` exports remain and Tier 1 isolation passes
+
+**Checkpoint**: All published adapter packages expose the same capability-based package surface. `createAdapter` is gone from every adapter package, and unsupported profiles fail explicitly.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -314,6 +350,7 @@
 - **Phase 7 (US7 — Consumer Migration)**: Depends on Phases 3, 5, 6 (all upstream packages)
 - **Phase 8 (US6 — Partial Adapters)**: Depends on Phases 2, 3, 5
 - **Phase 9 (Polish)**: Depends on all previous phases
+- **Phase 10 (US8 — Follow-On Adapters)**: Depends on Phase 9 — executes after the initial ecosystem rollout is stable
 
 ### User Story Dependencies
 
@@ -324,6 +361,7 @@
 - **US2 (UI Components)**: Depends on US4 + US3
 - **US7 (Consumer Migration)**: Depends on US2 + US3 + US5
 - **US6 (Partial Adapters)**: Depends on US4 + US3 + US5 — can run in parallel with US7
+- **US8 (Follow-On Adapters)**: Depends on US4 + US5 + Phase 9 capability validation updates — not a blocker for the initial consumer migration release
 
 ### Cross-Repository Publish Order
 
@@ -335,6 +373,8 @@ Phase 3: @openzeppelin/adapter-evm-core + adapter-evm + adapter-stellar (openzep
 Phase 6: @openzeppelin/ui-components + ui-renderer + ui-react (openzeppelin-ui) → npm publish
     ↓
 Phase 7: Consumer apps (ui-builder, role-manager, rwa-wizard) → deploy
+    ↓
+Phase 10: @openzeppelin/adapter-polkadot + adapter-solana + adapter-midnight (openzeppelin-adapters) → follow-on majors
 ```
 
 ### Parallel Opportunities
@@ -344,6 +384,7 @@ Phase 7: Consumer apps (ui-builder, role-manager, rwa-wizard) → deploy
 **Phases 4 + 5**: Can run in parallel after Phase 3 completes
 **Within Phase 6 (Components)**: T089–T105 (all component updates) can run in parallel
 **Phases 7 + 8**: US7 and US6 can run in parallel with different team members
+**Within Phase 10 (Follow-On Adapters)**: adapter-polkadot, adapter-solana, and adapter-midnight migrations can run in parallel once the shared validation shape is stable
 
 ---
 
@@ -367,6 +408,7 @@ Phase 7: Consumer apps (ui-builder, role-manager, rwa-wizard) → deploy
 5. US7 (Apps) → migrate consumer apps
 6. US6 (Partial) → update adapter author docs
 7. Polish → constitution, CI, changesets
+8. Follow-on wave → migrate adapter-polkadot, adapter-solana, adapter-midnight
 
 ### Parallel Team Strategy
 

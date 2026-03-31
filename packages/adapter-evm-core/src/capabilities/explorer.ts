@@ -1,6 +1,6 @@
 import type { ExplorerCapability, NetworkConfig } from '@openzeppelin/ui-types';
 
-import { getEvmExplorerAddressUrl, getEvmExplorerTxUrl } from '../configuration';
+import { getEvmExplorerAddressUrl, getEvmExplorerTxUrl } from '../configuration/explorer';
 import { asTypedEvmNetworkConfig } from './helpers';
 
 export function createExplorer(config?: NetworkConfig): ExplorerCapability {

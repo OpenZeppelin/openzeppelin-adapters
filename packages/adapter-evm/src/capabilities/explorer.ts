@@ -1,1 +1,1 @@
-export { createExplorer } from '@openzeppelin/adapter-evm-core';
+export { createExplorer } from '@openzeppelin/adapter-evm-core/explorer';

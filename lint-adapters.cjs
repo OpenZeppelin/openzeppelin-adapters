@@ -1,15 +1,16 @@
 /**
- * Legacy adapter compliance entrypoint.
+ * Adapter validation entrypoint.
  *
- * The capability-architecture migration removes monolithic `src/adapter.ts`
- * implementations in favor of per-capability modules. Until a dedicated
- * capability-conformance check replaces this script, packages without
- * `src/adapter.ts` should skip successfully.
+ * Supports both legacy `src/adapter.ts` interface linting and the
+ * capability-based Tier 1 isolation validation used by the new architecture.
  */
 
 const { ESLint } = require('eslint');
 const path = require('path');
 const fs = require('fs');
+const {
+  validateTierIsolationForPackage,
+} = require('./scripts/adapter-validation/tier-isolation.cjs');
 
 // Create an instance of ESLint with our custom config
 const eslint = new ESLint();
@@ -34,54 +35,99 @@ function findAdapterFiles() {
   return adapterFiles;
 }
 
+function getCurrentPackageMetadata() {
+  const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    return {
+      packageName: path.basename(process.cwd()),
+      packageJsonPath,
+    };
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  return {
+    packageName: packageJson.name || path.basename(process.cwd()),
+    packageJsonPath,
+  };
+}
+
 // Function to run ESLint against adapter files
 async function lintAdapters() {
   try {
-    console.log('Linting adapter files for interface compliance...');
+    const { packageName } = getCurrentPackageMetadata();
+    console.log(`Validating adapter package: ${packageName}`);
 
-    // Get all adapter files
+    const validationErrors = [];
     const adapterFiles = findAdapterFiles();
+    const tierIsolationResult = validateTierIsolationForPackage(process.cwd(), packageName);
 
-    if (adapterFiles.length === 0) {
-      console.log('No legacy adapter.ts file found. Skipping legacy adapter compliance lint.');
+    if (tierIsolationResult.checked && tierIsolationResult.errors.length === 0) {
+      console.log('✅ Tier 1 capability isolation check passed.');
+    } else if (tierIsolationResult.checked) {
+      validationErrors.push(...tierIsolationResult.errors);
+    }
+
+    let results = [];
+
+    if (adapterFiles.length > 0) {
+      console.log(`Found ${adapterFiles.length} legacy adapter implementation(s) to check:`);
+      adapterFiles.forEach((file) => console.log(`- ${path.relative(process.cwd(), file)}`));
+      console.log();
+
+      results = await eslint.lintFiles(adapterFiles);
+
+      const adapterRuleViolations = results
+        .flatMap((result) => result.messages)
+        .filter((message) => message.ruleId === 'custom/no-extra-adapter-methods');
+
+      if (adapterRuleViolations.length > 0) {
+        validationErrors.push(
+          ...adapterRuleViolations.map(
+            (message) =>
+              `${message.message} (${message.filePath}:${message.line}:${message.column})`
+          )
+        );
+      } else {
+        console.log('✅ Legacy adapter interface compliance passed.');
+      }
+    }
+
+    if (!tierIsolationResult.checked && adapterFiles.length === 0) {
+      console.log(
+        'No legacy adapter.ts or capability entrypoints found. Skipping adapter validation.'
+      );
       process.exit(0);
     }
 
-    console.log(`Found ${adapterFiles.length} adapter implementations to check:`);
-    adapterFiles.forEach((file) => console.log(`- ${path.relative(process.cwd(), file)}`));
-    console.log();
-
-    // Lint the files
-    const results = await eslint.lintFiles(adapterFiles);
-
-    // Filter for our custom rule
-    const adapterRuleViolations = results
-      .flatMap((result) => result.messages)
-      .filter((message) => message.ruleId === 'custom/no-extra-adapter-methods');
-
-    // Format and output results
-    if (adapterRuleViolations.length > 0) {
-      console.log('\n⚠️ Found adapter interface violations:');
-      adapterRuleViolations.forEach((message) => {
-        console.log(`- ${message.message} (${message.filePath}:${message.line}:${message.column})`);
+    if (validationErrors.length > 0) {
+      console.error('\n❌ Adapter validation failed:\n');
+      validationErrors.forEach((message) => {
+        console.error(`- ${message}`);
       });
-      console.log(
-        '\nThese methods should be either removed or marked as private if they are helper methods.'
-      );
-      process.exit(1); // Exit with error code if violations are found
-    } else {
-      console.log('✅ All adapter implementations comply with the ContractAdapter interface!');
+
+      if (adapterFiles.length > 0) {
+        console.error(
+          '\nLegacy adapter violations should be removed or marked private if they are helpers.'
+        );
+      }
+
+      process.exit(1);
     }
 
-    // Output full lint results
-    const formatter = await eslint.loadFormatter('stylish');
-    const formattedResults = await formatter.format(results);
-    console.log('\nFull lint results:');
-    console.log(formattedResults);
+    if (results.length > 0) {
+      const formatter = await eslint.loadFormatter('stylish');
+      const formattedResults = await formatter.format(results);
+      if (formattedResults.trim()) {
+        console.log('\nFull lint results:');
+        console.log(formattedResults);
+      }
 
-    // Exit with error if any lint issues were found
-    const hasLintErrors = results.some((result) => result.errorCount > 0);
-    process.exit(hasLintErrors ? 1 : 0);
+      const hasLintErrors = results.some((result) => result.errorCount > 0);
+      process.exit(hasLintErrors ? 1 : 0);
+    }
+
+    console.log('✅ Adapter validation passed.');
+    process.exit(0);
   } catch (error) {
     console.error('Error linting adapter files:', error);
     process.exit(1);

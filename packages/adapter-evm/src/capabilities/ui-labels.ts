@@ -1,1 +1,1 @@
-export { createUiLabels } from '@openzeppelin/adapter-evm-core';
+export { createUiLabels } from '@openzeppelin/adapter-evm-core/ui-labels';

@@ -121,6 +121,22 @@ All existing consumer apps (RWA Wizard, UI Builder, Role Manager) must migrate f
 
 ---
 
+### User Story 8 - Remaining Published Adapters Converge on Capability Exports (Priority: P3)
+
+The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, and `adapter-midnight`) migrate to the same `capabilities` + `createRuntime` package surface after the initial ecosystem rollout is stable. `adapter-polkadot` preserves its current EVM-backed behavior first, while `adapter-solana` and `adapter-midnight` expose the capability sets they actually support and reject unsupported profiles explicitly.
+
+**Why this priority**: This does not block the initial breaking-change release, but it is required to eliminate the long-term dual architecture where some published adapters still expose `createAdapter` and monolithic adapter classes.
+
+**Independent Test**: Can be fully tested by verifying that each of the three packages exports `ecosystemDefinition.capabilities` and `createRuntime`, no longer exports `createAdapter`, and its Tier 1 sub-paths pass the isolation validator.
+
+**Acceptance Scenarios**:
+
+1. **Given** `@openzeppelin/adapter-polkadot`, **When** it is migrated, **Then** EVM-backed Polkadot networks expose capability and profile sub-paths instead of `PolkadotAdapter`, and unsupported non-EVM execution paths fail explicitly instead of relying on missing methods.
+2. **Given** `@openzeppelin/adapter-solana` or `@openzeppelin/adapter-midnight`, **When** the package is migrated, **Then** supported capabilities are exposed via `CapabilityFactoryMap`, unsupported capabilities are `undefined`, and `createRuntime` throws `UnsupportedProfileError` when a profile requires unsupported capabilities.
+3. **Given** all published adapter packages, **When** release validation runs, **Then** no package exports `createAdapter` or a public monolithic adapter class.
+
+---
+
 ### Edge Cases
 
 - What happens when an app consumes capabilities from two different capability factories created with different NetworkConfigs? They must operate in complete isolation — no shared wallet or RPC state.
@@ -158,6 +174,7 @@ All existing consumer apps (RWA Wizard, UI Builder, Role Manager) must migrate f
 - **FR-016**: The `ContractStateCapabilities` interface (`isViewFunction`, `queryViewFunction`, `formatFunctionResult`) MUST be absorbed into the `QueryCapability` and `SchemaCapability` interfaces. The `FullContractAdapter` type alias is removed as part of FR-003's monolithic interface removal.
 - **FR-017**: The `initialAppServiceKitName` property MUST move to an optional `options` parameter on `createRuntime` (e.g., `createRuntime(profile, config, { uiKit?: string })`). The `getExportBootstrapFiles` method MUST remain on `EcosystemExport` as a build-time concern, not a runtime capability.
 - **FR-018**: Tier 2+ standalone capabilities created via `CapabilityFactoryMap` MUST expose a `dispose()` method for resource cleanup, matching the lifecycle contract of profile runtimes.
+- **FR-019**: System MUST define follow-up migration work for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` so all published adapters converge on the `capabilities` + `createRuntime` surface. Adapters with incomplete capability coverage MUST expose unsupported capabilities as `undefined` and reject unsupported profiles with `UnsupportedProfileError`.
 
 ### Key Entities
 
@@ -203,8 +220,9 @@ The breaking change spans multiple repositories and npm packages. The release se
 2. **`@openzeppelin/adapter-evm-core`**, **`@openzeppelin/adapter-evm`**, **`@openzeppelin/adapter-stellar`** (openzeppelin-adapters repo) — publish after types, implementing the new interfaces
 3. **`@openzeppelin/ui-components`**, **`@openzeppelin/ui-renderer`**, **`@openzeppelin/ui-react`** (openzeppelin-ui repo) — publish after adapters, consuming capability props
 4. **Consumer apps** (ui-builder, role-manager, rwa-wizard repos) — update after all packages are published
+5. **Follow-on adapter wave** (`@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, `@openzeppelin/adapter-midnight`) — migrate after the core ecosystem rollout is stable
 
-All packages in steps 1–3 are published before any consumer app is updated. PRs across repos are prepared in parallel but merged in sequence. If any step fails, the release is halted — no partial migration is acceptable.
+All packages in steps 1–3 are published before any consumer app is updated. PRs across repos are prepared in parallel but merged in sequence. If any step fails, the release is halted — no partial migration is acceptable. Step 5 is a follow-on wave and is not a gate for the initial consumer-app migration.
 
 ### Rollback Strategy
 
@@ -219,12 +237,12 @@ If the coordinated release encounters a blocking issue after partial publication
 - The monolithic `ContractAdapter` interface, `StellarAdapter` class, and `EvmAdapter` class will be removed. No backward-compatible facades or shims are provided.
 - All existing consumer apps (RWA Wizard, UI Builder, Role Manager) will be migrated to capability-based consumption in the same release cycle. This is a coordinated breaking change across the ecosystem. Open Accounts is excluded from this scope — it will be built against capability interfaces from the start.
 - The existing `AccessControlService` interface is mature and battle-tested — it is promoted to `AccessControlCapability` as a direct rename with no method changes.
-- `adapter-evm-core`, `adapter-evm`, and `adapter-stellar` are the only adapter packages actively restructured in the initial rollout. `adapter-polkadot` inherits from `adapter-evm-core` but is not restructured yet. `adapter-solana` and `adapter-midnight` will be implemented against the capability interfaces from the start.
+- `adapter-evm-core`, `adapter-evm`, and `adapter-stellar` are the only adapter packages actively restructured in the initial rollout. `adapter-polkadot`, `adapter-solana`, and `adapter-midnight` are covered by an explicit follow-on migration wave after the initial ecosystem rollout stabilizes.
 - The `@openzeppelin/ui-types` package is the single source of truth for all capability interfaces and will be the first package updated.
 - Per-capability conformance test suites are a stretch goal for the initial rollout — type-level conformance is sufficient initially.
 - Shared UI component packages (`@openzeppelin/ui-components`, `@openzeppelin/ui-renderer`, `@openzeppelin/ui-react`) will be updated simultaneously with the adapter refactoring since no backward compatibility shims are provided.
 - RWA Wizard currently depends on legacy `@openzeppelin/ui-builder-adapter-*` packages (not the current `@openzeppelin/adapter-*` namespace). Migration includes updating these dependency names to the new `@openzeppelin/adapter-*` namespace as part of the capability migration.
-- `adapter-polkadot` depends on `adapter-evm-core` for shared EVM logic. It passively inherits the new capability structure from `adapter-evm-core` but is NOT actively restructured in the initial rollout — it will be migrated to capability exports in a follow-up.
+- `adapter-polkadot` depends on `adapter-evm-core` for shared EVM logic. Its follow-on migration preserves the current EVM-backed execution path first; substrate-specific execution remains an explicit package-level follow-up inside that adapter.
 - The `lint:adapters` CI check currently validates `ContractAdapter` interface compliance. It will break when `ContractAdapter` is removed and MUST be updated (or temporarily disabled) in Phase B, then replaced with capability conformance validation in Phase E.
 - The `adapters-vite` package (`createOpenZeppelinAdapterIntegration`, `defineOpenZeppelinAdapterViteConfig`) does NOT require changes — it operates on build configuration, not runtime adapter interfaces. The `ecosystemDefinition` export name on each adapter module is preserved.
 - The `ecosystemDefinition` named export on each adapter module is preserved. Only the shape of `EcosystemExport` changes (replacing `createAdapter` with `capabilities` + `createRuntime`).

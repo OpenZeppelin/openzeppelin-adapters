@@ -1,4 +1,7 @@
 node_modules/
 dist/
+build/
+coverage/
+.env*
 pnpm-lock.yaml
 patches/
