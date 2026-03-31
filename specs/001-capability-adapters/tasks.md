@@ -242,37 +242,43 @@
 
 ## Phase 7: US7 — Consumer App Migration (Priority: P1)
 
-**Goal**: Migrate UI Builder, Role Manager, and RWA Wizard from `ContractAdapter` consumption to profile-based capability consumption.
+**Goal**: Migrate UI Builder, Role Manager, RWA Wizard, and the OpenZeppelin UI basic example app from `ContractAdapter` consumption to profile-based capability consumption.
 
 **Independent Test**: Each app's test suite passes. No app imports `ContractAdapter`, `createAdapter`, or monolithic adapter classes.
 
 ### UI Builder (ui-builder repo) — Composer Profile
 
-- [ ] T108 [US7] Update `apps/builder/src/core/ecosystemManager.ts` — replace `getAdapter(networkConfig): Promise<ContractAdapter>` with `getRuntime('composer', networkConfig): Promise<EcosystemRuntime>`. Preserve `loadAdapterModule` caching. Update `def.createAdapter(config)` to `def.createRuntime('composer', config)`
-- [ ] T109 [US7] Update all React hooks in ui-builder that hold `ContractAdapter | null` state to use `EcosystemRuntime | null` — add `dispose()` in `useEffect` cleanup on runtime replacement
-- [ ] T110 [US7] Update all component callsites in ui-builder that pass `adapter` prop — pass specific capabilities from runtime (e.g., `runtime.addressing`, `runtime.execution`)
-- [ ] T111 [US7] Run `pnpm test` in ui-builder — update test mocks from `ContractAdapter` to capability mocks, fix broken tests
+- [X] T108 [US7] Update `apps/builder/src/core/ecosystemManager.ts` — replace `getAdapter(networkConfig): Promise<ContractAdapter>` with `getRuntime('composer', networkConfig): Promise<EcosystemRuntime>`. Preserve `loadAdapterModule` caching. Update `def.createAdapter(config)` to `def.createRuntime('composer', config)`
+- [X] T109 [US7] Update all React hooks in ui-builder that hold `ContractAdapter | null` state to use `EcosystemRuntime | null` — add `dispose()` in `useEffect` cleanup on runtime replacement
+- [X] T110 [US7] Update all component callsites in ui-builder that pass `adapter` prop — pass specific capabilities from runtime (e.g., `runtime.addressing`, `runtime.execution`)
+- [X] T111 [US7] Run `pnpm test` in ui-builder — update test mocks from `ContractAdapter` to capability mocks, fix broken tests
 
 ### Role Manager (role-manager repo) — Operator Profile
 
-- [ ] T112 [US7] Update `apps/role-manager/src/core/ecosystems/ecosystemManager.ts` — replace `getAdapter` with `getRuntime('operator', networkConfig)`. Update `def.createAdapter(config)` to `def.createRuntime('operator', config)`
-- [ ] T113 [US7] Simplify `apps/role-manager/src/hooks/useAccessControlService.ts` — replace `adapter.getAccessControlService?.()` extraction with direct `runtime.accessControl` access from Operator profile runtime
-- [ ] T114 [US7] Update `apps/role-manager/src/hooks/useContractRegistration.ts` — replace `getAccessControlService` usage with direct capability access
-- [ ] T115 [US7] Update all React hooks in role-manager that hold `ContractAdapter | null` state to use `EcosystemRuntime | null` — add `dispose()` cleanup
-- [ ] T116 [US7] Update all component callsites in role-manager that pass `adapter` prop — pass specific capabilities
-- [ ] T117 [US7] Run `pnpm test` in role-manager — update test mocks, fix broken tests
+- [X] T112 [US7] Update `apps/role-manager/src/core/ecosystems/ecosystemManager.ts` — replace `getAdapter` with `getRuntime('operator', networkConfig)`. Update `def.createAdapter(config)` to `def.createRuntime('operator', config)`
+- [X] T113 [US7] Simplify `apps/role-manager/src/hooks/useAccessControlService.ts` — replace `adapter.getAccessControlService?.()` extraction with direct `runtime.accessControl` access from Operator profile runtime
+- [X] T114 [US7] Update `apps/role-manager/src/hooks/useContractRegistration.ts` — replace `getAccessControlService` usage with direct capability access
+- [X] T115 [US7] Update all React hooks in role-manager that hold `ContractAdapter | null` state to use `EcosystemRuntime | null` — add `dispose()` cleanup
+- [X] T116 [US7] Update all component callsites in role-manager that pass `adapter` prop — pass specific capabilities
+- [X] T117 [US7] Run `pnpm test` in role-manager — update test mocks, fix broken tests
 
 ### RWA Wizard (rwa-wizard repo) — Declarative Profile
 
-- [ ] T118 [US7] Update `apps/rwa-wizard/package.json` — replace legacy `@openzeppelin/ui-builder-adapter-evm` and `@openzeppelin/ui-builder-adapter-stellar` dependencies with `@openzeppelin/adapter-evm` and `@openzeppelin/adapter-stellar`
-- [ ] T119 [US7] Update ecosystem/adapter loading in rwa-wizard (if present) to use `createRuntime('declarative', networkConfig)` pattern
-- [ ] T120 [US7] Run `pnpm test` in rwa-wizard — verify functionality preserved
+- [X] T118 [US7] Update `apps/rwa-wizard/package.json` — replace legacy `@openzeppelin/ui-builder-adapter-evm` and `@openzeppelin/ui-builder-adapter-stellar` dependencies with `@openzeppelin/adapter-evm` and `@openzeppelin/adapter-stellar`
+- [X] T119 [US7] Update ecosystem/adapter loading in rwa-wizard (if present) to use `createRuntime('declarative', networkConfig)` pattern
+- [X] T120 [US7] Run `pnpm test` in rwa-wizard — verify functionality preserved
+
+### OpenZeppelin UI Example App (openzeppelin-ui repo) — Composer Profile
+
+- [X] T120A [US7] Update `examples/basic-react-app/src/core/ecosystemManager.ts` plus provider/store/context plumbing to resolve `createRuntime('composer', networkConfig)` through `RuntimeProvider` and `WalletStateProvider`
+- [X] T120B [US7] Update example app demos, hooks, and helper utilities to consume runtime capabilities instead of `ContractAdapter`/adapter-era wallet state APIs
+- [X] T120C [US7] Run `pnpm --filter @openzeppelin/ui-example-basic-react-app typecheck`, `lint`, and `build` in `openzeppelin-ui` and update example-app documentation/snippets to match runtime terminology
 
 ### Cross-App Verification
 
-- [ ] T121 [US7] Verify no `ContractAdapter` imports remain across all three consumer apps — `grep -r 'ContractAdapter' apps/` returns zero matches in each repo
+- [X] T121 [US7] Verify no `ContractAdapter` imports remain across all four consumer apps — `rg 'ContractAdapter'` returns zero matches in `ui-builder/apps/`, `role-manager/apps/`, `rwa-wizard/apps/`, and `openzeppelin-ui/examples/basic-react-app/src/`
 
-**Checkpoint**: All three consumer apps migrated. Test suites pass. No `ContractAdapter` references.
+**Checkpoint**: All four consumer apps migrated. Test suites/builds pass. No `ContractAdapter` references.
 
 ---
 
@@ -337,8 +343,10 @@
 
 - [ ] T144 [US8] Update capability conformance validation / `lint:adapters` expectations for `packages/adapter-polkadot`, `packages/adapter-solana`, and `packages/adapter-midnight` — remove reliance on legacy `src/adapter.ts` compliance once each package migrates
 - [ ] T145 [US8] Run `pnpm build && pnpm test && pnpm lint:adapters` for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` — verify no `createAdapter` exports remain and Tier 1 isolation passes
+- [ ] T146 [US8] Remove temporary consumer-side `createAdapter()` compatibility bridges after the follow-on adapter wave lands — delete `ui-builder/apps/builder/src/core/legacyComposerRuntime.ts` plus the fallback path in `ui-builder/apps/builder/src/core/ecosystemManager.ts`, and remove the matching legacy fallback/runtime wrapper in `role-manager/apps/role-manager/src/core/ecosystems/`
+- [ ] T147 [US8] Re-verify affected consumer/runtime bootstrap paths after bridge removal — ensure UI Builder runtime/export bootstrap code assumes `createRuntime()` only for Polkadot, Solana, and Midnight, and rerun targeted consumer validation for those ecosystems
 
-**Checkpoint**: All published adapter packages expose the same capability-based package surface. `createAdapter` is gone from every adapter package, and unsupported profiles fail explicitly.
+**Checkpoint**: All published adapter packages expose the same capability-based package surface. `createAdapter` is gone from every adapter package, temporary consumer-side compatibility bridges are removed, and unsupported profiles fail explicitly.
 
 ---
 

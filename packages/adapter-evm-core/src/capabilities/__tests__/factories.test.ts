@@ -125,6 +125,56 @@ describe('EVM core capability factories', () => {
     expect(typeof capability.getAvailableUiKits).toBe('function');
   });
 
+  it('initializes a ui kit from partial defaults', async () => {
+    const onConfigureUiKit = vi.fn().mockResolvedValue(undefined);
+    const capability: UiKitCapability = createUiKit(mockNetworkConfig, {
+      loadCurrentUiKitConfig: () => ({
+        kitName: 'custom',
+        kitConfig: {
+          showInjectedConnector: false,
+        },
+      }),
+      onConfigureUiKit,
+    });
+
+    await capability.configureUiKit?.({});
+
+    expect(onConfigureUiKit).toHaveBeenCalledWith({
+      kitName: 'custom',
+      kitConfig: {
+        showInjectedConnector: false,
+      },
+      customCode: undefined,
+    });
+  });
+
+  it('merges partial ui kit overrides with the active defaults', async () => {
+    const onConfigureUiKit = vi.fn().mockResolvedValue(undefined);
+    const capability: UiKitCapability = createUiKit(mockNetworkConfig, {
+      loadCurrentUiKitConfig: () => ({
+        kitName: 'custom',
+        kitConfig: {
+          showInjectedConnector: false,
+        },
+      }),
+      onConfigureUiKit,
+    });
+
+    await capability.configureUiKit?.({
+      kitConfig: {
+        showInjectedConnector: true,
+      },
+    });
+
+    expect(onConfigureUiKit).toHaveBeenCalledWith({
+      kitName: 'custom',
+      kitConfig: {
+        showInjectedConnector: true,
+      },
+      customCode: undefined,
+    });
+  });
+
   it('creates a relayer capability', () => {
     const capability: RelayerCapability = createRelayer(mockNetworkConfig);
     expect(typeof capability.getRelayers).toBe('function');

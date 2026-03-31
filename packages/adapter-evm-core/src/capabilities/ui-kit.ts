@@ -73,7 +73,7 @@ export function createUiKit(
 
   return Object.assign(withRuntimeCapability(networkConfig), {
     async configureUiKit(
-      programmaticConfig: UiKitConfiguration,
+      programmaticConfig: Partial<UiKitConfiguration> = {},
       runtimeOptions?: {
         loadUiKitNativeConfig?: (relativePath: string) => Promise<Record<string, unknown> | null>;
       }
