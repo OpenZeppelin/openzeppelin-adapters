@@ -207,34 +207,34 @@
 
 ### ui-components Package (openzeppelin-ui repo)
 
-- [ ] T089 [P] [US2] Update `AddressField` in `packages/components/src/components/fields/AddressField.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
-- [ ] T090 [P] [US2] Update `ContractDefinitionSettingsPanel` in `packages/components/src/components/contract-definition/ContractDefinitionSettingsPanel.tsx` — replace `ContractAdapter` prop with `ContractLoadingCapability`
-- [ ] T091 [P] [US2] Update `ObjectField` in `packages/components/src/components/fields/ObjectField.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
-- [ ] T092 [P] [US2] Update `ArrayObjectField` in `packages/components/src/components/fields/ArrayObjectField.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
+- [X] T089 [P] [US2] Update `AddressField` in `packages/components/src/components/fields/AddressField.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
+- [X] T090 [P] [US2] Update `ContractDefinitionSettingsPanel` in `packages/components/src/components/contract-definition/ContractDefinitionSettingsPanel.tsx` — replace `ContractAdapter` prop with `ContractLoadingCapability`
+- [X] T091 [P] [US2] Update `ObjectField` in `packages/components/src/components/fields/ObjectField.tsx` — replace `ContractAdapter` prop with `TypeMappingCapability`
+- [X] T092 [P] [US2] Update `ArrayObjectField` in `packages/components/src/components/fields/ArrayObjectField.tsx` — replace `ContractAdapter` prop with `TypeMappingCapability`
 
 ### ui-renderer Package (openzeppelin-ui repo)
 
-- [ ] T093 [P] [US2] Update `AddAliasDialog` in `packages/renderer/src/components/AddressBookWidget/AddAliasDialog.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
-- [ ] T094 [P] [US2] Update `NetworkSettingsDialog` in `packages/renderer/src/components/network/NetworkSettingsDialog.tsx` — replace `ContractAdapter` prop with `RelayerCapability`
-- [ ] T095 [P] [US2] Update `DynamicFormField` in `packages/renderer/src/components/DynamicFormField.tsx` — replace `ContractAdapter` prop with `TypeMappingCapability` + `AddressingCapability`
-- [ ] T096 [P] [US2] Update `NetworkServiceSettingsPanel` in `packages/renderer/src/components/network/NetworkServiceSettingsPanel.tsx` — replace `ContractAdapter` prop with `RelayerCapability`
-- [ ] T097 [P] [US2] Update `ExecutionConfigDisplay` in `packages/renderer/src/components/ExecutionConfigDisplay/ExecutionConfigDisplay.tsx` — replace `ContractAdapter` prop with `ExecutionCapability`
-- [ ] T098 [P] [US2] Update `ViewFunctionsPanel` in `packages/renderer/src/components/ContractStateWidget/components/ViewFunctionsPanel.tsx` — replace `ContractAdapter` prop with `QueryCapability` + `SchemaCapability`
-- [ ] T099 [P] [US2] Update `TransactionStatusDisplay` in `packages/renderer/src/components/transaction/TransactionStatusDisplay.tsx` — replace `FullContractAdapter` prop with `QueryCapability` + `ExplorerCapability`
-- [ ] T100 [P] [US2] Update `ContractStateWidget` in `packages/renderer/src/components/ContractStateWidget/ContractStateWidget.tsx` — replace `FullContractAdapter` prop with `QueryCapability` + `SchemaCapability`
+- [X] T093 [P] [US2] Update `AddAliasDialog` in `packages/renderer/src/components/AddressBookWidget/AddAliasDialog.tsx` — replace `ContractAdapter` prop with `AddressingCapability`
+- [X] T094 [P] [US2] Update `NetworkSettingsDialog` in `packages/renderer/src/components/network/NetworkSettingsDialog.tsx` — replace `ContractAdapter` prop with `RelayerCapability`
+- [X] T095 [P] [US2] Update `DynamicFormField` in `packages/renderer/src/components/DynamicFormField.tsx` — replace `ContractAdapter` prop with `TypeMappingCapability` + `AddressingCapability`
+- [X] T096 [P] [US2] Update `NetworkServiceSettingsPanel` in `packages/renderer/src/components/network/NetworkServiceSettingsPanel.tsx` — replace `ContractAdapter` prop with `RelayerCapability`
+- [X] T097 [P] [US2] Update `ExecutionConfigDisplay` in `packages/renderer/src/components/ExecutionConfigDisplay/ExecutionConfigDisplay.tsx` — replace `ContractAdapter` prop with `ExecutionCapability` + `RelayerCapability`
+- [X] T098 [P] [US2] Update `ViewFunctionsPanel` in `packages/renderer/src/components/ContractStateWidget/components/ViewFunctionsPanel.tsx` — replace `ContractAdapter` prop with `QueryCapability` + `SchemaCapability`
+- [X] T099 [P] [US2] Update `TransactionStatusDisplay` in `packages/renderer/src/components/transaction/TransactionStatusDisplay.tsx` — replace `FullContractAdapter` prop with `QueryCapability` + `ExplorerCapability`
+- [X] T100 [P] [US2] Update `ContractStateWidget` in `packages/renderer/src/components/ContractStateWidget/ContractStateWidget.tsx` — replace `FullContractAdapter` prop with `QueryCapability` + `SchemaCapability`
 
 ### ui-react Package (openzeppelin-ui repo)
 
-- [ ] T101 [US2] Update `NetworkSwitchManager` in `packages/react/src/components/NetworkSwitchManager.tsx` — replace `ContractAdapter` prop with `WalletCapability` + `NetworkCatalogCapability`
-- [ ] T102 [US2] Update `AdapterProvider` in `packages/react/src/hooks/AdapterProvider.tsx` — rename to `RuntimeProvider`, replace `resolveAdapter` with `resolveRuntime` function prop
-- [ ] T103 [P] [US2] Update `useNetworkErrorAwareAdapter` hook in `packages/components/src/components/network-errors/NetworkErrorAwareAdapter.tsx` — accept `RuntimeCapability` instead of `ContractAdapter`
-- [ ] T104 [P] [US2] Update `useExecutionValidation` hook in `packages/renderer/src/components/ExecutionConfigDisplay/hooks/useExecutionValidation.ts` — accept `ExecutionCapability`
-- [ ] T105 [US2] Update field registry typing to use `TypeMappingCapability` + `AddressingCapability` instead of `ContractAdapter`
+- [X] T101 [US2] Update `NetworkSwitchManager` in `packages/react/src/components/NetworkSwitchManager.tsx` — replace `ContractAdapter` prop with `WalletCapability` + `NetworkCatalogCapability`
+- [X] T102 [US2] Update `AdapterProvider` in `packages/react/src/hooks/AdapterProvider.tsx` — rename to `RuntimeProvider`, replace `resolveAdapter` with `resolveRuntime` function prop
+- [X] T103 [P] [US2] Update `useNetworkErrorAwareAdapter` hook in `packages/components/src/components/network-errors/NetworkErrorAwareAdapter.tsx` — accept `RuntimeCapability` instead of `ContractAdapter`
+- [X] T104 [P] [US2] Update `useExecutionValidation` hook in `packages/renderer/src/components/ExecutionConfigDisplay/hooks/useExecutionValidation.ts` — accept `ExecutionCapability`
+- [X] T105 [US2] Update field registry typing to use `TypeMappingCapability` + `AddressingCapability` instead of `ContractAdapter`
 
 ### Verification
 
-- [ ] T106 [US2] Run `grep -r 'ContractAdapter' packages/` in openzeppelin-ui repo — verify zero matches in component/hook source files (excluding type definition files being actively deleted)
-- [ ] T107 [US2] Run `pnpm typecheck && pnpm test` across ui-components, ui-renderer, ui-react — fix any broken tests
+- [X] T106 [US2] Run `grep -r 'ContractAdapter' packages/` in openzeppelin-ui repo — verify zero matches in component/hook source files (excluding type definition files being actively deleted)
+- [X] T107 [US2] Run `pnpm typecheck && pnpm test` across ui-components, ui-renderer, ui-react — fix any broken tests
 
 **Checkpoint**: All 13 components + hooks/providers accept narrow capability props. No `ContractAdapter` or `FullContractAdapter` references remain.
 
