@@ -15,6 +15,7 @@ import type {
   UiLabelsCapability,
   WalletCapability,
 } from '@openzeppelin/ui-types';
+import { RuntimeDisposedError } from '@openzeppelin/ui-types';
 
 import {
   createAccessControl,
@@ -33,6 +34,11 @@ import {
 } from '..';
 import { stellarTestnet } from '../../networks';
 
+const { connectStellarWalletMock, disconnectStellarWalletMock } = vi.hoisted(() => ({
+  connectStellarWalletMock: vi.fn(),
+  disconnectStellarWalletMock: vi.fn(),
+}));
+
 vi.mock('../../wallet', () => {
   const mockWalletImplementation = {
     getWalletConnectionStatus: () => ({
@@ -49,8 +55,8 @@ vi.mock('../../wallet', () => {
   };
 
   return {
-    connectStellarWallet: vi.fn(),
-    disconnectStellarWallet: vi.fn(),
+    connectStellarWallet: connectStellarWalletMock,
+    disconnectStellarWallet: disconnectStellarWalletMock,
     generateStellarWalletsKitExportables: vi.fn().mockResolvedValue({}),
     getInitializedStellarWalletImplementation: vi.fn(() => mockWalletImplementation),
     getResolvedWalletComponents: vi.fn(() => undefined),
@@ -92,6 +98,18 @@ vi.mock('@creit.tech/stellar-wallets-kit', () => ({
 }));
 
 describe('Stellar capability factories', () => {
+  it('disposes standalone wallet capabilities safely', async () => {
+    disconnectStellarWalletMock.mockResolvedValue(undefined);
+
+    const capability: WalletCapability = createWallet(stellarTestnet);
+
+    capability.dispose();
+
+    expect(() => capability.disconnectWallet()).toThrow(RuntimeDisposedError);
+    expect(() => capability.networkConfig).toThrow(RuntimeDisposedError);
+    expect(disconnectStellarWalletMock).toHaveBeenCalledTimes(1);
+  });
+
   it('creates an addressing capability', () => {
     const capability: AddressingCapability = createAddressing();
     expect(typeof capability.isValidAddress).toBe('function');

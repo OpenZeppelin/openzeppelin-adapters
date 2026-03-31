@@ -4,7 +4,7 @@ import type {
   OperatorEcosystemRuntime,
 } from '@openzeppelin/ui-types';
 
-import { createRuntimeFromFactories } from './shared';
+import { createRuntimeFromFactories } from './shared-state';
 
 export function createOperatorRuntime(
   config: NetworkConfig,

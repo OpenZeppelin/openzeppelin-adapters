@@ -4,7 +4,7 @@ import type {
   ViewerEcosystemRuntime,
 } from '@openzeppelin/ui-types';
 
-import { createRuntimeFromFactories } from './shared';
+import { createRuntimeFromFactories } from './shared-state';
 
 export function createViewerRuntime(
   config: NetworkConfig,

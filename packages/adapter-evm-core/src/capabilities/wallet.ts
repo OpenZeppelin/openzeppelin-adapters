@@ -5,7 +5,11 @@ import type {
   WalletConnectionStatus,
 } from '@openzeppelin/ui-types';
 
-import { asTypedEvmNetworkConfig, withRuntimeCapability } from './helpers';
+import {
+  asTypedEvmNetworkConfig,
+  registerRuntimeCapabilityCleanup,
+  withRuntimeCapability,
+} from './helpers';
 
 export interface CreateWalletOptions {
   connectWallet: (
@@ -27,7 +31,7 @@ export function createWallet(
 ): WalletCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  const capability = Object.assign(withRuntimeCapability(networkConfig, 'wallet'), {
     supportsWalletConnection() {
       return options.supportsWalletConnection?.() ?? true;
     },
@@ -39,4 +43,14 @@ export function createWallet(
     getWalletConnectionStatus: options.getWalletConnectionStatus,
     onWalletConnectionChange: options.onWalletConnectionChange,
   }) as WalletCapability;
+
+  registerRuntimeCapabilityCleanup(
+    capability,
+    async () => {
+      await options.disconnectWallet();
+    },
+    'wallet'
+  );
+
+  return capability;
 }

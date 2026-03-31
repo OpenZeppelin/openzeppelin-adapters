@@ -110,7 +110,7 @@ Consumer ecosystem managers (`getAdapter()`) become `getRuntime()` or `getCapabi
 
 **Rationale**: Shared internal state (wallet connections, RPC clients, cached data) is all tied to a specific network. Mutating the config would require cascading updates across all capabilities and risk stale state. The dispose-and-recreate model is simpler, more predictable, and aligns with React's data-flow model where components re-render with new props.
 
-**`dispose()` contract**: Must clean up event listeners, cancel pending subscriptions, disconnect wallet sessions tied to the old network, and release RPC client resources. Pending async operations (e.g., `signAndBroadcast` in flight) should reject with a `RuntimeDisposedError`.
+**`dispose()` contract**: Must reject pending async operations (e.g., `signAndBroadcast` in flight) with `RuntimeDisposedError`, then run cleanup in staged order so listeners/subscriptions are released before wallet or RPC teardown. The lifecycle trigger remains synchronous and idempotent; async cleanup work may continue in the background once disposal has started.
 
 **Alternatives considered**:
 - Mutable `switchNetwork()` method: Rejected — adds complexity, stale-state risk, and makes it harder to reason about capability state in React components.
@@ -142,3 +142,19 @@ Consumer ecosystem managers (`getAdapter()`) become `getRuntime()` or `getCapabi
 - `formatFunctionResult` → `QueryCapability` (it formats query results)
 
 **Rationale**: `ContractStateCapabilities` was an extension interface on `FullContractAdapter` that grouped read-only query methods. These methods naturally belong to SchemaCapability and QueryCapability in the new architecture. The `FullContractAdapter` type alias (`ContractAdapter & ContractStateCapabilities`) is removed entirely.
+
+## R12: Shared Runtime Utility Extraction
+
+**Decision**: Extract profile composition, runtime lifecycle guards, and runtime-scoped capability memoization into an internal workspace package: `packages/adapter-runtime-utils`.
+
+**Rationale**: After Phase 5 landed in both EVM and Stellar adapters, the same logic existed in multiple places: runtime disposal guards, pending-promise rejection, cleanup registration, profile requirement validation, shared capability caching, and lazy runtime-scoped capability assembly. Centralizing that behavior keeps EVM and Stellar aligned, reduces duplication, and makes lifecycle behavior testable in isolation without going through a full adapter package.
+
+**Shared exports**:
+- `createRuntimeFromFactories`, `PROFILE_REQUIREMENTS`, `isProfileName`
+- `withRuntimeCapability`, `guardRuntimeCapability`, `registerRuntimeCapabilityCleanup`
+- `createLazyRuntimeCapabilityFactories`
+
+**Implications**:
+1. Adapter-specific `shared-state.ts` and capability helper modules become thin wrappers around the shared runtime utilities.
+2. Shared runtime behavior can be unit-tested directly in `packages/adapter-runtime-utils/src/__tests__/` instead of relying only on adapter-level integration coverage.
+3. Public adapter APIs remain unchanged — the extraction is an internal maintainability improvement, not a new consumer-facing feature.

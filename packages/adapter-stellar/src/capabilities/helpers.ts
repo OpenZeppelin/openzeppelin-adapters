@@ -1,3 +1,9 @@
+import {
+  guardRuntimeCapability as guardSharedRuntimeCapability,
+  registerRuntimeCapabilityCleanup as registerSharedRuntimeCapabilityCleanup,
+  withRuntimeCapability as withSharedRuntimeCapability,
+  type RuntimeCleanupStage,
+} from '@openzeppelin/adapter-runtime-utils';
 import type {
   ExecutionMethodDetail,
   FormFieldType,
@@ -15,22 +21,35 @@ export function asStellarNetworkConfig(config: NetworkConfig): StellarNetworkCon
   return config;
 }
 
-export function withRuntimeCapability(networkConfig: StellarNetworkConfig): RuntimeCapability;
-export function withRuntimeCapability<T extends object>(
+export function withRuntimeCapability(
   networkConfig: StellarNetworkConfig,
-  members: T
-): RuntimeCapability & T;
-export function withRuntimeCapability<T extends object>(
+  capabilityName = 'capability'
+): RuntimeCapability {
+  return withSharedRuntimeCapability(networkConfig, capabilityName);
+}
+
+export function guardRuntimeCapability<T extends object>(
+  capability: T,
   networkConfig: StellarNetworkConfig,
-  members?: T
-): RuntimeCapability | (RuntimeCapability & T) {
-  return Object.assign(
-    {
-      networkConfig,
-      dispose() {},
-    },
-    members ?? {}
+  capabilityName: string,
+  onDispose?: () => void | Promise<void>,
+  cleanupStage: RuntimeCleanupStage = 'general'
+): T & RuntimeCapability {
+  return guardSharedRuntimeCapability(
+    capability,
+    networkConfig,
+    capabilityName,
+    onDispose,
+    cleanupStage
   );
+}
+
+export function registerRuntimeCapabilityCleanup(
+  capability: RuntimeCapability,
+  cleanup: () => void | Promise<void>,
+  cleanupStage: RuntimeCleanupStage = 'general'
+): void {
+  registerSharedRuntimeCapabilityCleanup(capability, cleanup, cleanupStage);
 }
 
 export function getStellarSupportedExecutionMethods(): Promise<ExecutionMethodDetail[]> {

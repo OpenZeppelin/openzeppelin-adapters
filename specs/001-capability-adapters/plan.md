@@ -5,7 +5,7 @@
 
 ## Summary
 
-Decompose the monolithic `ContractAdapter` interface into 13 composable capability interfaces organized in 3 tiers, with 5 pre-composed profiles for common app archetypes. Capability interfaces are defined in `@openzeppelin/ui-types` (single source of truth), implemented in adapter packages under `src/capabilities/` with physical isolation via sub-path exports, and consumed directly or through profile runtimes with dispose-and-recreate lifecycle. This is a coordinated breaking change across the ecosystem — no backward compatibility. After the initial rollout lands, a follow-on wave migrates `adapter-polkadot`, `adapter-solana`, and `adapter-midnight` to the same package surface.
+Decompose the monolithic `ContractAdapter` interface into 13 composable capability interfaces organized in 3 tiers, with 5 pre-composed profiles for common app archetypes. Capability interfaces are defined in `@openzeppelin/ui-types` (single source of truth), implemented in adapter packages under `src/capabilities/` with physical isolation via sub-path exports, and consumed directly or through profile runtimes with dispose-and-recreate lifecycle. Shared profile composition, runtime lifecycle guards, and runtime-scoped capability memoization are centralized in an internal `adapter-runtime-utils` package to keep EVM and Stellar behavior aligned. This is a coordinated breaking change across the ecosystem — no backward compatibility. After the initial rollout lands, a follow-on wave migrates `adapter-polkadot`, `adapter-solana`, and `adapter-midnight` to the same package surface.
 
 ## Technical Context
 
@@ -18,7 +18,7 @@ Decompose the monolithic `ContractAdapter` interface into 13 composable capabili
 **Build**: tsdown (dual ESM .mjs / CJS .cjs + .d.mts/.d.cts), per-adapter Vite config exports  
 **Performance Goals**: Tier 1 imports must not pull Tier 2/3 dependencies — zero-cost abstraction for lightweight consumers  
 **Constraints**: Physical sub-path isolation (not tree-shaking-dependent); dispose-and-recreate on network switch (no mutable state)  
-**Scale/Scope**: 6 adapter packages across two waves (initial: adapter-evm-core, adapter-evm, adapter-stellar; follow-on: adapter-polkadot, adapter-solana, adapter-midnight), 1 types package updated, 3 consumer apps migrated (UI Builder, Role Manager, RWA Wizard), shared UI component packages updated
+**Scale/Scope**: 6 adapter packages across two waves (initial: adapter-evm-core, adapter-evm, adapter-stellar; follow-on: adapter-polkadot, adapter-solana, adapter-midnight), plus 1 internal runtime utility package (`adapter-runtime-utils`), 1 types package updated, 3 consumer apps migrated (UI Builder, Role Manager, RWA Wizard), shared UI component packages updated
 
 ## Constitution Check
 
@@ -82,6 +82,16 @@ packages/types/src/adapters/
 ├── base.ts                    # REMOVED — ContractAdapter interface deleted
 └── index.ts                   # MODIFIED — re-export new structure
 
+packages/adapter-runtime-utils/src/
+├── profile-runtime.ts         # NEW — shared profile composition + profile requirements
+├── runtime-capability.ts      # NEW — runtime lifecycle guards + staged cleanup helpers
+├── runtime-factories.ts       # NEW — runtime-scoped capability memoization helpers
+├── __tests__/                 # NEW — direct utility-level runtime tests
+│   ├── profile-runtime.test.ts
+│   ├── runtime-capability.test.ts
+│   └── runtime-factories.test.ts
+└── index.ts                   # NEW — internal utility barrel
+
 # Adapter packages (openzeppelin-adapters repo)
 packages/adapter-evm-core/src/
 ├── capabilities/              # NEW — EVM capability implementations
@@ -99,6 +109,7 @@ packages/adapter-evm-core/src/
 │   ├── relayer.ts
 │   └── access-control.ts
 ├── profiles/                  # NEW — EVM profile factories
+│   ├── shared-state.ts        # NEW — thin wrapper around shared runtime utilities
 │   ├── declarative.ts
 │   ├── viewer.ts
 │   ├── transactor.ts
@@ -117,8 +128,10 @@ packages/adapter-evm-core/src/
 └── index.ts                   # MODIFIED — export capabilities + profiles
 
 packages/adapter-evm/
-├── src/                       # SIMPLIFIED — re-exports from adapter-evm-core
-│   ├── index.ts               # MODIFIED — re-export capabilities
+├── src/                       # SIMPLIFIED — public re-export + runtime wiring layer
+│   ├── capabilities/          # NEW — sub-path re-exports from adapter-evm-core
+│   ├── profiles/              # NEW — profile wrappers + runtime-scoped factory assembly
+│   ├── index.ts               # MODIFIED — ecosystemDefinition + capability/profile exports
 │   ├── metadata.ts            # EXISTING
 │   ├── networks.ts            # EXISTING
 │   └── config.ts              # EXISTING
@@ -129,6 +142,7 @@ packages/adapter-stellar/src/
 ├── capabilities/              # NEW — Stellar capability implementations
 │   └── (same structure as evm-core/capabilities/)
 ├── profiles/                  # NEW — Stellar profile factories
+│   ├── shared-state.ts        # NEW — thin wrapper around shared runtime utilities
 │   └── (same structure as evm-core/profiles/)
 ├── access-control/            # EXISTING → wrapped by capability
 ├── contract/                  # EXISTING → used by capabilities
@@ -139,7 +153,7 @@ packages/adapter-stellar/src/
 └── adapter.ts                 # REMOVED — monolithic StellarAdapter deleted
 ```
 
-**Structure Decision**: Multi-package monorepo with pnpm workspaces. Changes span two repositories (openzeppelin-ui for types, openzeppelin-adapters for implementations). Each adapter package gains `src/capabilities/` and `src/profiles/` directories. Existing internal modules are preserved and wrapped by capability implementations. The same directory pattern is applied in a follow-on migration wave to `adapter-polkadot`, `adapter-solana`, and `adapter-midnight`, with partial capability support allowed where profiles are not fully implementable yet.
+**Structure Decision**: Multi-package monorepo with pnpm workspaces. Changes span two repositories (openzeppelin-ui for types, openzeppelin-adapters for implementations). Each adapter package gains `src/capabilities/` and `src/profiles/` directories, while shared runtime composition/lifecycle logic is extracted into `packages/adapter-runtime-utils`. Existing internal modules are preserved and wrapped by capability implementations. The same directory pattern is applied in a follow-on migration wave to `adapter-polkadot`, `adapter-solana`, and `adapter-midnight`, with partial capability support allowed where profiles are not fully implementable yet.
 
 ## Complexity Tracking
 

@@ -1,6 +1,6 @@
 import type { OperatorEcosystemRuntime, StellarNetworkConfig } from '@openzeppelin/ui-types';
 
-import { createRuntime } from './shared';
+import { createRuntime } from './shared-state';
 
 export function createOperatorRuntime(
   config: StellarNetworkConfig,

@@ -165,32 +165,37 @@
 
 ### adapter-evm-core Profile Factories
 
-- [ ] T075 [US5] Create shared state factory infrastructure in `packages/adapter-evm-core/src/profiles/shared-state.ts` — internal factory that creates shared wallet manager, RPC client, and event bus for a given `NetworkConfig`
-- [ ] T076 [P] [US5] Create `packages/adapter-evm-core/src/profiles/declarative.ts` — compose Tier 1 capabilities only, no shared state needed
-- [ ] T077 [P] [US5] Create `packages/adapter-evm-core/src/profiles/viewer.ts` — compose Tier 1 + Tier 2, shared RPC client
-- [ ] T078 [P] [US5] Create `packages/adapter-evm-core/src/profiles/transactor.ts` — compose Tier 1 + Tier 2 (except Query) + Execution + Wallet, shared wallet + RPC
-- [ ] T079 [P] [US5] Create `packages/adapter-evm-core/src/profiles/composer.ts` — compose Tier 1 + Tier 2 + Execution + Wallet + UiKit + Relayer, shared state
-- [ ] T080 [P] [US5] Create `packages/adapter-evm-core/src/profiles/operator.ts` — compose Tier 1 + Tier 2 + Execution + Wallet + UiKit + AccessControl, shared state
-- [ ] T081 [US5] Implement `dispose()` lifecycle on `EcosystemRuntime` in profile factories — idempotent, 6-step cleanup (mark disposed → reject pending → remove listeners → cancel subscriptions → disconnect wallet → release RPC), `RuntimeDisposedError` on post-dispose access
-- [ ] T082 [US5] Implement `createRuntime` function and profiles barrel export in `packages/adapter-evm-core/src/profiles/index.ts` — synchronous, validates profile capabilities, throws `UnsupportedProfileError` if missing, throws `TypeError` for invalid profile name. Accept optional `options` parameter for `uiKit` (FR-017). Export `createRuntime` and individual profile factories
+- [X] T075 [US5] Create shared runtime composition infrastructure in `packages/adapter-evm-core/src/profiles/shared-state.ts` — adapter-specific wrapper over the shared profile runtime utilities, providing runtime-scoped capability caching and event-bus composition for a given `NetworkConfig`
+- [X] T076 [P] [US5] Create `packages/adapter-evm-core/src/profiles/declarative.ts` — compose Tier 1 capabilities only, no shared state needed
+- [X] T077 [P] [US5] Create `packages/adapter-evm-core/src/profiles/viewer.ts` — compose Tier 1 + Tier 2, shared RPC client
+- [X] T078 [P] [US5] Create `packages/adapter-evm-core/src/profiles/transactor.ts` — compose Tier 1 + Tier 2 (except Query) + Execution + Wallet, shared wallet + RPC
+- [X] T079 [P] [US5] Create `packages/adapter-evm-core/src/profiles/composer.ts` — compose Tier 1 + Tier 2 + Execution + Wallet + UiKit + Relayer, shared state
+- [X] T080 [P] [US5] Create `packages/adapter-evm-core/src/profiles/operator.ts` — compose Tier 1 + Tier 2 + Execution + Wallet + UiKit + AccessControl, shared state
+- [X] T081 [US5] Implement `dispose()` lifecycle on `EcosystemRuntime` in profile factories — idempotent, staged cleanup (mark disposed → reject pending → listener cleanup → subscription cleanup → general cleanup → wallet teardown → RPC teardown), `RuntimeDisposedError` on post-dispose access
+- [X] T082 [US5] Implement `createRuntime` function and profiles barrel export in `packages/adapter-evm-core/src/profiles/index.ts` — synchronous, validates profile capabilities, throws `UnsupportedProfileError` if missing, throws `TypeError` for invalid profile name. Accept optional `options` parameter for `uiKit` (FR-017). Export `createRuntime` and individual profile factories
 
 ### adapter-stellar Profile Factories
 
-- [ ] T084 [P] [US5] Create shared state factory in `packages/adapter-stellar/src/profiles/shared-state.ts` — Stellar-specific shared resources (Stellar SDK client, wallet kit)
-- [ ] T085 [P] [US5] Create all 5 profile factories in `packages/adapter-stellar/src/profiles/` — `declarative.ts`, `viewer.ts`, `transactor.ts`, `composer.ts`, `operator.ts`
-- [ ] T086 [US5] Implement `dispose()` and `createRuntime` for Stellar profiles in `packages/adapter-stellar/src/profiles/index.ts`
+- [X] T084 [P] [US5] Create shared runtime composition wrapper in `packages/adapter-stellar/src/profiles/shared-state.ts` — Stellar-specific wiring on top of the shared runtime utilities for profile composition and lifecycle
+- [X] T085 [P] [US5] Create all 5 profile factories in `packages/adapter-stellar/src/profiles/` — `declarative.ts`, `viewer.ts`, `transactor.ts`, `composer.ts`, `operator.ts`
+- [X] T086 [US5] Implement `dispose()` and `createRuntime` for Stellar profiles in `packages/adapter-stellar/src/profiles/index.ts`
+
+### Cross-Adapter Runtime Utilities
+
+- [X] T086b [US5] Extract shared profile composition, runtime lifecycle guards, and runtime-scoped factory memoization into `packages/adapter-runtime-utils/src/` — centralize `createRuntimeFromFactories`, `withRuntimeCapability`, `guardRuntimeCapability`, `registerRuntimeCapabilityCleanup`, and `createLazyRuntimeCapabilityFactories` for reuse across EVM and Stellar adapters
 
 ### Standalone Capability Dispose (FR-018)
 
-- [ ] T083 [US5] Implement `dispose()` method on Tier 2+ standalone capabilities returned by `CapabilityFactoryMap` factory functions — matching the lifecycle contract of profile runtimes. Each factory function for Tier 2+ capabilities MUST return an object that includes `dispose()` for resource cleanup
+- [X] T083 [US5] Implement `dispose()` method on Tier 2+ standalone capabilities returned by `CapabilityFactoryMap` factory functions — matching the lifecycle contract of profile runtimes. Each factory function for Tier 2+ capabilities MUST return an object that includes `dispose()` for resource cleanup
 
 ### Verification
 
-- [ ] T087 [US5] Create profile integration test — verify shared wallet state: connect wallet via WalletCapability, assert address visible on ExecutionCapability and AccessControlCapability
-- [ ] T088 [US5] Create dispose lifecycle test — verify `dispose()` is idempotent, rejects pending ops with `RuntimeDisposedError`, blocks post-dispose method calls
-- [ ] T088b [US5] Create standalone capability dispose test — verify that Tier 2+ capabilities from `CapabilityFactoryMap` expose `dispose()` and clean up resources (FR-018)
+- [X] T087 [US5] Create profile integration test — verify shared wallet state: connect wallet via WalletCapability, assert address visible on ExecutionCapability and AccessControlCapability
+- [X] T088 [US5] Create dispose lifecycle test — verify `dispose()` is idempotent, rejects pending ops with `RuntimeDisposedError`, blocks post-dispose method calls
+- [X] T088b [US5] Create standalone capability dispose test — verify that Tier 2+ capabilities from `CapabilityFactoryMap` expose `dispose()` and clean up resources (FR-018)
+- [X] T088c [US5] Create direct tests for `packages/adapter-runtime-utils/src/__tests__/` — cover profile composition, runtime lifecycle guards, runtime-scoped capability caching, and cleanup stage ordering
 
-**Checkpoint**: All 5 profiles functional for both EVM and Stellar adapters. Shared state + dispose lifecycle verified.
+**Checkpoint**: All 5 profiles functional for both EVM and Stellar adapters. Shared state + dispose lifecycle verified. Shared runtime utilities extracted into `adapter-runtime-utils` and directly tested.
 
 ---
 

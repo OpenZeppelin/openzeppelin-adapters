@@ -5,8 +5,9 @@ import {
   collectStaticDependencyGraph,
   findRestrictedDependencies,
 } from '../../../../tests/helpers/tierIsolation';
+import * as capabilities from '../capabilities';
 import { ethereumSepolia } from '../networks';
-import { capabilityFactories, createRuntime } from '../profiles/shared';
+import { createRuntime } from '../profiles/shared';
 
 const packageRoot = process.cwd();
 const workspaceRoot = resolve(packageRoot, '../..');
@@ -64,37 +65,31 @@ const tierOneEntries = [
   },
 ] as const;
 
-const deferredFactoryKeys = [
-  'contractLoading',
-  'schema',
-  'typeMapping',
-  'query',
-  'execution',
-  'wallet',
-  'uiKit',
-  'relayer',
-  'accessControl',
-] as const;
+const deferredFactoryCreators = {
+  contractLoading: 'createContractLoading',
+  schema: 'createSchema',
+  typeMapping: 'createTypeMapping',
+  query: 'createQuery',
+  execution: 'createExecution',
+  wallet: 'createWallet',
+  uiKit: 'createUiKit',
+  relayer: 'createRelayer',
+  accessControl: 'createAccessControl',
+} as const;
 
 function spyOnDeferredFactories() {
-  const mutableFactories = capabilityFactories as Record<string, (...args: unknown[]) => unknown>;
-  const originals = new Map<string, (...args: unknown[]) => unknown>();
-  const spies = new Map<string, ReturnType<typeof vi.fn>>();
+  const spies = new Map<string, ReturnType<typeof vi.spyOn>>();
 
-  for (const key of deferredFactoryKeys) {
-    const original = mutableFactories[key];
-    originals.set(key, original);
-
-    const spy = vi.fn((...args: unknown[]) => original(...args));
+  for (const [key, creatorName] of Object.entries(deferredFactoryCreators)) {
+    const spy = vi.spyOn(capabilities, creatorName);
     spies.set(key, spy);
-    mutableFactories[key] = spy;
   }
 
   return {
     spies,
     restore() {
-      for (const [key, original] of originals) {
-        mutableFactories[key] = original;
+      for (const spy of spies.values()) {
+        spy.mockRestore();
       }
     },
   };
@@ -144,7 +139,7 @@ describe('EVM Tier 1 isolation', () => {
       expect(runtime.relayer).toBeUndefined();
       expect(runtime.accessControl).toBeUndefined();
 
-      for (const key of deferredFactoryKeys) {
+      for (const key of Object.keys(deferredFactoryCreators)) {
         expect(trackedFactories.spies.get(key)).not.toHaveBeenCalled();
       }
 

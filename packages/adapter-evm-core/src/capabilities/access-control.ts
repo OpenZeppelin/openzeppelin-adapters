@@ -7,7 +7,7 @@ import type {
 } from '@openzeppelin/ui-types';
 
 import { createEvmAccessControlService } from '../access-control';
-import { asTypedEvmNetworkConfig } from './helpers';
+import { asTypedEvmNetworkConfig, guardRuntimeCapability } from './helpers';
 
 export interface CreateAccessControlOptions {
   signAndBroadcast: (
@@ -38,8 +38,5 @@ export function createAccessControl(
     }
   );
 
-  return Object.assign(service, {
-    networkConfig,
-    dispose() {},
-  }) as AccessControlCapability;
+  return guardRuntimeCapability(service, networkConfig, 'accessControl') as AccessControlCapability;
 }

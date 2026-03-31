@@ -25,6 +25,7 @@ export default defineConfig({
   },
   format: ['esm', 'cjs'],
   dts: {
+    resolve: ['@openzeppelin/adapter-runtime-utils'],
     compilerOptions: {
       composite: false,
       incremental: false,
@@ -32,6 +33,7 @@ export default defineConfig({
   },
   sourcemap: true,
   clean: true,
+  noExternal: ['@openzeppelin/adapter-runtime-utils'],
   external: [
     'react',
     'react-dom',

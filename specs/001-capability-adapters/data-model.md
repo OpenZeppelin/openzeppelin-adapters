@@ -63,13 +63,13 @@ A pre-composed bundle of capabilities matching a common app archetype. Profiles 
 **Validation Rules**:
 - A profile must include all Tier 1 capabilities
 - If a profile includes any Tier 3 capability, it must also include all Tier 2 capabilities that Tier 3 depends on
-- The Operator profile may optionally include Relayer and Query (included by default)
+- The Operator profile includes `Query` by default; `Relayer` remains available through direct capability consumption unless a future profile revision adds it explicitly
 
 ---
 
 ### EcosystemRuntime (Runtime Instance)
 
-The object returned by a profile factory. Holds capability instances with shared internal state and lifecycle management.
+The object returned by a profile factory. Holds capability instances with shared internal state and lifecycle management. Internally, the runtime is backed by a runtime-scoped capability cache plus any adapter-specific shared resources needed by the composed capabilities.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -98,10 +98,11 @@ Created → Active → Disposed
                  │
                  ├── 1. Mark runtime as disposed (guard flag)
                  ├── 2. Reject pending async operations with RuntimeDisposedError
-                 ├── 3. Remove event listeners (wallet connection, block watchers)
-                 ├── 4. Cancel active subscriptions (RPC polling, transaction monitors)
-                 ├── 5. Disconnect wallet session (if connected)
-                 └── 6. Release RPC client resources (close connections)
+                 ├── 3. Run listener cleanup
+                 ├── 4. Run subscription cleanup
+                 ├── 5. Run general capability cleanup
+                 ├── 6. Disconnect wallet/session resources
+                 └── 7. Release RPC/client resources
 ```
 
 **`dispose()` Contract**:
@@ -115,18 +116,17 @@ Created → Active → Disposed
 
 | Resource | Shared? | Description |
 |----------|---------|-------------|
-| Wallet Manager | Shared | Single wallet connection shared by Execution, AccessControl, and Wallet capabilities |
-| RPC Client | Shared | Single RPC connection shared by Query, Execution, ContractLoading, and AccessControl |
+| Capability Cache | Shared | Memoizes capability instances per runtime so dependencies are reused and disposed together |
+| Event Bus | Shared | Internal event propagation for runtime-scoped coordination |
 | Network Config | Shared | Immutable reference held by all Tier 2+ capabilities via `RuntimeCapability` base |
-| Contract Cache | Shared | Loaded contract schemas cached and available to Schema, TypeMapping, Query |
-| Event Bus | Shared | Internal event propagation (wallet status changes, block updates) |
-| UI Kit Config | Isolated | Per-capability; UiKit state is not shared with other capabilities |
+| Adapter-Specific Runtime Resources | Shared when composed | Wallet state, contract-loading helpers, execution/access-control dependencies, or other runtime-scoped resources wired through capability creators |
+| UI Kit Config | Runtime-scoped | Applied once via `createRuntime(..., { uiKit })` when the runtime includes `UiKitCapability` |
 
 **Validation Rules**:
 - Immutable once created — no `switchNetwork()` method
 - `dispose()` must be called before creating a new runtime for a different network
-- Capabilities from the same runtime share internal state (see table above)
-- Capabilities from different runtimes are fully isolated
+- Capabilities from the same runtime share internal state via the runtime-scoped capability cache and composed dependencies (see table above)
+- Standalone capability factory invocations and capabilities from different runtimes are fully isolated
 - Accessing a capability or its methods/properties after `dispose()` throws `RuntimeDisposedError`
 
 ---
@@ -154,7 +154,7 @@ The self-describing module export from each adapter package. Replaces `createAda
 
 ### CapabilityFactoryMap (Factory Registry)
 
-Maps capability names to their factory functions. Each factory creates a capability instance for a given `NetworkConfig`.
+Maps capability names to standalone factory functions. Each factory creates a capability instance for a given `NetworkConfig`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -177,7 +177,8 @@ Maps capability names to their factory functions. Each factory creates a capabil
 - Tier 2 and Tier 3 factories MUST receive `NetworkConfig` — they cannot function without a network context.
 - Tier 2+ capabilities returned by factories expose a `dispose()` method for standalone resource cleanup.
 - Missing entries indicate the adapter does not support that capability — consumers check for `undefined`.
-- `createRuntime` internally uses this factory map to compose capabilities with shared state. When used via profiles, the factory map is an internal detail — consumers call `createRuntime` directly.
+- Standalone factory invocations are isolated from each other. Shared state is introduced only when `createRuntime` composes a runtime-scoped, memoized capability graph.
+- `createRuntime` internally uses the capability map (or runtime-scoped creators derived from it) to compose capabilities with shared state. When used via profiles, the factory map is an internal detail — consumers call `createRuntime` directly.
 
 ---
 
@@ -188,9 +189,9 @@ EcosystemExport
   ├── extends EcosystemMetadata (id, name, icon)
   ├── contains NetworkConfig[] (networks)
   ├── contains CapabilityFactoryMap (capabilities)
-  │     └── each factory creates → Capability instance
+  │     └── each factory creates → standalone Capability instance
   ├── createRuntime() creates → EcosystemRuntime
-  │     ├── contains Capability instances (shared state)
+  │     ├── contains Capability instances (runtime-scoped shared state)
   │     └── exposes dispose() lifecycle
   └── optional AdapterConfig (build config)
 

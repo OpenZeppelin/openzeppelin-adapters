@@ -141,7 +141,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 
 - What happens when an app consumes capabilities from two different capability factories created with different NetworkConfigs? They must operate in complete isolation — no shared wallet or RPC state.
 - How does the system handle a profile that requests a capability the adapter doesn't implement? The profile factory MUST throw `UnsupportedProfileError` at creation time listing the missing capabilities, not fail silently at method call time.
-- What happens when `dispose()` is called on a runtime while async operations (e.g., `signAndBroadcast`) are in flight? The runtime MUST reject pending operations with `RuntimeDisposedError` and release resources. `dispose()` is idempotent — calling it twice is a no-op (does not throw).
+- What happens when `dispose()` is called on a runtime while async operations (e.g., `signAndBroadcast`) are in flight? The runtime MUST reject pending operations with `RuntimeDisposedError` and release resources. `dispose()` is idempotent — calling it twice is a no-op (does not throw), and cleanup runs in staged order so listeners/subscriptions are released before wallet or RPC teardown.
 - What happens when an adapter author implements a capability interface but with incorrect runtime behavior (e.g., `isValidAddress` always returns true)? Conformance test suites (stretch goal) should catch this.
 - What happens when `createRuntime` is called with an invalid `ProfileName` string? It MUST throw a `TypeError` with a message listing the valid profile names.
 - What happens when a consumer imports a profile runtime AND a standalone capability from the factory map for the same `NetworkConfig`? They are fully isolated — the standalone capability does not share state with the profile runtime.
@@ -160,7 +160,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **FR-006**: System MUST enforce tier isolation via sub-path exports — importing a Tier 1 capability (e.g., `@openzeppelin/adapter-evm/addressing`) MUST NOT physically include any Tier 2 or Tier 3 code (wallet, RPC, access-control) in the import graph, regardless of bundler configuration.
 - **FR-007**: System MUST replace the `createAdapter` factory on `EcosystemExport` with a `capabilities` map that provides factory functions for each capability and a `createRuntime` function for profile-based consumption.
 - **FR-008**: System MUST implement 5 profile factories (Declarative, Viewer, Transactor, Composer, Operator) that compose capabilities with shared internal state.
-- **FR-009**: System MUST ensure that capabilities created from the same factory/profile share internal state (wallet manager, RPC client) while capabilities from different factories are isolated.
+- **FR-009**: System MUST ensure that capabilities created within the same profile runtime share runtime-scoped internal state (for example wallet/session state, cached contract-loading dependencies, and adapter-specific runtime resources) while standalone factory invocations and capabilities from different runtimes remain isolated.
 - **FR-010**: System MUST provide a `dispose()` method on profile runtimes (`EcosystemRuntime`) to clean up event listeners, subscriptions, and stateful resources.
 - **FR-011**: System MUST update all shared UI components and hooks that accept `ContractAdapter` or `FullContractAdapter` props to accept only narrow capability props. The complete list (13 components + hooks/providers):
   - Components with `ContractAdapter` props: `AddressField`, `ContractDefinitionSettingsPanel`, `ObjectField`, `ArrayObjectField`, `AddAliasDialog`, `NetworkSettingsDialog`, `DynamicFormField`, `NetworkServiceSettingsPanel`, `ExecutionConfigDisplay`, `ViewFunctionsPanel`, `NetworkSwitchManager`
@@ -181,7 +181,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **Capability**: A small, composable interface representing a focused area of adapter functionality (e.g., address validation, transaction execution, wallet connection). 13 capabilities organized in 3 tiers.
 - **Profile**: A pre-composed bundle of capabilities matching a common app archetype (Declarative, Viewer, Transactor, Composer, Operator). Convenience type, not enforcement mechanism.
 - **EcosystemRuntime**: The runtime object returned by a profile factory. Contains capability accessors, the network config, and a `dispose()` method for lifecycle management. Immutable once created — network changes require disposing and recreating.
-- **Capability Factory**: A function on `EcosystemExport.capabilities` that creates a capability instance for a given NetworkConfig. Factories for the same ecosystem share internal state. Each invocation is tied to one `NetworkConfig` for its lifetime.
+- **Capability Factory**: A function on `EcosystemExport.capabilities` that creates a standalone capability instance for a given `NetworkConfig`. Standalone factory invocations are isolated from each other and from profile runtimes unless an adapter explicitly composes them through a runtime-scoped factory map.
 - **RuntimeCapability**: Base interface for Tier 2+ capabilities exposing `readonly networkConfig: NetworkConfig`.
 
 ## Success Criteria *(mandatory)*
@@ -204,6 +204,8 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - Q: How should network switching work — dispose-and-recreate or mutable update? → A: Dispose-and-recreate. Consumer calls `dispose()` on the current runtime, then calls the profile/capability factory again with the new `NetworkConfig`. No `switchNetwork()` method.
 - Q: How strict should Tier 1 isolation from Tier 2/3 dependencies be? → A: Physical isolation via sub-path exports. Each capability is its own sub-path export; importing a Tier 1 capability physically cannot pull in wallet/RPC code regardless of bundler configuration.
 - Q: Who owns the capability interface definitions — types package or adapter packages? → A: All 13 capability interfaces are defined in `@openzeppelin/ui-types`. Adapter packages only implement them. Single source of truth.
+- Q: Do standalone capability factory calls share state with profile runtimes or other standalone calls for the same network? → A: No. Shared state is guaranteed only within a single `EcosystemRuntime`; standalone factory invocations are isolated unless an adapter explicitly wraps them in runtime-scoped composition.
+- Q: Must each adapter keep its own copy of the profile-composition and lifecycle logic? → A: No. Adapters may reuse shared internal runtime utilities as long as the public capability/profile behavior and lifecycle contract stay unchanged.
 
 ### Non-Functional Requirements
 

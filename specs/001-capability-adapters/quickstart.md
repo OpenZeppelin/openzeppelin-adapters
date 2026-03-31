@@ -24,9 +24,9 @@ The implementation must follow this dependency order. Each phase produces artifa
 
 ---
 
-### Phase B: Adapter Restructuring (`adapter-evm-core`, `adapter-stellar`)
+### Phase B: Adapter Restructuring (`adapter-evm-core`, `adapter-stellar`, `adapter-runtime-utils`)
 
-**Scope**: Implement each capability in a dedicated module under `src/capabilities/`, create profile factories under `src/profiles/`, add sub-path exports to `package.json` and tsdown config. Remove monolithic adapter classes.
+**Scope**: Implement each capability in a dedicated module under `src/capabilities/`, create profile factories under `src/profiles/`, add sub-path exports to `package.json` and tsdown config, and extract shared runtime composition/lifecycle helpers into `adapter-runtime-utils`. Remove monolithic adapter classes.
 
 **Depends on**: Phase A (capability interfaces to implement)
 
@@ -37,19 +37,24 @@ The implementation must follow this dependency order. Each phase produces artifa
    - `execution.ts` imports from `../transaction/` and exports `createExecution(config) => ExecutionCapability`
    - (similarly for all 13)
 
-2. **Create `src/profiles/` factories** — Each profile factory composes capabilities with shared state:
+2. **Create `src/profiles/` factories** — Each profile factory composes capabilities with shared runtime state:
    - `declarative.ts` creates only Tier 1 capabilities
    - `operator.ts` creates Tier 1 + 2 + 3 with shared wallet/RPC
 
-3. **Update tsdown config** — Add 18 new entry points (13 capabilities + 5 profiles)
+3. **Extract shared runtime helpers** — Centralize duplicated profile/runtime logic in `packages/adapter-runtime-utils/src/`:
+   - `profile-runtime.ts` for profile requirements + shared runtime composition
+   - `runtime-capability.ts` for disposal guards, pending-op rejection, and cleanup registration
+   - `runtime-factories.ts` for runtime-scoped capability memoization and dependency reuse
 
-4. **Update package.json exports** — Add sub-path exports matching tsdown entries
+4. **Update tsdown config** — Add 18 new entry points (13 capabilities + 5 profiles)
 
-5. **Delete monolithic adapter** — Remove `adapter.ts` (the `EvmAdapter`/`StellarAdapter` class)
+5. **Update package.json exports** — Add sub-path exports matching tsdown entries
 
-6. **Update `adapter-evm`** — Re-export capabilities from `adapter-evm-core` via sub-path exports. Maintain `noExternal` bundling.
+6. **Delete monolithic adapter** — Remove `adapter.ts` (the `EvmAdapter`/`StellarAdapter` class)
 
-**Verification**: Each capability importable via sub-path. Tier 1 imports don't pull Tier 2/3. `pnpm build` and `pnpm test` pass.
+7. **Update `adapter-evm`** — Re-export capabilities from `adapter-evm-core` via sub-path exports. Maintain `noExternal` bundling.
+
+**Verification**: Each capability importable via sub-path. Tier 1 imports don't pull Tier 2/3. Shared runtime utilities have direct tests for profile composition, lifecycle guards, runtime-scoped caching, and cleanup ordering. `pnpm build` and `pnpm test` pass.
 
 ---
 

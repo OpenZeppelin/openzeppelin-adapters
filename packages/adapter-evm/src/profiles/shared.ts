@@ -1,5 +1,9 @@
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
-import { createRuntime as createCoreRuntime } from '@openzeppelin/adapter-evm-core';
+import {
+  createAccessControl as createCoreAccessControl,
+  createRuntime as createCoreRuntime,
+} from '@openzeppelin/adapter-evm-core';
+import { createLazyRuntimeCapabilityFactories } from '@openzeppelin/adapter-runtime-utils';
 import type {
   CapabilityFactoryMap,
   EcosystemRuntime,
@@ -49,10 +53,47 @@ export const capabilityFactories: CapabilityFactoryMap = {
   accessControl: (config: NetworkConfig) => createAccessControl(toTypedEvmNetworkConfig(config)),
 };
 
+function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): CapabilityFactoryMap {
+  return createLazyRuntimeCapabilityFactories(config, {
+    addressing: () => createAddressing(),
+    explorer: () => createExplorer(config),
+    networkCatalog: () => createNetworkCatalog(),
+    uiLabels: () => createUiLabels(),
+    contractLoading: () => createContractLoading(config),
+    schema: () => createSchema(config),
+    typeMapping: () => createTypeMapping(config),
+    query: (_runtimeConfig, getCapability) =>
+      createQuery(config, {
+        loadContract: (source) => getCapability('contractLoading').loadContract(source),
+      }),
+    execution: () => createExecution(config),
+    wallet: () => createWallet(config),
+    uiKit: () => createUiKit(config),
+    relayer: () => createRelayer(config),
+    accessControl: (_runtimeConfig, getCapability) =>
+      createCoreAccessControl(config, {
+        signAndBroadcast: (
+          transactionData,
+          executionConfig,
+          onStatusChange,
+          runtimeApiKey,
+          runtimeSecret
+        ) =>
+          getCapability('execution').signAndBroadcast(
+            transactionData,
+            executionConfig,
+            onStatusChange as Parameters<ReturnType<typeof createExecution>['signAndBroadcast']>[2],
+            runtimeApiKey,
+            runtimeSecret
+          ),
+      }),
+  });
+}
+
 export function createRuntime(
   profile: ProfileName,
   config: TypedEvmNetworkConfig,
   options?: { uiKit?: string }
 ): EcosystemRuntime {
-  return createCoreRuntime(profile, config, capabilityFactories, options);
+  return createCoreRuntime(profile, config, createRuntimeCapabilityFactories(config), options);
 }

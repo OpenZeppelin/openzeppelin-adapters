@@ -15,6 +15,7 @@ import type {
   UiLabelsCapability,
   WalletCapability,
 } from '@openzeppelin/ui-types';
+import { RuntimeDisposedError } from '@openzeppelin/ui-types';
 
 import {
   createAccessControl,
@@ -44,6 +45,18 @@ const mockNetworkConfig = {
   rpcUrl: 'https://rpc.example.com',
   nativeCurrency: { name: 'Test Ether', symbol: 'TETH', decimals: 18 },
 } as const;
+
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+
+  return { promise, reject, resolve };
+}
 
 describe('EVM core capability factories', () => {
   it('creates an addressing capability', () => {
@@ -124,5 +137,25 @@ describe('EVM core capability factories', () => {
     });
     expect(typeof capability.registerContract).toBe('function');
     expect(typeof capability.dispose).toBe('function');
+  });
+
+  it('disposes standalone wallet capabilities safely', async () => {
+    const connectDeferred = createDeferredPromise<{ connected: boolean }>();
+    const disconnectWallet = vi.fn().mockResolvedValue({ disconnected: true });
+    const capability: WalletCapability = createWallet(mockNetworkConfig, {
+      connectWallet: vi.fn(() => connectDeferred.promise),
+      disconnectWallet,
+      getAvailableConnectors: vi.fn().mockResolvedValue([]),
+      getWalletConnectionStatus: vi.fn().mockReturnValue({ isConnected: false }),
+    });
+
+    const pendingConnection = capability.connectWallet('injected');
+
+    capability.dispose();
+
+    await expect(pendingConnection).rejects.toBeInstanceOf(RuntimeDisposedError);
+    expect(() => capability.networkConfig).toThrow(RuntimeDisposedError);
+    expect(disconnectWallet).toHaveBeenCalledTimes(1);
+    connectDeferred.reject(new Error('ignored after disposal'));
   });
 });

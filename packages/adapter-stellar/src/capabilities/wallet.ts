@@ -12,7 +12,11 @@ import {
   stellarUiKitManager,
   supportsStellarWalletConnection,
 } from '../wallet';
-import { asStellarNetworkConfig, withRuntimeCapability } from './helpers';
+import {
+  asStellarNetworkConfig,
+  registerRuntimeCapabilityCleanup,
+  withRuntimeCapability,
+} from './helpers';
 
 function getStellarWalletConnectionStatus(): WalletConnectionStatus {
   const implementation = getInitializedStellarWalletImplementation();
@@ -30,7 +34,7 @@ function getStellarWalletConnectionStatus(): WalletConnectionStatus {
 export function createWallet(config: NetworkConfig): WalletCapability {
   const networkConfig = asStellarNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  const capability = Object.assign(withRuntimeCapability(networkConfig, 'wallet'), {
     supportsWalletConnection() {
       return supportsStellarWalletConnection();
     },
@@ -51,4 +55,14 @@ export function createWallet(config: NetworkConfig): WalletCapability {
       });
     },
   }) as WalletCapability;
+
+  registerRuntimeCapabilityCleanup(
+    capability,
+    async () => {
+      await disconnectStellarWallet();
+    },
+    'wallet'
+  );
+
+  return capability;
 }

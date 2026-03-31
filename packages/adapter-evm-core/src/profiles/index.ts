@@ -8,7 +8,7 @@ import type {
 import { createComposerRuntime } from './composer';
 import { createDeclarativeRuntime } from './declarative';
 import { createOperatorRuntime } from './operator';
-import { isProfileName } from './shared';
+import { isProfileName } from './shared-state';
 import { createTransactorRuntime } from './transactor';
 import { createViewerRuntime } from './viewer';
 

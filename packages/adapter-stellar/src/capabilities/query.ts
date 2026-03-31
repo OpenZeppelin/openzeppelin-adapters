@@ -9,7 +9,11 @@ import { getCurrentLedger } from '../access-control/onchain-reader';
 import { queryStellarViewFunction } from '../query';
 import { formatStellarFunctionResult } from '../transform';
 import { createContractLoading } from './contract-loading';
-import { asStellarNetworkConfig, withRuntimeCapability } from './helpers';
+import {
+  asStellarNetworkConfig,
+  registerRuntimeCapabilityCleanup,
+  withRuntimeCapability,
+} from './helpers';
 
 export interface CreateQueryOptions {
   loadContract?: (source: string | Record<string, unknown>) => Promise<ContractSchema>;
@@ -27,7 +31,7 @@ export function createQuery(
     options.loadContract ??
     ((source: string | Record<string, unknown>) => fallbackContractLoading!.loadContract(source));
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  const capability = Object.assign(withRuntimeCapability(networkConfig, 'query'), {
     async queryViewFunction(
       contractAddress: string,
       functionId: string,
@@ -50,4 +54,10 @@ export function createQuery(
       return getCurrentLedger(networkConfig);
     },
   }) as QueryCapability;
+
+  if (fallbackContractLoading) {
+    registerRuntimeCapabilityCleanup(capability, () => fallbackContractLoading.dispose(), 'rpc');
+  }
+
+  return capability;
 }

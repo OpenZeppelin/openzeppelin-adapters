@@ -126,6 +126,9 @@ importers:
 
   packages/adapter-evm:
     dependencies:
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0
@@ -205,6 +208,9 @@ importers:
 
   packages/adapter-evm-core:
     dependencies:
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0
@@ -413,6 +419,19 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(jiti@2.6.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(terser@5.46.1)(yaml@2.8.2)
 
+  packages/adapter-runtime-utils:
+    dependencies:
+      '@openzeppelin/ui-types':
+        specifier: ^1.12.0
+        version: 1.12.0
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.5.0)(jiti@2.6.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(terser@5.46.1)(yaml@2.8.2)
+
   packages/adapter-solana:
     dependencies:
       '@project-serum/anchor':
@@ -464,6 +483,9 @@ importers:
       '@creit.tech/stellar-wallets-kit':
         specifier: ^1.8.0
         version: 1.9.5(1eb75684ff2bec38b7737740c3906b3f)
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0

@@ -37,7 +37,7 @@ export default defineConfig({
   },
   format: ['esm', 'cjs'],
   dts: {
-    resolve: ['@openzeppelin/adapter-evm-core'],
+    resolve: ['@openzeppelin/adapter-evm-core', '@openzeppelin/adapter-runtime-utils'],
     compilerOptions: {
       composite: false,
       incremental: false,
@@ -53,7 +53,7 @@ export default defineConfig({
     '@openzeppelin/ui-react',
     'lucide-react',
   ],
-  noExternal: ['@openzeppelin/adapter-evm-core'],
+  noExternal: ['@openzeppelin/adapter-evm-core', '@openzeppelin/adapter-runtime-utils'],
   define: {
     __OZ_PEER_MINIMUMS__: JSON.stringify(ozPeerMinimums),
   },
