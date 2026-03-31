@@ -15,8 +15,8 @@
 
 **Purpose**: Branch creation and workspace preparation
 
-- [ ] T001 Create feature branch `001-capability-adapters` from `main` in openzeppelin-adapters repo
-- [ ] T002 [P] Create feature branch `001-capability-adapters` from `main` in openzeppelin-ui repo
+- [X] T001 Create feature branch `001-capability-adapters` from `main` in openzeppelin-adapters repo
+- [X] T002 [P] Create feature branch `001-capability-adapters` from `main` in openzeppelin-ui repo
 
 **Checkpoint**: Branches ready in both repositories
 
@@ -36,31 +36,35 @@
 
 ### Implementation
 
-- [ ] T003 [US4] Create `RuntimeCapability` base interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — define `interface RuntimeCapability { readonly networkConfig: NetworkConfig; }`
-- [ ] T004 [P] [US4] Create `AddressingCapability` interface in `packages/types/src/adapters/capabilities/addressing.ts` (openzeppelin-ui repo) — Tier 1, does not extend RuntimeCapability
-- [ ] T005 [P] [US4] Create `ExplorerCapability` interface in `packages/types/src/adapters/capabilities/explorer.ts` (openzeppelin-ui repo) — Tier 1, includes optional `getExplorerTxUrl`
-- [ ] T006 [P] [US4] Create `NetworkCatalogCapability` interface in `packages/types/src/adapters/capabilities/network-catalog.ts` (openzeppelin-ui repo) — Tier 1
-- [ ] T007 [P] [US4] Create `UiLabelsCapability` interface in `packages/types/src/adapters/capabilities/ui-labels.ts` (openzeppelin-ui repo) — Tier 1
-- [ ] T008 [P] [US4] Create `ContractLoadingCapability` interface in `packages/types/src/adapters/capabilities/contract-loading.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Methods: `loadContract`, `loadContractWithMetadata?`, `getContractDefinitionInputs`, `getSupportedContractDefinitionProviders?`, `compareContractDefinitions?`, `validateContractDefinition?`, `hashContractDefinition?`, `getArtifactPersistencePolicy?`, `prepareArtifactsForFunction?`
-- [ ] T009 [P] [US4] Create `SchemaCapability` interface in `packages/types/src/adapters/capabilities/schema.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Absorbs `isViewFunction` from `ContractStateCapabilities`
-- [ ] T010 [P] [US4] Create `TypeMappingCapability` interface in `packages/types/src/adapters/capabilities/type-mapping.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability
-- [ ] T011 [P] [US4] Create `QueryCapability` interface in `packages/types/src/adapters/capabilities/query.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Absorbs `queryViewFunction` + `formatFunctionResult` from `ContractStateCapabilities`
-- [ ] T012 [P] [US4] Create `ExecutionCapability` interface in `packages/types/src/adapters/capabilities/execution.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
-- [ ] T013 [P] [US4] Create `WalletCapability` interface in `packages/types/src/adapters/capabilities/wallet.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
-- [ ] T014 [P] [US4] Create `UiKitCapability` interface in `packages/types/src/adapters/capabilities/ui-kit.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
-- [ ] T015 [P] [US4] Create `RelayerCapability` interface in `packages/types/src/adapters/capabilities/relayer.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
-- [ ] T016 [P] [US4] Create `AccessControlCapability` interface in `packages/types/src/adapters/capabilities/access-control.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability. Direct promotion of `AccessControlService` (19 methods + 20 types + 5 errors)
-- [ ] T017 [US4] Create capabilities barrel export in `packages/types/src/adapters/capabilities/index.ts` (openzeppelin-ui repo) — re-export all 13 interfaces
-- [ ] T018 [US4] Create `ProfileName` type union and profile-specific runtime types in `packages/types/src/adapters/profiles/declarative.ts`, `viewer.ts`, `transactor.ts`, `composer.ts`, `operator.ts` (openzeppelin-ui repo)
-- [ ] T019 [US4] Create profiles barrel export in `packages/types/src/adapters/profiles/index.ts` (openzeppelin-ui repo)
-- [ ] T020 [US4] Define `EcosystemRuntime` interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — capability accessors (Tier 1 required, Tier 2/3 optional), `dispose()`, `readonly networkConfig`
-- [ ] T021 [US4] Define `CapabilityFactoryMap` interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — factory functions keyed by capability name
-- [ ] T022 [US4] Define `RuntimeDisposedError` and `UnsupportedProfileError` classes in `packages/types/src/adapters/errors.ts` (openzeppelin-ui repo)
-- [ ] T023 [US4] Update `EcosystemExport` in `packages/types/src/adapters/ecosystem-export.ts` (openzeppelin-ui repo) — remove `createAdapter`, add `capabilities: CapabilityFactoryMap` + `createRuntime: (profile: ProfileName, config: NetworkConfig, options?: { uiKit?: string }) => EcosystemRuntime`. The `options.uiKit` replaces the legacy `initialAppServiceKitName` property (FR-017)
-- [ ] T024 [US4] Remove `ContractAdapter` interface from `packages/types/src/adapters/base.ts` (openzeppelin-ui repo) — delete or gut the file, removing all ContractAdapter types
-- [ ] T025 [US4] Remove `ContractStateCapabilities` interface and `FullContractAdapter` type alias from `packages/types/src/adapters/contract-state.ts` and `packages/types/src/adapters/index.ts` (openzeppelin-ui repo)
-- [ ] T026 [US4] Update barrel export in `packages/types/src/adapters/index.ts` (openzeppelin-ui repo) — re-export capabilities, profiles, runtime, errors; remove base.ts and contract-state.ts re-exports
-- [ ] T027 [US4] Run `pnpm typecheck` in `packages/types` (openzeppelin-ui repo) — verify all interfaces compile. Fix any type errors from removed ContractAdapter references in other parts of ui-types
+- [X] T003 [US4] Create `RuntimeCapability` base interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — define `interface RuntimeCapability { readonly networkConfig: NetworkConfig; }`
+- [X] T004 [P] [US4] Create `AddressingCapability` interface in `packages/types/src/adapters/capabilities/addressing.ts` (openzeppelin-ui repo) — Tier 1, does not extend RuntimeCapability
+- [X] T005 [P] [US4] Create `ExplorerCapability` interface in `packages/types/src/adapters/capabilities/explorer.ts` (openzeppelin-ui repo) — Tier 1, includes optional `getExplorerTxUrl`
+- [X] T006 [P] [US4] Create `NetworkCatalogCapability` interface in `packages/types/src/adapters/capabilities/network-catalog.ts` (openzeppelin-ui repo) — Tier 1
+- [X] T007 [P] [US4] Create `UiLabelsCapability` interface in `packages/types/src/adapters/capabilities/ui-labels.ts` (openzeppelin-ui repo) — Tier 1
+- [X] T008 [P] [US4] Create `ContractLoadingCapability` interface in `packages/types/src/adapters/capabilities/contract-loading.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Methods: `loadContract`, `loadContractWithMetadata?`, `getContractDefinitionInputs`, `getSupportedContractDefinitionProviders?`, `compareContractDefinitions?`, `validateContractDefinition?`, `hashContractDefinition?`, `getArtifactPersistencePolicy?`, `prepareArtifactsForFunction?`
+- [X] T009 [P] [US4] Create `SchemaCapability` interface in `packages/types/src/adapters/capabilities/schema.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Absorbs `isViewFunction` from `ContractStateCapabilities`
+- [X] T010 [P] [US4] Create `TypeMappingCapability` interface in `packages/types/src/adapters/capabilities/type-mapping.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability
+- [X] T011 [P] [US4] Create `QueryCapability` interface in `packages/types/src/adapters/capabilities/query.ts` (openzeppelin-ui repo) — Tier 2, extends RuntimeCapability. Absorbs `queryViewFunction` + `formatFunctionResult` from `ContractStateCapabilities`
+- [X] T012 [P] [US4] Create `ExecutionCapability` interface in `packages/types/src/adapters/capabilities/execution.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
+- [X] T013 [P] [US4] Create `WalletCapability` interface in `packages/types/src/adapters/capabilities/wallet.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
+- [X] T014 [P] [US4] Create `UiKitCapability` interface in `packages/types/src/adapters/capabilities/ui-kit.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
+- [X] T015 [P] [US4] Create `RelayerCapability` interface in `packages/types/src/adapters/capabilities/relayer.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability
+- [X] T016 [P] [US4] Create `AccessControlCapability` interface in `packages/types/src/adapters/capabilities/access-control.ts` (openzeppelin-ui repo) — Tier 3, extends RuntimeCapability. Direct promotion of `AccessControlService` (19 methods + 20 types + 5 errors)
+- [X] T017 [US4] Create capabilities barrel export in `packages/types/src/adapters/capabilities/index.ts` (openzeppelin-ui repo) — re-export all 13 interfaces
+- [X] T018 [US4] Create `ProfileName` type union and profile-specific runtime types in `packages/types/src/adapters/profiles/declarative.ts`, `viewer.ts`, `transactor.ts`, `composer.ts`, `operator.ts` (openzeppelin-ui repo)
+- [X] T019 [US4] Create profiles barrel export in `packages/types/src/adapters/profiles/index.ts` (openzeppelin-ui repo)
+- [X] T020 [US4] Define `EcosystemRuntime` interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — capability accessors (Tier 1 required, Tier 2/3 optional), `dispose()`, `readonly networkConfig`
+- [X] T021 [US4] Define `CapabilityFactoryMap` interface in `packages/types/src/adapters/runtime.ts` (openzeppelin-ui repo) — factory functions keyed by capability name
+- [X] T022 [US4] Define `RuntimeDisposedError` and `UnsupportedProfileError` classes in `packages/types/src/adapters/errors.ts` (openzeppelin-ui repo)
+- [X] T023 [US4] Update `EcosystemExport` in `packages/types/src/adapters/ecosystem-export.ts` (openzeppelin-ui repo) — remove `createAdapter`, add `capabilities: CapabilityFactoryMap` + `createRuntime: (profile: ProfileName, config: NetworkConfig, options?: { uiKit?: string }) => EcosystemRuntime`. The `options.uiKit` replaces the legacy `initialAppServiceKitName` property (FR-017)
+- [X] T024 [US4] Remove `ContractAdapter` interface from `packages/types/src/adapters/base.ts` (openzeppelin-ui repo) — delete or gut the file, removing all ContractAdapter types
+- [X] T025 [US4] Remove `ContractStateCapabilities` interface and `FullContractAdapter` type alias from `packages/types/src/adapters/contract-state.ts` and `packages/types/src/adapters/index.ts` (openzeppelin-ui repo)
+- [X] T026 [US4] Update barrel export in `packages/types/src/adapters/index.ts` (openzeppelin-ui repo) — re-export capabilities, profiles, runtime, errors; remove base.ts and contract-state.ts re-exports
+- [X] T027 [US4] Run `pnpm typecheck` in `packages/types` (openzeppelin-ui repo) — verify all interfaces compile. Fix any type errors from removed ContractAdapter references in other parts of ui-types
+
+### Phase 2 follow-up — `getExportBootstrapFiles`
+
+`getExportBootstrapFiles` was **not** added to `ContractLoadingCapability` in Phase 2 because **T008** lists only the named methods. If export/bootstrap must stay on the contract-loading surface, extend `ContractLoadingCapability` in `@openzeppelin/ui-types` and wire the implementation when building **`adapter-evm-core`** / **`adapter-stellar`** contract-loading modules in Phase 3 (see **T032**, **T055**).
 
 **Checkpoint**: All 13 capability interfaces, 5 profile types, `EcosystemRuntime`, `CapabilityFactoryMap`, and error classes are importable from `@openzeppelin/ui-types`. `ContractAdapter` and `FullContractAdapter` no longer exist.
 
@@ -78,7 +82,7 @@
 - [ ] T029 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/explorer.ts` — wrap explorer URL generation into `createExplorer(config?) => ExplorerCapability`
 - [ ] T030 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/network-catalog.ts` — wrap network list into `createNetworkCatalog() => NetworkCatalogCapability`
 - [ ] T031 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/ui-labels.ts` — wrap label generation into `createUiLabels() => UiLabelsCapability`
-- [ ] T032 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/contract-loading.ts` — wrap `../abi/`, `../proxy/`, `../configuration/` into `createContractLoading(config) => ContractLoadingCapability`
+- [ ] T032 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/contract-loading.ts` — wrap `../abi/`, `../proxy/`, `../configuration/` into `createContractLoading(config) => ContractLoadingCapability` (if `getExportBootstrapFiles` is required, add it to `ContractLoadingCapability` in ui-types first — see Phase 2 follow-up above)
 - [ ] T033 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/schema.ts` — wrap `../transform/` into `createSchema(config) => SchemaCapability`, include `isViewFunction` from ContractStateCapabilities
 - [ ] T034 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
 - [ ] T035 [P] [US3] Create `packages/adapter-evm-core/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`, include `queryViewFunction` + `formatFunctionResult`
@@ -107,7 +111,7 @@
 - [ ] T052 [P] [US3] Create `packages/adapter-stellar/src/capabilities/explorer.ts` — wrap explorer logic into `createExplorer(config?) => ExplorerCapability`
 - [ ] T053 [P] [US3] Create `packages/adapter-stellar/src/capabilities/network-catalog.ts` — `createNetworkCatalog() => NetworkCatalogCapability`
 - [ ] T054 [P] [US3] Create `packages/adapter-stellar/src/capabilities/ui-labels.ts` — `createUiLabels() => UiLabelsCapability`
-- [ ] T055 [P] [US3] Create `packages/adapter-stellar/src/capabilities/contract-loading.ts` — wrap `../contract/` into `createContractLoading(config) => ContractLoadingCapability`
+- [ ] T055 [P] [US3] Create `packages/adapter-stellar/src/capabilities/contract-loading.ts` — wrap `../contract/` into `createContractLoading(config) => ContractLoadingCapability` (same `getExportBootstrapFiles` note as T032 — Phase 2 follow-up)
 - [ ] T056 [P] [US3] Create `packages/adapter-stellar/src/capabilities/schema.ts` — wrap schema logic + `isViewFunction` into `createSchema(config) => SchemaCapability`
 - [ ] T057 [P] [US3] Create `packages/adapter-stellar/src/capabilities/type-mapping.ts` — wrap `../mapping/` into `createTypeMapping(config) => TypeMappingCapability`
 - [ ] T058 [P] [US3] Create `packages/adapter-stellar/src/capabilities/query.ts` — wrap `../query/` into `createQuery(config) => QueryCapability`
