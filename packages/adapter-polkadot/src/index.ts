@@ -8,13 +8,20 @@
  */
 
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
-import type { EcosystemExport } from '@openzeppelin/ui-types';
+import type {
+  CapabilityFactoryMap,
+  EcosystemExport,
+  NetworkConfig,
+  ProfileName,
+} from '@openzeppelin/ui-types';
 import { VERSION as UI_UTILS_V, validatePeerVersions } from '@openzeppelin/ui-utils';
 
-import { PolkadotAdapter } from './adapter';
+import { asTypedPolkadotNetworkConfig } from './capabilities/helpers';
+
 import { polkadotAdapterConfig } from './config';
 import { ecosystemMetadata } from './metadata';
 import { polkadotNetworks } from './networks';
+import { capabilityFactories, createRuntime } from './profiles';
 
 declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
 
@@ -30,12 +37,17 @@ validatePeerVersions('@openzeppelin/adapter-polkadot', {
 });
 
 export { ecosystemMetadata } from './metadata';
-export { PolkadotAdapter } from './adapter';
+export * from './capabilities';
+export * from './profiles';
+
+export const capabilities: CapabilityFactoryMap = capabilityFactories;
 
 export const ecosystemDefinition: EcosystemExport = {
   ...ecosystemMetadata,
   networks: polkadotNetworks,
-  createAdapter: (config) => new PolkadotAdapter(config),
+  capabilities,
+  createRuntime: (profile: ProfileName, config: NetworkConfig, options) =>
+    createRuntime(profile, asTypedPolkadotNetworkConfig(config), options),
   adapterConfig: polkadotAdapterConfig,
 };
 

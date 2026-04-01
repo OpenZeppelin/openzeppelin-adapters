@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { SolanaNetworkConfig } from '@openzeppelin/ui-types';
 
-import { SolanaAdapter } from '../adapter';
+import { createRelayer } from '../capabilities/relayer';
 
-describe('SolanaAdapter.getDefaultServiceConfig', () => {
+describe('createRelayer().getDefaultServiceConfig', () => {
   const createMockNetworkConfig = (
     overrides: Partial<SolanaNetworkConfig> = {}
   ): SolanaNetworkConfig =>
@@ -23,9 +23,9 @@ describe('SolanaAdapter.getDefaultServiceConfig', () => {
   describe('rpc service', () => {
     it('should return RPC config when rpcEndpoint is present', () => {
       const networkConfig = createMockNetworkConfig();
-      const adapter = new SolanaAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      const result = adapter.getDefaultServiceConfig('rpc');
+      const result = relayer.getDefaultServiceConfig('rpc');
 
       expect(result).toEqual({
         rpcEndpoint: 'https://api.mainnet-beta.solana.com',
@@ -36,9 +36,9 @@ describe('SolanaAdapter.getDefaultServiceConfig', () => {
       const networkConfig = createMockNetworkConfig({
         rpcEndpoint: undefined,
       });
-      const adapter = new SolanaAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      const result = adapter.getDefaultServiceConfig('rpc');
+      const result = relayer.getDefaultServiceConfig('rpc');
 
       expect(result).toBeNull();
     });
@@ -47,11 +47,11 @@ describe('SolanaAdapter.getDefaultServiceConfig', () => {
   describe('unknown service', () => {
     it('should return null for unknown service IDs', () => {
       const networkConfig = createMockNetworkConfig();
-      const adapter = new SolanaAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      expect(adapter.getDefaultServiceConfig('explorer')).toBeNull();
-      expect(adapter.getDefaultServiceConfig('indexer')).toBeNull();
-      expect(adapter.getDefaultServiceConfig('unknown')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('explorer')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('indexer')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('unknown')).toBeNull();
     });
   });
 });

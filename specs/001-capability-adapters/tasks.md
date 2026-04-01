@@ -320,31 +320,31 @@
 
 ### adapter-polkadot Follow-On Migration
 
-- [ ] T132 [US8] Create `packages/adapter-polkadot/src/capabilities/` modules for the currently supported EVM-backed feature set — wrap `src/evm/`, `src/wallet/`, `src/networks.ts`, and shared EVM-core helpers into capability factories. Keep unsupported Substrate-only behavior out of the initial capability map
-- [ ] T133 [US8] Create `packages/adapter-polkadot/src/profiles/` runtime factories and `createRuntime` — support profiles backed by the currently implemented EVM capability set and throw `UnsupportedProfileError` for unsupported execution types or missing Substrate-specific capabilities
-- [ ] T134 [US8] Update `packages/adapter-polkadot/src/index.ts`, `packages/adapter-polkadot/package.json`, and `packages/adapter-polkadot/tsdown.config.ts` — replace `createAdapter` with `capabilities` + `createRuntime`, add capability/profile sub-path exports, and remove the public `PolkadotAdapter` export
-- [ ] T135 [US8] Add verification in `packages/adapter-polkadot/src/__tests__/` — Tier 1 isolation, declarative runtime creation, and unsupported-profile / unsupported-execution assertions
+- [X] T132 [US8] Create `packages/adapter-polkadot/src/capabilities/` modules for the currently supported EVM-backed feature set — wrap `src/evm/`, `src/wallet/`, `src/networks.ts`, and shared EVM-core helpers into capability factories. Keep unsupported Substrate-only behavior out of the initial capability map
+- [X] T133 [US8] Create `packages/adapter-polkadot/src/profiles/` runtime factories and `createRuntime` — support profiles backed by the currently implemented EVM capability set and throw `UnsupportedProfileError` for unsupported execution types or missing Substrate-specific capabilities
+- [X] T134 [US8] Update `packages/adapter-polkadot/src/index.ts`, `packages/adapter-polkadot/package.json`, and `packages/adapter-polkadot/tsdown.config.ts` — replace `createAdapter` with `capabilities` + `createRuntime`, add capability/profile sub-path exports, and remove the public `PolkadotAdapter` export
+- [X] T135 [US8] Add verification in `packages/adapter-polkadot/src/__tests__/` — Tier 1 isolation, declarative runtime creation, and unsupported-profile / unsupported-execution assertions
 
 ### adapter-solana Follow-On Migration
 
-- [ ] T136 [US8] Create `packages/adapter-solana/src/capabilities/` modules — lift logic from `src/adapter.ts`, `src/configuration/`, `src/definition/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, and `src/utils/` into capability factories
-- [ ] T137 [US8] Create `packages/adapter-solana/src/profiles/` runtime factories and `createRuntime` — support only profiles whose required capabilities are implemented, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
-- [ ] T138 [US8] Update `packages/adapter-solana/src/index.ts`, `packages/adapter-solana/package.json`, and `packages/adapter-solana/tsdown.config.ts` — replace `createAdapter`, add capability/profile sub-path exports, and remove the public `SolanaAdapter` export
-- [ ] T139 [US8] Add verification in `packages/adapter-solana/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, and package build/test coverage for the migrated surface
+- [X] T136 [US8] Create `packages/adapter-solana/src/capabilities/` modules — lift logic from `src/adapter.ts`, `src/configuration/`, `src/definition/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, and `src/utils/` into capability factories
+- [X] T137 [US8] Create `packages/adapter-solana/src/profiles/` runtime factories and `createRuntime` — support only profiles whose required capabilities are implemented, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
+- [X] T138 [US8] Update `packages/adapter-solana/src/index.ts`, `packages/adapter-solana/package.json`, and `packages/adapter-solana/tsdown.config.ts` — replace `createAdapter`, add capability/profile sub-path exports, and remove the public `SolanaAdapter` export
+- [X] T139 [US8] Add verification in `packages/adapter-solana/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, and package build/test coverage for the migrated surface
 
 ### adapter-midnight Follow-On Migration
 
-- [ ] T140 [US8] Create `packages/adapter-midnight/src/capabilities/` modules — lift logic from `src/validation/`, `src/configuration/`, `src/contract/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, `src/analysis/`, and `src/export/` into capability factories
-- [ ] T141 [US8] Create `packages/adapter-midnight/src/profiles/` runtime factories and `createRuntime` — support only profiles backed by the implemented Midnight capability set, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
-- [ ] T142 [US8] Update `packages/adapter-midnight/src/index.ts`, `packages/adapter-midnight/package.json`, `packages/adapter-midnight/tsdown.config.ts`, and `packages/adapter-midnight/src/browser-init.ts` handling — add capability/profile sub-path exports while keeping Tier 1 imports free of heavyweight browser bootstrap side effects
-- [ ] T143 [US8] Add verification in `packages/adapter-midnight/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, browser-init isolation checks, and build/test coverage for the migrated surface
+- [X] T140 [US8] Create `packages/adapter-midnight/src/capabilities/` modules — lift logic from `src/validation/`, `src/configuration/`, `src/contract/`, `src/mapping/`, `src/query/`, `src/transaction/`, `src/wallet/`, `src/analysis/`, and `src/export/` into capability factories
+- [X] T141 [US8] Create `packages/adapter-midnight/src/profiles/` runtime factories and `createRuntime` — support only profiles backed by the implemented Midnight capability set, expose unsupported capabilities as `undefined`, and reject unsupported profiles with `UnsupportedProfileError`
+- [X] T142 [US8] Update `packages/adapter-midnight/src/index.ts`, `packages/adapter-midnight/package.json`, `packages/adapter-midnight/tsdown.config.ts`, and `packages/adapter-midnight/src/browser-init.ts` handling — add capability/profile sub-path exports while keeping Tier 1 imports free of heavyweight browser bootstrap side effects
+- [X] T143 [US8] Add verification in `packages/adapter-midnight/src/__tests__/` — Tier 1 isolation, runtime support-matrix assertions, browser-init isolation checks, and build/test coverage for the migrated surface
 
 ### Cross-Adapter Verification
 
-- [ ] T144 [US8] Update capability conformance validation / `lint:adapters` expectations for `packages/adapter-polkadot`, `packages/adapter-solana`, and `packages/adapter-midnight` — remove reliance on legacy `src/adapter.ts` compliance once each package migrates
-- [ ] T145 [US8] Run `pnpm build && pnpm test && pnpm lint:adapters` for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` — verify no `createAdapter` exports remain and Tier 1 isolation passes
-- [ ] T146 [US8] Remove temporary consumer-side `createAdapter()` compatibility bridges after the follow-on adapter wave lands — delete `ui-builder/apps/builder/src/core/legacyComposerRuntime.ts` plus the fallback path in `ui-builder/apps/builder/src/core/ecosystemManager.ts`, and remove the matching legacy fallback/runtime wrapper in `role-manager/apps/role-manager/src/core/ecosystems/`
-- [ ] T147 [US8] Re-verify affected consumer/runtime bootstrap paths after bridge removal — ensure UI Builder runtime/export bootstrap code assumes `createRuntime()` only for Polkadot, Solana, and Midnight, and rerun targeted consumer validation for those ecosystems
+- [X] T144 [US8] Update capability conformance validation / `lint:adapters` expectations for `packages/adapter-polkadot`, `packages/adapter-solana`, and `packages/adapter-midnight` — remove reliance on legacy `src/adapter.ts` compliance once each package migrates
+- [X] T145 [US8] Run `pnpm build && pnpm test && pnpm lint:adapters` for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` — verify no `createAdapter` exports remain and Tier 1 isolation passes
+- [X] T146 [US8] Remove temporary consumer-side `createAdapter()` compatibility bridges after the follow-on adapter wave lands — delete `ui-builder/apps/builder/src/core/legacyComposerRuntime.ts` plus the fallback path in `ui-builder/apps/builder/src/core/ecosystemManager.ts`, and remove the matching legacy fallback/runtime wrapper in `role-manager/apps/role-manager/src/core/ecosystems/`
+- [X] T147 [US8] Re-verify affected consumer/runtime bootstrap paths after bridge removal — ensure UI Builder runtime/export bootstrap code assumes `createRuntime()` only for Polkadot, Solana, and Midnight, and rerun targeted consumer validation for those ecosystems
 
 **Checkpoint**: All published adapter packages expose the same capability-based package surface. `createAdapter` is gone from every adapter package, temporary consumer-side compatibility bridges are removed, and unsupported profiles fail explicitly.
 

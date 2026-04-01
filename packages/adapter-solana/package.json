@@ -39,9 +39,12 @@
     "lint:fix": "eslint . --fix",
     "lint:adapters": "node ../../lint-adapters.cjs",
     "prepublishOnly": "[ \"$SKIP_PUBLISH_BUILD\" = \"true\" ] || pnpm build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@project-serum/anchor": "^0.26.0",
     "@solana/spl-token": "^0.3.11",
     "@solana/wallet-adapter-base": "^0.9.27",
@@ -57,7 +60,8 @@
     "@types/lodash-es": "^4.17.12",
     "eslint": "^9.32.0",
     "react": "^19.0.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "@openzeppelin/ui-types": "^1.12.0",
@@ -89,7 +93,7 @@
       "import": "./dist/networks.mjs",
       "require": "./dist/networks.cjs"
     },
-    "./dist/config.js": {
+    "./config": {
       "types": {
         "import": "./dist/config.d.mts",
         "require": "./dist/config.d.cts"
@@ -104,6 +108,142 @@
       },
       "import": "./dist/vite-config.mjs",
       "require": "./dist/vite-config.cjs"
+    },
+    "./addressing": {
+      "types": {
+        "import": "./dist/addressing.d.mts",
+        "require": "./dist/addressing.d.cts"
+      },
+      "import": "./dist/addressing.mjs",
+      "require": "./dist/addressing.cjs"
+    },
+    "./explorer": {
+      "types": {
+        "import": "./dist/explorer.d.mts",
+        "require": "./dist/explorer.d.cts"
+      },
+      "import": "./dist/explorer.mjs",
+      "require": "./dist/explorer.cjs"
+    },
+    "./network-catalog": {
+      "types": {
+        "import": "./dist/network-catalog.d.mts",
+        "require": "./dist/network-catalog.d.cts"
+      },
+      "import": "./dist/network-catalog.mjs",
+      "require": "./dist/network-catalog.cjs"
+    },
+    "./ui-labels": {
+      "types": {
+        "import": "./dist/ui-labels.d.mts",
+        "require": "./dist/ui-labels.d.cts"
+      },
+      "import": "./dist/ui-labels.mjs",
+      "require": "./dist/ui-labels.cjs"
+    },
+    "./contract-loading": {
+      "types": {
+        "import": "./dist/contract-loading.d.mts",
+        "require": "./dist/contract-loading.d.cts"
+      },
+      "import": "./dist/contract-loading.mjs",
+      "require": "./dist/contract-loading.cjs"
+    },
+    "./schema": {
+      "types": {
+        "import": "./dist/schema.d.mts",
+        "require": "./dist/schema.d.cts"
+      },
+      "import": "./dist/schema.mjs",
+      "require": "./dist/schema.cjs"
+    },
+    "./type-mapping": {
+      "types": {
+        "import": "./dist/type-mapping.d.mts",
+        "require": "./dist/type-mapping.d.cts"
+      },
+      "import": "./dist/type-mapping.mjs",
+      "require": "./dist/type-mapping.cjs"
+    },
+    "./query": {
+      "types": {
+        "import": "./dist/query.d.mts",
+        "require": "./dist/query.d.cts"
+      },
+      "import": "./dist/query.mjs",
+      "require": "./dist/query.cjs"
+    },
+    "./execution": {
+      "types": {
+        "import": "./dist/execution.d.mts",
+        "require": "./dist/execution.d.cts"
+      },
+      "import": "./dist/execution.mjs",
+      "require": "./dist/execution.cjs"
+    },
+    "./wallet": {
+      "types": {
+        "import": "./dist/wallet.d.mts",
+        "require": "./dist/wallet.d.cts"
+      },
+      "import": "./dist/wallet.mjs",
+      "require": "./dist/wallet.cjs"
+    },
+    "./ui-kit": {
+      "types": {
+        "import": "./dist/ui-kit.d.mts",
+        "require": "./dist/ui-kit.d.cts"
+      },
+      "import": "./dist/ui-kit.mjs",
+      "require": "./dist/ui-kit.cjs"
+    },
+    "./relayer": {
+      "types": {
+        "import": "./dist/relayer.d.mts",
+        "require": "./dist/relayer.d.cts"
+      },
+      "import": "./dist/relayer.mjs",
+      "require": "./dist/relayer.cjs"
+    },
+    "./declarative": {
+      "types": {
+        "import": "./dist/declarative.d.mts",
+        "require": "./dist/declarative.d.cts"
+      },
+      "import": "./dist/declarative.mjs",
+      "require": "./dist/declarative.cjs"
+    },
+    "./viewer": {
+      "types": {
+        "import": "./dist/viewer.d.mts",
+        "require": "./dist/viewer.d.cts"
+      },
+      "import": "./dist/viewer.mjs",
+      "require": "./dist/viewer.cjs"
+    },
+    "./transactor": {
+      "types": {
+        "import": "./dist/transactor.d.mts",
+        "require": "./dist/transactor.d.cts"
+      },
+      "import": "./dist/transactor.mjs",
+      "require": "./dist/transactor.cjs"
+    },
+    "./composer": {
+      "types": {
+        "import": "./dist/composer.d.mts",
+        "require": "./dist/composer.d.cts"
+      },
+      "import": "./dist/composer.mjs",
+      "require": "./dist/composer.cjs"
+    },
+    "./operator": {
+      "types": {
+        "import": "./dist/operator.d.mts",
+        "require": "./dist/operator.d.cts"
+      },
+      "import": "./dist/operator.mjs",
+      "require": "./dist/operator.cjs"
     }
   }
 }
