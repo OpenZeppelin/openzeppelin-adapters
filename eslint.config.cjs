@@ -11,8 +11,6 @@ const importPlugin = require('eslint-plugin-import');
 const unusedImportsPlugin = require('eslint-plugin-unused-imports');
 const prettierPlugin = require('eslint-plugin-prettier');
 const prettierConfig = require('eslint-config-prettier');
-const customPlugin = require('./.eslint/index.cjs');
-
 // Extract rules from recommended configs
 const typescriptRecommendedRules = getPluginConfigs(typescriptPlugin, 'recommended');
 const reactRecommendedRulesRaw = getPluginConfigs(reactPlugin, 'recommended');
@@ -169,15 +167,6 @@ const baseConfig = [
     rules: {
       ...(prettierConfig.rules || {}),
       'prettier/prettier': ['error', {}, { usePrettierrc: true }],
-    },
-  },
-
-  // Custom adapter plugin
-  {
-    files: ['packages/adapter-*/src/adapter.ts'],
-    plugins: { custom: customPlugin },
-    rules: {
-      'custom/no-extra-adapter-methods': 'error',
     },
   },
 ];

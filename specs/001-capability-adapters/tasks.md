@@ -302,13 +302,13 @@
 
 **Purpose**: Constitution amendment, documentation, release preparation
 
-- [ ] T125 Amend Constitution Principle I in `.specify/memory/constitution.md` — replace "Every adapter package MUST implement the `ContractAdapter` interface" with capability interface compliance language
-- [ ] T126 Update or replace `lint:adapters` CI check with capability conformance validation
-- [ ] T127 [P] Update `docs/ADAPTER_ARCHITECTURE.md` — document new capability-based structure, sub-path exports, profile factories, lifecycle
-- [ ] T128 [P] Update root `README.md` — reflect capability-based architecture
-- [ ] T129 Create Changesets files for all modified packages — major version bumps for `@openzeppelin/ui-types`, `@openzeppelin/adapter-evm`, `@openzeppelin/adapter-stellar`, `@openzeppelin/ui-components`, `@openzeppelin/ui-renderer`, `@openzeppelin/ui-react`
-- [ ] T130 Run full CI pipeline across all repos — `pnpm build && pnpm test && pnpm lint && pnpm typecheck` in openzeppelin-adapters and openzeppelin-ui
-- [ ] T131 Verify NFR-001 (build time ≤ 2x baseline) and NFR-002 (dist size ≤ 130% baseline) for adapter packages
+- [X] T125 Amend Constitution Principle I in `.specify/memory/constitution.md` — replace "Every adapter package MUST implement the `ContractAdapter` interface" with capability interface compliance language
+- [X] T126 Update or replace `lint:adapters` CI check with capability conformance validation
+- [X] T127 [P] Update `docs/ADAPTER_ARCHITECTURE.md` — document new capability-based structure, sub-path exports, profile factories, lifecycle
+- [X] T128 [P] Update root `README.md` — reflect capability-based architecture
+- [X] T129 Create Changesets files for all modified packages — major version bumps for `@openzeppelin/ui-types`, `@openzeppelin/adapter-evm`, `@openzeppelin/adapter-stellar`, `@openzeppelin/ui-components`, `@openzeppelin/ui-renderer`, `@openzeppelin/ui-react`
+- [X] T130 Run full CI pipeline across all repos — `pnpm build && pnpm test && pnpm lint && pnpm typecheck` in openzeppelin-adapters and openzeppelin-ui
+- [X] T131 Verify NFR-001 (build time ≤ 2x baseline) and NFR-002 (dist size ≤ 130% baseline) for adapter packages
 
 ---
 

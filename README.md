@@ -1,10 +1,10 @@
 # OpenZeppelin Adapters
 
-> OpenZeppelin Ecosystem Adapters are a set of modular, chain-specific integration packages that bridge the gap between blockchain ecosystems and developer tooling. Built around a standardized `ContractAdapter` interface, each adapter encapsulates everything needed to interact with a specific blockchain — contract loading and schema parsing, type mapping to UI-friendly form fields, transaction execution (with pluggable strategies like EOA and Relayer), wallet connection, and network configuration — while keeping the consuming application completely chain-agnostic. Today, production adapters exist for EVM (Ethereum, Polygon, and other compatible chains), Stellar (Soroban), Midnight (with full zero-knowledge proof orchestration), and Polkadot (EVM parachains).
+> OpenZeppelin Ecosystem Adapters are a set of modular, chain-specific integration packages that bridge the gap between blockchain ecosystems and developer tooling. Built around 13 composable capability interfaces organized in 3 tiers, each adapter encapsulates everything needed to interact with a specific blockchain — contract loading and schema parsing, type mapping to UI-friendly form fields, transaction execution (with pluggable strategies like EOA and Relayer), wallet connection, and network configuration — while keeping the consuming application completely chain-agnostic. Capabilities are consumed individually via sub-path imports or composed into profile runtimes for common app archetypes. Production adapters exist for EVM (Ethereum, Polygon, and other compatible chains) and Stellar (Soroban), with Midnight, Polkadot (EVM parachains), and Solana in various stages of migration.
 
 ## Overview
 
-This repository contains the extracted adapter packages previously maintained in the `ui-builder` monorepo. Adapters are published under the `@openzeppelin/adapter-*` namespace and consumed by:
+Adapters are published under the `@openzeppelin/adapter-*` namespace and consumed by:
 
 - [UI Builder](https://github.com/OpenZeppelin/ui-builder)
 - [OpenZeppelin UI](https://github.com/OpenZeppelin/openzeppelin-ui)
@@ -14,30 +14,44 @@ This repository contains the extracted adapter packages previously maintained in
 
 ## Packages
 
-| Package                          | Description                                     |
-| -------------------------------- | ----------------------------------------------- |
-| `@openzeppelin/adapters-vite`    | Shared Vite/Vitest integration helpers          |
-| `@openzeppelin/adapter-evm`      | EVM-compatible chains (Ethereum, Polygon, etc.) |
-| `@openzeppelin/adapter-evm-core` | Shared EVM core (internal, bundled)             |
-| `@openzeppelin/adapter-midnight` | Midnight Network                                |
-| `@openzeppelin/adapter-polkadot` | Polkadot ecosystem                              |
-| `@openzeppelin/adapter-solana`   | Solana (scaffolding only)                       |
-| `@openzeppelin/adapter-stellar`  | Stellar                                         |
 
-## Unified Capability Model
+| Package                               | Description                                                           |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `@openzeppelin/adapters-vite`         | Shared Vite/Vitest integration helpers                                |
+| `@openzeppelin/adapter-evm`           | EVM-compatible chains (Ethereum, Polygon, etc.)                       |
+| `@openzeppelin/adapter-evm-core`      | Shared EVM capability implementations (internal, bundled)             |
+| `@openzeppelin/adapter-runtime-utils` | Shared profile composition and runtime lifecycle utilities (internal) |
+| `@openzeppelin/adapter-midnight`      | Midnight Network                                                      |
+| `@openzeppelin/adapter-polkadot`      | Polkadot ecosystem                                                    |
+| `@openzeppelin/adapter-solana`        | Solana (scaffolding only)                                             |
+| `@openzeppelin/adapter-stellar`       | Stellar                                                               |
 
-All adapters follow the same high-level model, so apps can stay mostly chain-agnostic:
 
-- 🧩 **Shared interface**: built around the same `ContractAdapter` shape.
-- 🌐 **Network config**: wraps chain IDs, RPCs, explorers, and env-specific settings.
-- 📄 **Contract loading**: turns chain-native metadata into a shared schema.
-- 🧠 **Type mapping**: converts contract params into UI-friendly form fields.
-- 🔄 **Input/output transforms**: parses user input and formats query results.
-- 🔍 **Read support**: handles view/query execution behind a common API.
-- ✍️ **Transaction flows**: prepares, signs, and submits writes.
-- 👛 **Wallet integration**: exposes wallet providers, hooks, and UI helpers where supported.
-- ⚙️ **Validation and config**: centralizes RPC, explorer, and execution settings.
-- 🧱 **Extensible design**: keeps ecosystem-specific logic modular and swappable.
+## Capability Architecture
+
+All adapters implement capability interfaces from `@openzeppelin/ui-types`, organized in 3 tiers:
+
+
+| Tier                | Purpose                    | Capabilities                                     |
+| ------------------- | -------------------------- | ------------------------------------------------ |
+| **1 — Lightweight** | Stateless, no network      | Addressing, Explorer, NetworkCatalog, UiLabels   |
+| **2 — Schema**      | Network-aware, no wallet   | ContractLoading, Schema, TypeMapping, Query      |
+| **3 — Runtime**     | Stateful, wallet-dependent | Execution, Wallet, UiKit, Relayer, AccessControl |
+
+
+Capabilities can be consumed individually via sub-path imports (e.g., `@openzeppelin/adapter-stellar/addressing`) or composed into **profile runtimes** for common app archetypes:
+
+
+| Profile         | Use Case                             | Includes                                                  |
+| --------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Declarative** | Metadata-only (catalogs, validators) | Tier 1                                                    |
+| **Viewer**      | Read-only (dashboards, analytics)    | Tier 1 + Tier 2                                           |
+| **Transactor**  | Write-only (send, approve, mint)     | Tier 1 + partial Tier 2 + Execution, Wallet               |
+| **Composer**    | Full-featured UI Builder apps        | Tier 1 + Tier 2 + Execution, Wallet, UiKit, Relayer       |
+| **Operator**    | Role/permission management           | Tier 1 + Tier 2 + Execution, Wallet, UiKit, AccessControl |
+
+
+See [ADAPTER_ARCHITECTURE.md](docs/ADAPTER_ARCHITECTURE.md) for the full capability and profile reference.
 
 ## Adapter Feature Highlights
 
@@ -55,7 +69,7 @@ All adapters follow the same high-level model, so apps can stay mostly chain-agn
 ### `@openzeppelin/adapter-evm-core`
 
 - Internal shared package used by EVM-oriented adapters.
-- Centralizes reusable EVM functionality such as ABI loading, schema transformation, proxy handling, input/output conversion, and transaction formatting.
+- Centralizes reusable EVM capability implementations: ABI loading (ContractLoading), schema transformation (Schema), proxy handling, input/output conversion (TypeMapping), query helpers (Query), transaction execution (Execution), wallet infrastructure (Wallet), network services (Relayer), and access control (AccessControl).
 - Handles explorer API key and RPC URL resolution with override support from user settings and app configuration.
 - Provides shared wallet infrastructure and RainbowKit-related utilities.
 - Keeps EVM-specific logic consistent across `adapter-evm` and `adapter-polkadot`.
@@ -100,15 +114,21 @@ All adapters follow the same high-level model, so apps can stay mostly chain-agn
 
 ```mermaid
 flowchart TD
-    App[Consumer app] --> Interface[ContractAdapter interface]
-    Interface --> EVM["@openzeppelin/adapter-evm"]
-    Interface --> Polkadot["@openzeppelin/adapter-polkadot"]
-    Interface --> Stellar["@openzeppelin/adapter-stellar"]
-    Interface --> Midnight["@openzeppelin/adapter-midnight"]
-    Interface --> Solana["@openzeppelin/adapter-solana"]
+    App[Consumer App] --> Runtime[EcosystemRuntime]
+    Runtime --> Caps[Capability Interfaces]
+    Caps --> EVM["@openzeppelin/adapter-evm"]
+    Caps --> Polkadot["@openzeppelin/adapter-polkadot"]
+    Caps --> Stellar["@openzeppelin/adapter-stellar"]
+    Caps --> Midnight["@openzeppelin/adapter-midnight"]
+    Caps --> Solana["@openzeppelin/adapter-solana"]
+    App --> AdaptersVite["@openzeppelin/adapters-vite"]
     EVM --> Core["@openzeppelin/adapter-evm-core"]
     Polkadot --> Core
+    Core --> Utils["@openzeppelin/adapter-runtime-utils"]
+    Stellar --> Utils
 ```
+
+
 
 ## Prerequisites
 
@@ -217,7 +237,7 @@ Compatibility notes:
 - `pnpm build` - Build all adapter packages
 - `pnpm test` - Run tests
 - `pnpm lint` - Run ESLint
-- `pnpm lint:adapters` - Validate adapter implementations against the ContractAdapter interface
+- `pnpm lint:adapters` - Validate adapter capability conformance (tier isolation + export structure)
 - `pnpm lint:fix` - Fix ESLint issues
 - `pnpm format` - Format code with Prettier
 - `pnpm format:check` - Check formatting without making changes
