@@ -5,11 +5,7 @@ import type {
   WalletConnectionStatus,
 } from '@openzeppelin/ui-types';
 
-import {
-  asTypedEvmNetworkConfig,
-  registerRuntimeCapabilityCleanup,
-  withRuntimeCapability,
-} from './helpers';
+import { asTypedEvmNetworkConfig, withRuntimeCapability } from './helpers';
 
 export interface CreateWalletOptions {
   connectWallet: (
@@ -31,7 +27,9 @@ export function createWallet(
 ): WalletCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
 
-  const capability = Object.assign(withRuntimeCapability(networkConfig, 'wallet'), {
+  // Runtime disposal should invalidate the capability object without severing the
+  // user's external wallet session. Disconnect remains an explicit user action.
+  return Object.assign(withRuntimeCapability(networkConfig, 'wallet'), {
     supportsWalletConnection() {
       return options.supportsWalletConnection?.() ?? true;
     },
@@ -43,14 +41,4 @@ export function createWallet(
     getWalletConnectionStatus: options.getWalletConnectionStatus,
     onWalletConnectionChange: options.onWalletConnectionChange,
   }) as WalletCapability;
-
-  registerRuntimeCapabilityCleanup(
-    capability,
-    async () => {
-      await options.disconnectWallet();
-    },
-    'wallet'
-  );
-
-  return capability;
 }

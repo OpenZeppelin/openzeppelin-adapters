@@ -7,6 +7,7 @@ import {
 } from './utils/stellarWalletImplementationManager';
 
 import { stellarUiKitManager } from './stellar-wallets-kit';
+import type { StellarWalletConnectionStatus } from './types';
 import { StellarConnectionStatusListener } from './types';
 
 /**
@@ -51,12 +52,7 @@ export async function disconnectStellarWallet(): Promise<{
  * Get the current wallet connection status
  * @inheritdoc
  */
-export function getStellarWalletConnectionStatus(): {
-  isConnected: boolean;
-  address?: string;
-  chainId?: string;
-  walletId?: string;
-} {
+export function getStellarWalletConnectionStatus(): StellarWalletConnectionStatus {
   const impl = getInitializedStellarWalletImplementation();
   if (!impl) {
     logger.warn(
@@ -65,6 +61,10 @@ export function getStellarWalletConnectionStatus(): {
     );
     return {
       isConnected: false,
+      isConnecting: false,
+      isDisconnected: true,
+      isReconnecting: false,
+      status: 'disconnected',
       address: undefined,
       chainId: stellarUiKitManager.getState().networkConfig?.id || 'stellar-testnet',
       walletId: undefined,

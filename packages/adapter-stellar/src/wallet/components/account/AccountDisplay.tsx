@@ -22,7 +22,7 @@ export const CustomAccountDisplay: React.FC<BaseComponentProps> = ({
 
   const sizeProps = getWalletAccountDisplaySizeProps(size);
 
-  if (!isConnected || !address || !disconnect) {
+  if (!isConnected || !address) {
     return null;
   }
 
@@ -43,15 +43,17 @@ export const CustomAccountDisplay: React.FC<BaseComponentProps> = ({
           Stellar Account
         </span>
       </div>
-      <Button
-        onClick={() => disconnect()}
-        variant={variant || 'ghost'}
-        size="icon"
-        className={cn(sizeProps.iconButtonSize, 'p-0')}
-        title="Disconnect wallet"
-      >
-        <LogOut className={sizeProps.iconSize} />
-      </Button>
+      {disconnect && (
+        <Button
+          onClick={() => disconnect()}
+          variant={variant || 'ghost'}
+          size="icon"
+          className={cn(sizeProps.iconButtonSize, 'p-0')}
+          title="Disconnect wallet"
+        >
+          <LogOut className={sizeProps.iconSize} />
+        </Button>
+      )}
     </div>
   );
 };

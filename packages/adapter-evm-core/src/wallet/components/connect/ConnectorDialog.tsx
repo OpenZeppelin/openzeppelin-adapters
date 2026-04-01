@@ -13,10 +13,6 @@ import type { Connector } from '@openzeppelin/ui-types';
 
 import { SafeWagmiComponent } from '../SafeWagmiComponent';
 
-/**
- * Dialog component for selecting a wallet connector
- * @param showInjectedConnector - Whether to show the injected connector (default: false)
- */
 interface ConnectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,7 +24,6 @@ export const ConnectorDialog: React.FC<ConnectorDialogProps> = ({
   onOpenChange,
   showInjectedConnector = false,
 }) => {
-  // Prepare fallback dialog content
   const unavailableContent = (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -42,7 +37,6 @@ export const ConnectorDialog: React.FC<ConnectorDialogProps> = ({
     </Dialog>
   );
 
-  // Only render wagmi-dependent part when provider is initialized
   return (
     <SafeWagmiComponent fallback={unavailableContent}>
       <ConnectorDialogContent
@@ -54,26 +48,50 @@ export const ConnectorDialog: React.FC<ConnectorDialogProps> = ({
   );
 };
 
-// Inner content that uses wagmi hooks
+function isAlreadyConnectedError(error: Error | null | undefined): boolean {
+  return !!error?.message?.includes('Connector already connected');
+}
+
 const ConnectorDialogContent: React.FC<ConnectorDialogProps> = ({
   open,
   onOpenChange,
   showInjectedConnector = false,
 }) => {
-  const { connect, connectors, error: connectError, isConnecting } = useDerivedConnectStatus();
-  const { isConnected } = useDerivedAccountStatus();
+  const { connect, connectors, error: connectError } = useDerivedConnectStatus();
+  const accountStatus = useDerivedAccountStatus();
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
-  // Track connection attempts for dialog closure
+  const isConnected = accountStatus.isConnected;
+
+  // Close the dialog when connection succeeds (including auto-reconnect).
   useEffect(() => {
-    // If we're connected and there was a connection attempt, close the dialog
-    if (isConnected && connectingId) {
+    if (isConnected && open) {
       onOpenChange(false);
       setConnectingId(null);
     }
-  }, [isConnected, connectingId, onOpenChange]);
+  }, [isConnected, onOpenChange, open]);
 
-  // If connect function itself is not available (e.g., adapter doesn't provide useConnect facade hook)
+  // "Connector already connected" means wagmi auto-reconnected while the dialog
+  // was opening. Treat it as a successful connection — close the dialog.
+  useEffect(() => {
+    if (open && isAlreadyConnectedError(connectError)) {
+      onOpenChange(false);
+      setConnectingId(null);
+    }
+  }, [connectError, onOpenChange, open]);
+
+  useEffect(() => {
+    if (!open && connectingId) {
+      setConnectingId(null);
+    }
+  }, [connectingId, open]);
+
+  useEffect(() => {
+    if (connectError && !isAlreadyConnectedError(connectError)) {
+      setConnectingId(null);
+    }
+  }, [connectError]);
+
   if (!connect) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,16 +105,23 @@ const ConnectorDialogContent: React.FC<ConnectorDialogProps> = ({
     );
   }
 
+  const canSelectConnector = !isConnected && connectingId === null;
+
   const handleConnectorSelect = (selectedConnector: Connector) => {
+    if (!canSelectConnector) {
+      return;
+    }
+
     setConnectingId(selectedConnector.id);
     connect({ connector: selectedConnector });
   };
 
-  // Filter out the injected connector if showInjectedConnector is false
   const filteredConnectors = connectors.filter((connector: Connector) => {
     const isInjected = connector.id === 'injected';
     return !(isInjected && !showInjectedConnector);
   });
+
+  const displayError = connectError && !isAlreadyConnectedError(connectError) ? connectError : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -116,12 +141,12 @@ const ConnectorDialogContent: React.FC<ConnectorDialogProps> = ({
               <Button
                 key={connector.id}
                 onClick={() => handleConnectorSelect(connector)}
-                disabled={isConnecting && connectingId === connector.id}
+                disabled={!canSelectConnector}
                 variant="outline"
                 className="flex justify-between items-center w-full py-6"
               >
                 <span>{connector.name}</span>
-                {isConnecting && connectingId === connector.id && (
+                {connectingId === connector.id && (
                   <span className="ml-2 text-xs">Connecting...</span>
                 )}
               </Button>
@@ -129,9 +154,9 @@ const ConnectorDialogContent: React.FC<ConnectorDialogProps> = ({
           )}
         </div>
 
-        {connectError && (
+        {displayError && (
           <p className="text-sm text-red-500 mt-1">
-            {connectError.message || 'Error connecting wallet'}
+            {displayError.message || 'Error connecting wallet'}
           </p>
         )}
       </DialogContent>

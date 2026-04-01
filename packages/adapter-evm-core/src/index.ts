@@ -98,6 +98,7 @@ export {
   WagmiProviderInitializedContext,
   // Wagmi hooks
   useIsWagmiProviderInitialized,
+  useManagedWagmiDisconnect,
   // Wagmi components
   SafeWagmiComponent,
   // Wallet UI components

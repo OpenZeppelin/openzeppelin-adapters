@@ -43,7 +43,7 @@ const AccountDisplayContent: React.FC<BaseComponentProps> = ({
 
   const sizeProps = getWalletAccountDisplaySizeProps(size);
 
-  if (!isConnected || !address || !disconnect) {
+  if (!isConnected || !address) {
     return null;
   }
 
@@ -64,15 +64,17 @@ const AccountDisplayContent: React.FC<BaseComponentProps> = ({
           {chainId ? `Chain ID: ${chainId}` : 'Chain ID: N/A'}
         </span>
       </div>
-      <Button
-        onClick={() => disconnect()}
-        variant={variant || 'ghost'}
-        size="icon"
-        className={cn(sizeProps.iconButtonSize, 'p-0')}
-        title="Disconnect wallet"
-      >
-        <LogOut className={sizeProps.iconSize} />
-      </Button>
+      {disconnect && (
+        <Button
+          onClick={() => disconnect()}
+          variant={variant || 'ghost'}
+          size="icon"
+          className={cn(sizeProps.iconButtonSize, 'p-0')}
+          title="Disconnect wallet"
+        >
+          <LogOut className={sizeProps.iconSize} />
+        </Button>
+      )}
     </div>
   );
 };

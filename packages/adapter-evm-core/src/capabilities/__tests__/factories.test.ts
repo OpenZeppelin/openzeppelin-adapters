@@ -189,7 +189,7 @@ describe('EVM core capability factories', () => {
     expect(typeof capability.dispose).toBe('function');
   });
 
-  it('disposes standalone wallet capabilities safely', async () => {
+  it('disposes standalone wallet capabilities without disconnecting the session', async () => {
     const connectDeferred = createDeferredPromise<{ connected: boolean }>();
     const disconnectWallet = vi.fn().mockResolvedValue({ disconnected: true });
     const capability: WalletCapability = createWallet(mockNetworkConfig, {
@@ -205,7 +205,7 @@ describe('EVM core capability factories', () => {
 
     await expect(pendingConnection).rejects.toBeInstanceOf(RuntimeDisposedError);
     expect(() => capability.networkConfig).toThrow(RuntimeDisposedError);
-    expect(disconnectWallet).toHaveBeenCalledTimes(1);
+    expect(disconnectWallet).not.toHaveBeenCalled();
     connectDeferred.reject(new Error('ignored after disposal'));
   });
 });

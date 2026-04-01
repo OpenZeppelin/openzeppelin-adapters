@@ -7,6 +7,7 @@ import { cn, getWalletButtonSizeProps } from '@openzeppelin/ui-utils';
 
 import { useStellarAccount } from '../../hooks';
 import { ConnectorDialog } from './ConnectorDialog';
+import { getStellarConnectUiState } from './connectUiState';
 
 /**
  * A button that allows users to connect their wallet.
@@ -25,12 +26,19 @@ export const CustomConnectButton: React.FC<ConnectButtonProps> = ({
   hideWhenConnected = true,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { isConnected, isConnecting } = useStellarAccount();
+  const { isConnected, isConnecting, isReconnecting } = useStellarAccount();
 
   // Local state to indicate the button has been clicked and dialog is open, awaiting user selection
   const [isManuallyInitiated, setIsManuallyInitiated] = useState(false);
 
   const sizeProps = getWalletButtonSizeProps(size);
+  const connectUiState = getStellarConnectUiState({
+    isConnected,
+    isConnecting,
+    isReconnecting,
+    isManuallyInitiated,
+    dialogOpen,
+  });
 
   useEffect(() => {
     if (isConnected && hideWhenConnected) {
@@ -54,7 +62,7 @@ export const CustomConnectButton: React.FC<ConnectButtonProps> = ({
   }, [isConnecting]);
 
   const handleConnectClick = () => {
-    if (!isConnected) {
+    if (connectUiState.canStartManualConnect) {
       setIsManuallyInitiated(true); // User clicked, show pending on button
       setDialogOpen(true);
     }
@@ -64,25 +72,22 @@ export const CustomConnectButton: React.FC<ConnectButtonProps> = ({
     return null;
   }
 
-  // Button shows loading if either hook reports connecting OR if user just clicked to open dialog
-  const showButtonLoading = isConnecting || isManuallyInitiated;
-
   return (
     <div className={cn('flex items-center', fullWidth && 'w-full', className)}>
       <Button
         onClick={handleConnectClick}
-        disabled={showButtonLoading || isConnected}
+        disabled={connectUiState.shouldDisableButton}
         variant={variant || 'outline'}
         size={sizeProps.size}
         className={cn(sizeProps.className, fullWidth && 'w-full')}
         title={isConnected ? 'Connected' : 'Connect Wallet'}
       >
-        {showButtonLoading ? (
+        {connectUiState.showButtonLoading ? (
           <Loader2 className={cn(sizeProps.iconSize, 'animate-spin mr-1')} />
         ) : (
           <Wallet className={cn(sizeProps.iconSize, 'mr-1')} />
         )}
-        {showButtonLoading ? 'Connecting...' : 'Connect Wallet'}
+        {connectUiState.buttonLabel}
       </Button>
 
       <ConnectorDialog

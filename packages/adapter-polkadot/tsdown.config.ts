@@ -24,10 +24,18 @@ export default defineConfig({
   external: [
     'react',
     'react-dom',
+    'react/jsx-runtime',
     '@rainbow-me/rainbowkit',
+    '@tanstack/react-query',
     '@openzeppelin/ui-components',
     '@openzeppelin/ui-react',
+    '@openzeppelin/ui-types',
+    '@openzeppelin/ui-utils',
     'lucide-react',
+    'wagmi',
+    '@wagmi/core',
+    '@wagmi/connectors',
+    'viem',
   ],
   define: {
     __OZ_PEER_MINIMUMS__: JSON.stringify(ozPeerMinimums),

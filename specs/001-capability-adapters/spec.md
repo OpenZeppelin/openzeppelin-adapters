@@ -84,7 +84,7 @@ An app developer chooses a profile (Declarative, Viewer, Transactor, Composer, o
 
 1. **Given** a developer building a governance tool, **When** they create an Operator runtime, **Then** they receive all Tier 1 capabilities (Addressing, Explorer, NetworkCatalog, UiLabels), all Tier 2 capabilities (ContractLoading, Schema, TypeMapping, Query), and Tier 3 capabilities Execution, Wallet, UiKit, and AccessControl. Relayer is not included by default but can be consumed directly via the capability factory.
 2. **Given** capabilities from the same profile runtime, **When** the developer connects a wallet via WalletCapability, **Then** the connected address is available to ExecutionCapability and AccessControlCapability without separate initialization.
-3. **Given** a profile runtime, **When** the network changes, **Then** `dispose()` on the old runtime cleans up event listeners and subscriptions, and a new runtime is created for the new network config.
+3. **Given** a profile runtime, **When** the network changes, **Then** `dispose()` on the old runtime cleans up runtime-owned listeners and subscriptions, a new runtime is created for the new network config, and any ecosystem-scoped wallet session is preserved or restored separately when supported by the wallet library.
 
 ---
 
@@ -142,6 +142,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - What happens when an app consumes capabilities from two different capability factories created with different NetworkConfigs? They must operate in complete isolation — no shared wallet or RPC state.
 - How does the system handle a profile that requests a capability the adapter doesn't implement? The profile factory MUST throw `UnsupportedProfileError` at creation time listing the missing capabilities, not fail silently at method call time.
 - What happens when `dispose()` is called on a runtime while async operations (e.g., `signAndBroadcast`) are in flight? The runtime MUST reject pending operations with `RuntimeDisposedError` and release resources. `dispose()` is idempotent — calling it twice is a no-op (does not throw), and cleanup runs in staged order so listeners/subscriptions are released before wallet or RPC teardown.
+- What happens to an external wallet session when a runtime is disposed during a network change? Runtime disposal cleans up runtime-owned resources only; it MUST NOT count as a user-owned wallet disconnect. Consumer orchestration may keep or later restore one dormant wallet session per ecosystem when the underlying wallet library supports it.
 - What happens when an adapter author implements a capability interface but with incorrect runtime behavior (e.g., `isValidAddress` always returns true)? Conformance test suites (stretch goal) should catch this.
 - What happens when `createRuntime` is called with an invalid `ProfileName` string? It MUST throw a `TypeError` with a message listing the valid profile names.
 - What happens when a consumer imports a profile runtime AND a standalone capability from the factory map for the same `NetworkConfig`? They are fully isolated — the standalone capability does not share state with the profile runtime.
@@ -175,6 +176,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **FR-017**: The `initialAppServiceKitName` property MUST move to an optional `options` parameter on `createRuntime` (e.g., `createRuntime(profile, config, { uiKit?: string })`). The `getExportBootstrapFiles` method MUST remain on `EcosystemExport` as a build-time concern, not a runtime capability.
 - **FR-018**: Tier 2+ standalone capabilities created via `CapabilityFactoryMap` MUST expose a `dispose()` method for resource cleanup, matching the lifecycle contract of profile runtimes.
 - **FR-019**: System MUST define follow-up migration work for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` so all published adapters converge on the `capabilities` + `createRuntime` surface. Adapters with incomplete capability coverage MUST expose unsupported capabilities as `undefined` and reject unsupported profiles with `UnsupportedProfileError`.
+- **FR-020**: Consumer-facing wallet orchestration MUST treat `EcosystemRuntime` instances as network-scoped and disposable while allowing wallet provider/session lifetime to be ecosystem-scoped. Disposing a runtime MUST release runtime-owned listeners, subscriptions, and async work without forcing an external wallet disconnect; explicit disconnect remains a user-owned action.
 
 ### Key Entities
 
@@ -183,6 +185,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **EcosystemRuntime**: The runtime object returned by a profile factory. Contains capability accessors, the network config, and a `dispose()` method for lifecycle management. Immutable once created — network changes require disposing and recreating.
 - **Capability Factory**: A function on `EcosystemExport.capabilities` that creates a standalone capability instance for a given `NetworkConfig`. Standalone factory invocations are isolated from each other and from profile runtimes unless an adapter explicitly composes them through a runtime-scoped factory map.
 - **RuntimeCapability**: Base interface for Tier 2+ capabilities exposing `readonly networkConfig: NetworkConfig`.
+- **Wallet Session**: Consumer-owned wallet/provider lifetime for a single ecosystem (for example EVM or Stellar). Wallet sessions may survive network-scoped runtime recreation and may be restored after reactivation when the connector or wallet library supports it.
 
 ## Success Criteria *(mandatory)*
 
@@ -194,6 +197,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **SC-004**: Shared UI components accept only narrow capability props — no component or hook accepts `ContractAdapter` or `FullContractAdapter` after the migration. Verified by `grep -r 'ContractAdapter' packages/` returning zero matches in component/hook source files.
 - **SC-005**: Each of the 13 capabilities can be imported individually via sub-path exports without triggering initialization of unrelated capabilities — verified by a test that dynamically imports each Tier 1 sub-path and asserts that the module's transitive dependency graph does not include any Tier 2/3 module files (e.g., via Node's `--experimental-loader` or bundle analysis).
 - **SC-006**: Capabilities created from the same profile runtime share wallet/RPC state — verified by a test that creates an Operator runtime, calls `connectWallet()` on `WalletCapability`, and asserts that `ExecutionCapability` and `AccessControlCapability` can observe the connected wallet address without separate `connectWallet()` calls.
+- **SC-007**: Same-ecosystem network switching (for example EVM mainnet → EVM testnet) preserves the wallet provider/session boundary — verified by a consumer-level test that recreates the runtime for the new network, switches chain if needed, and does not require the user to reconnect the wallet manually.
 
 ## Clarifications
 
@@ -206,6 +210,12 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - Q: Who owns the capability interface definitions — types package or adapter packages? → A: All 13 capability interfaces are defined in `@openzeppelin/ui-types`. Adapter packages only implement them. Single source of truth.
 - Q: Do standalone capability factory calls share state with profile runtimes or other standalone calls for the same network? → A: No. Shared state is guaranteed only within a single `EcosystemRuntime`; standalone factory invocations are isolated unless an adapter explicitly wraps them in runtime-scoped composition.
 - Q: Must each adapter keep its own copy of the profile-composition and lifecycle logic? → A: No. Adapters may reuse shared internal runtime utilities as long as the public capability/profile behavior and lifecycle contract stay unchanged.
+
+### Session 2026-04-01
+
+- Q: If runtimes are disposed and recreated on every network change, should wallet sessions also be disposed? → A: No. `EcosystemRuntime` remains network-scoped, but wallet/provider lifetime is ecosystem-scoped at the consumer orchestration layer. Runtime disposal releases runtime-owned resources only.
+- Q: Who owns reconnect behavior after the capability refactor? → A: The ecosystem wallet session owns restoration semantics. Same-ecosystem network changes should preserve the active wallet session, while cross-ecosystem reactivation may restore a dormant session when the underlying wallet library supports it.
+- Q: Is explicit disconnect part of runtime disposal? → A: No. Disconnect remains an explicit user action and must not be triggered as a side effect of runtime recreation.
 
 ### Non-Functional Requirements
 

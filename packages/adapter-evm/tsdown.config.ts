@@ -48,10 +48,18 @@ export default defineConfig({
   external: [
     'react',
     'react-dom',
+    'react/jsx-runtime',
     '@rainbow-me/rainbowkit',
+    '@tanstack/react-query',
     '@openzeppelin/ui-components',
     '@openzeppelin/ui-react',
+    '@openzeppelin/ui-types',
+    '@openzeppelin/ui-utils',
     'lucide-react',
+    'wagmi',
+    '@wagmi/core',
+    '@wagmi/connectors',
+    'viem',
   ],
   noExternal: ['@openzeppelin/adapter-evm-core', '@openzeppelin/adapter-runtime-utils'],
   define: {

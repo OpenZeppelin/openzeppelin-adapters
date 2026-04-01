@@ -58,10 +58,22 @@ export function getEvmViteConfig(): UserConfig {
     },
 
     optimizeDeps: {
-      // Force Pre-Bundling (CommonJS → ESM conversion)
-      // Include wagmi and @wagmi/core to ensure they're properly resolved
-      // when the EVM adapter is dynamically imported in production builds
-      include: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query'],
+      // Force pre-bundling of runtime wallet dependencies that are loaded lazily
+      // through wagmi/RainbowKit so dev mode gets stable ESM interop.
+      include: [
+        'wagmi',
+        '@wagmi/core',
+        '@wagmi/connectors',
+        'viem',
+        '@tanstack/react-query',
+        '@rainbow-me/rainbowkit',
+        '@metamask/sdk',
+        'debug',
+        '@walletconnect/ethereum-provider',
+        '@walletconnect/universal-provider',
+        '@walletconnect/logger',
+        'events',
+      ],
       exclude: [],
     },
   };

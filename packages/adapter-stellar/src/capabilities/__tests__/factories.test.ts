@@ -98,7 +98,7 @@ vi.mock('@creit.tech/stellar-wallets-kit', () => ({
 }));
 
 describe('Stellar capability factories', () => {
-  it('disposes standalone wallet capabilities safely', async () => {
+  it('disposes standalone wallet capabilities without disconnecting the session', async () => {
     disconnectStellarWalletMock.mockResolvedValue(undefined);
 
     const capability: WalletCapability = createWallet(stellarTestnet);
@@ -107,7 +107,7 @@ describe('Stellar capability factories', () => {
 
     expect(() => capability.disconnectWallet()).toThrow(RuntimeDisposedError);
     expect(() => capability.networkConfig).toThrow(RuntimeDisposedError);
-    expect(disconnectStellarWalletMock).toHaveBeenCalledTimes(1);
+    expect(disconnectStellarWalletMock).not.toHaveBeenCalled();
   });
 
   it('creates an addressing capability', () => {

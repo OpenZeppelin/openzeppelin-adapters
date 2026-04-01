@@ -15,7 +15,7 @@
 export { WagmiProviderInitializedContext } from './context';
 
 // Wagmi hooks
-export { useIsWagmiProviderInitialized } from './hooks';
+export { useIsWagmiProviderInitialized, useManagedWagmiDisconnect } from './hooks';
 
 // Wagmi components
 export { SafeWagmiComponent } from './components';

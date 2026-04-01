@@ -11,6 +11,9 @@ export interface StellarWalletContextType {
   address: string | null;
   isConnected: boolean;
   isConnecting: boolean;
+  isDisconnected: boolean;
+  isReconnecting: boolean;
+  status: 'connected' | 'connecting' | 'disconnected' | 'reconnecting';
 
   // Available wallets
   availableWallets: ISupportedWallet[];
