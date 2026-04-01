@@ -3,9 +3,9 @@
 This document is the source of truth for the architecture of packages in the
 `openzeppelin-adapters` repository.
 
-It describes what an adapter package is responsible for, how adapters should be
-structured, how shared EVM-oriented code is reused, and how adapter-owned
-build-time requirements are surfaced to consumer applications.
+It describes what an adapter package is responsible for, how capabilities are
+structured and composed, how shared EVM-oriented code is reused, and how
+adapter-owned build-time requirements are surfaced to consumer applications.
 
 ## Overview
 
@@ -14,87 +14,287 @@ applications stay chain-agnostic.
 
 Each public adapter package:
 
-- implements the shared `ContractAdapter` contract from `@openzeppelin/ui-types`
-- exports ecosystem metadata and supported networks
+- implements capability interfaces defined in `@openzeppelin/ui-types`
+- exports ecosystem metadata, supported networks, and a `CapabilityFactoryMap`
+- exposes a `createRuntime` function that composes capabilities into
+  profile-scoped runtimes with shared state and lifecycle management
 - encapsulates chain-specific loading, mapping, validation, transaction, query,
-  wallet, and formatting logic
-- may expose optional UI and export hooks when the ecosystem needs them
+  wallet, and formatting logic behind narrow capability boundaries
+- publishes each capability as a sub-path export for physical tier isolation
 
 Repository boundaries:
 
 - `openzeppelin-adapters`: chain-specific runtime and build-time adapter logic
 - `openzeppelin-ui`: shared types, React integration, storage, and UI packages
 - consumer apps like `ui-builder` and `role-manager`: choose supported
-  ecosystems and compose adapters into an application
+  ecosystems and consume adapters through profile runtimes or individual
+  capabilities
+
+## Capability Architecture
+
+Adapter functionality is decomposed into 13 capability interfaces organized in
+3 tiers. Each capability is a focused, composable interface representing one
+area of adapter functionality.
+
+### Tier Classification
+
+| Tier | Category | Network Required | Wallet Required | Capabilities |
+|------|----------|-----------------|-----------------|--------------|
+| 1 | Lightweight / Declarative | No | No | Addressing, Explorer, NetworkCatalog, UiLabels |
+| 2 | Schema / Definition | Yes | No | ContractLoading, Schema, TypeMapping, Query |
+| 3 | Runtime / Stateful | Yes | Yes | Execution, Wallet, UiKit, Relayer, AccessControl |
+
+Tier 1 capabilities are stateless. They do not extend `RuntimeCapability` and
+can be used without a network connection. Tier 2 and Tier 3 capabilities extend
+`RuntimeCapability`, carry a `readonly networkConfig`, and expose a `dispose()`
+method for resource cleanup.
+
+### Tier Import Rules
+
+- Tier 1 modules MUST NOT import from Tier 2 or Tier 3 modules
+- Tier 2 modules MAY import from Tier 1 modules
+- Tier 3 modules MAY import from Tier 1 and Tier 2 modules
+- This isolation is enforced physically through sub-path exports, not
+  tree-shaking
+
+### Capability Interfaces
+
+All 13 capability interfaces are defined in `@openzeppelin/ui-types` as the
+single source of truth:
+
+| Capability | Interface | Tier | Key Methods |
+|------------|-----------|------|-------------|
+| Addressing | `AddressingCapability` | 1 | `isValidAddress` |
+| Explorer | `ExplorerCapability` | 1 | `getExplorerUrl`, `getExplorerTxUrl?` |
+| NetworkCatalog | `NetworkCatalogCapability` | 1 | `getNetworks` |
+| UiLabels | `UiLabelsCapability` | 1 | `getUiLabels` |
+| ContractLoading | `ContractLoadingCapability` | 2 | `loadContract`, `getContractDefinitionInputs` |
+| Schema | `SchemaCapability` | 2 | `isViewFunction`, `getWritableFunctions` |
+| TypeMapping | `TypeMappingCapability` | 2 | `getTypeMappingInfo`, `mapParameterTypeToFieldType` |
+| Query | `QueryCapability` | 2 | `queryViewFunction`, `formatFunctionResult` |
+| Execution | `ExecutionCapability` | 3 | `signAndBroadcast`, `validateExecutionConfig` |
+| Wallet | `WalletCapability` | 3 | `connectWallet`, `disconnectWallet`, `getWalletConnectionStatus` |
+| UiKit | `UiKitCapability` | 3 | `getAvailableUiKits`, `configureUiKit?` |
+| Relayer | `RelayerCapability` | 3 | `getRelayers`, `getNetworkServiceForms` |
+| AccessControl | `AccessControlCapability` | 3 | `registerContract`, `grantRole`, and 17 more |
+
+## Profiles
+
+Profiles are pre-composed bundles of capabilities matching common app
+archetypes. They are convenience compositions — direct capability consumption
+via the `CapabilityFactoryMap` is always available as an alternative.
+
+### Profile–Capability Matrix
+
+| Profile | Tier 1 (all 4) | Tier 2 | Tier 3 |
+|---------|----------------|--------|--------|
+| **Declarative** | Addressing, Explorer, NetworkCatalog, UiLabels | — | — |
+| **Viewer** | Addressing, Explorer, NetworkCatalog, UiLabels | ContractLoading, Schema, TypeMapping, Query | — |
+| **Transactor** | Addressing, Explorer, NetworkCatalog, UiLabels | ContractLoading, Schema, TypeMapping | Execution, Wallet |
+| **Composer** | Addressing, Explorer, NetworkCatalog, UiLabels | ContractLoading, Schema, TypeMapping, Query | Execution, Wallet, UiKit, Relayer |
+| **Operator** | Addressing, Explorer, NetworkCatalog, UiLabels | ContractLoading, Schema, TypeMapping, Query | Execution, Wallet, UiKit, AccessControl |
+
+Every profile includes all 4 Tier 1 capabilities. Higher profiles are strict
+supersets of Declarative.
+
+### Profile Selection Guide
+
+| Profile | Use When |
+|---------|----------|
+| Declarative | Metadata-only consumers (catalogs, explorers, address validators) |
+| Viewer | Read-only contract interaction (dashboards, analytics) |
+| Transactor | Write-only flows (simple send, approve, mint) |
+| Composer | Full-featured UI Builder apps (read + write + wallet + relayer) |
+| Operator | Role/permission management apps (read + write + access control) |
+
+## Writing a Minimal Adapter
+
+An adapter author does not need to implement all 13 capabilities. The
+`CapabilityFactoryMap` type has every entry as optional — implement only the
+capabilities your chain supports.
+
+### Minimum Viable Adapter (Tier 1 Only)
+
+The smallest valid adapter implements 4 Tier 1 capabilities, enabling
+Declarative-profile consumers:
+
+```ts
+import type {
+  AddressingCapability,
+  CapabilityFactoryMap,
+  EcosystemExport,
+  ExplorerCapability,
+  NetworkCatalogCapability,
+  NetworkConfig,
+  UiLabelsCapability,
+} from '@openzeppelin/ui-types';
+
+import { createRuntime } from './profiles';
+import { metadata } from './metadata';
+import { networks } from './networks';
+
+function createAddressing(): AddressingCapability {
+  return {
+    isValidAddress(address: string): boolean {
+      return /^0x[0-9a-fA-F]{40}$/.test(address);
+    },
+  };
+}
+
+function createExplorer(config?: NetworkConfig): ExplorerCapability {
+  const baseUrl = config ? `https://explorer.example.com/${config.id}` : '';
+  return {
+    getExplorerUrl: (address) => `${baseUrl}/address/${address}`,
+    getExplorerTxUrl: (txHash) => `${baseUrl}/tx/${txHash}`,
+  };
+}
+
+function createNetworkCatalog(): NetworkCatalogCapability {
+  return { getNetworks: () => networks };
+}
+
+function createUiLabels(): UiLabelsCapability {
+  return { getUiLabels: () => ({ transactionLabel: 'Transaction' }) };
+}
+
+const capabilities: CapabilityFactoryMap = {
+  addressing: createAddressing,
+  explorer: createExplorer,
+  networkCatalog: createNetworkCatalog,
+  uiLabels: createUiLabels,
+};
+
+export const ecosystemDefinition: EcosystemExport = {
+  ...metadata,
+  networks,
+  capabilities,
+  createRuntime: (profile, config, options) =>
+    createRuntime(profile, config, capabilities, options),
+};
+```
+
+With this minimal adapter:
+- `createRuntime('declarative', networkConfig)` succeeds
+- `createRuntime('viewer', networkConfig)` throws `UnsupportedProfileError`
+  listing `contractLoading`, `schema`, `typeMapping`, `query` as missing
+- `createRuntime('operator', networkConfig)` throws `UnsupportedProfileError`
+  listing all missing Tier 2 and Tier 3 capabilities
+
+### Adding Higher-Tier Capabilities
+
+To support profiles beyond Declarative, implement additional capabilities
+incrementally:
+
+1. **Viewer**: Add `contractLoading`, `schema`, `typeMapping`, `query`
+2. **Transactor**: Add `contractLoading`, `schema`, `typeMapping`, `execution`,
+   `wallet`
+3. **Composer**: Add all Tier 2 + `execution`, `wallet`, `uiKit`, `relayer`
+4. **Operator**: Add all Tier 2 + `execution`, `wallet`, `uiKit`,
+   `accessControl`
+
+Each Tier 2+ factory function must accept `NetworkConfig` and return a
+capability object that includes `dispose()` for resource cleanup.
+
+## Lifecycle Management
+
+### Dispose-and-Recreate
+
+Runtimes are immutable once created. Network changes require disposing the
+current runtime and creating a new one:
+
+```ts
+let runtime = ecosystemDefinition.createRuntime('composer', networkA);
+
+// When switching networks:
+runtime.dispose();
+runtime = ecosystemDefinition.createRuntime('composer', networkB);
+```
+
+### Dispose Contract
+
+- `dispose()` is idempotent — calling it multiple times is a no-op
+- After `dispose()`, any method or property access throws
+  `RuntimeDisposedError`
+- Pending async operations are rejected with `RuntimeDisposedError`
+- Cleanup follows a staged order: mark disposed, reject pending operations,
+  clean up listeners, subscriptions, capabilities, wallet, and RPC resources
+
+### Standalone Capability Disposal
+
+Tier 2+ capabilities obtained directly from `CapabilityFactoryMap` also expose
+`dispose()`. Tier 1 capabilities are stateless and need no disposal.
 
 ## Package Topology
 
 ```mermaid
 flowchart TD
-    App[ConsumerApp] --> AdapterInterface[ContractAdapterInterface]
-    AdapterInterface --> Evm["@openzeppelin/adapter-evm"]
-    AdapterInterface --> Polkadot["@openzeppelin/adapter-polkadot"]
-    AdapterInterface --> Stellar["@openzeppelin/adapter-stellar"]
-    AdapterInterface --> Midnight["@openzeppelin/adapter-midnight"]
-    AdapterInterface --> Solana["@openzeppelin/adapter-solana"]
+    App[Consumer App] --> Runtime[EcosystemRuntime]
+    Runtime --> Caps[Capability Interfaces]
+    Caps --> Evm["@openzeppelin/adapter-evm"]
+    Caps --> Polkadot["@openzeppelin/adapter-polkadot"]
+    Caps --> Stellar["@openzeppelin/adapter-stellar"]
+    Caps --> Midnight["@openzeppelin/adapter-midnight"]
+    Caps --> Solana["@openzeppelin/adapter-solana"]
     App --> AdaptersVite["@openzeppelin/adapters-vite"]
     Evm --> EvmCore["@openzeppelin/adapter-evm-core"]
     Polkadot --> EvmCore
+    EvmCore --> RuntimeUtils["@openzeppelin/adapter-runtime-utils"]
+    Stellar --> RuntimeUtils
 ```
 
-### Current Packages
+### Packages
 
 | Package | Purpose |
 | --- | --- |
 | `@openzeppelin/adapters-vite` | Shared Vite/Vitest integration helpers for consuming apps |
-| `@openzeppelin/adapter-evm` | Public EVM ecosystem adapter |
+| `@openzeppelin/adapter-evm` | Public EVM ecosystem adapter (re-exports from evm-core) |
 | `@openzeppelin/adapter-polkadot` | Public Polkadot adapter built on the EVM core |
 | `@openzeppelin/adapter-stellar` | Public Stellar/Soroban adapter |
 | `@openzeppelin/adapter-midnight` | Public Midnight adapter |
 | `@openzeppelin/adapter-solana` | Public Solana package scaffold |
-| `@openzeppelin/adapter-evm-core` | Internal shared EVM functionality bundled into EVM-oriented adapters |
-
-## Adapter Package Contract
-
-All public adapters should expose a consistent public surface:
-
-- root package export for the adapter runtime
-- `./metadata` export for lightweight ecosystem metadata
-- `./networks` export for static network definitions
-- `./vite-config` export for adapter-owned build-time requirements
-
-An adapter package should be network-aware. It is constructed with a
-`NetworkConfig` and uses that configuration internally for RPC resolution,
-explorer URLs, wallet behavior, execution settings, and ecosystem-specific
-feature support.
+| `@openzeppelin/adapter-evm-core` | Internal shared EVM capability implementations |
+| `@openzeppelin/adapter-runtime-utils` | Internal shared profile composition and runtime lifecycle utilities |
 
 ## Standard Package Structure
-
-Adapter packages should keep the main adapter class thin and push
-ecosystem-specific behavior into dedicated modules.
 
 ```text
 packages/adapter-<chain>/
 ├── src/
-│   ├── adapter.ts
+│   ├── capabilities/          # Capability factory functions
+│   │   ├── addressing.ts
+│   │   ├── explorer.ts
+│   │   ├── network-catalog.ts
+│   │   ├── ui-labels.ts
+│   │   ├── contract-loading.ts
+│   │   ├── schema.ts
+│   │   ├── type-mapping.ts
+│   │   ├── query.ts
+│   │   ├── execution.ts
+│   │   ├── wallet.ts
+│   │   ├── ui-kit.ts
+│   │   ├── relayer.ts
+│   │   ├── access-control.ts
+│   │   ├── index.ts
+│   │   └── __tests__/
+│   ├── profiles/              # Profile runtime factories
+│   │   ├── shared-state.ts
+│   │   ├── declarative.ts
+│   │   ├── viewer.ts
+│   │   ├── transactor.ts
+│   │   ├── composer.ts
+│   │   ├── operator.ts
+│   │   └── index.ts
+│   ├── index.ts               # ecosystemDefinition export
 │   ├── config.ts
 │   ├── metadata.ts
 │   ├── networks.ts
 │   ├── vite-config.ts
-│   ├── contract/
-│   ├── networks/
-│   ├── configuration/
+│   ├── contract/              # Chain-specific internal modules
 │   ├── query/
 │   ├── transaction/
 │   ├── wallet/
 │   ├── mapping/
-│   ├── transform/
 │   ├── validation/
-│   ├── access-control/
-│   ├── export/
-│   ├── analysis/
-│   ├── types/
-│   ├── utils/
 │   └── __tests__/
 ├── package.json
 ├── tsconfig.json
@@ -103,28 +303,64 @@ packages/adapter-<chain>/
 └── README.md
 ```
 
-Not every adapter needs every directory. For example:
+Not every adapter needs every capability or internal module. A minimal adapter
+may only have `capabilities/addressing.ts`, `capabilities/explorer.ts`,
+`capabilities/network-catalog.ts`, and `capabilities/ui-labels.ts`.
 
-- `adapter-solana` is currently scaffolding-heavy and not production complete
-- `adapter-midnight` has artifact/export and WASM-specific concerns
-- `adapter-evm` and `adapter-polkadot` rely heavily on `adapter-evm-core`
-- `adapter-polkadot` contains an `evm/` subtree that groups its
-  EVM-compatible wrappers
-- some packages use single files such as `browser-init.ts` or `configuration.ts`
-  instead of a directory when the surface area is small
+## Sub-Path Exports
+
+Each adapter publishes capabilities and profiles as sub-path exports for
+physical tier isolation:
+
+```json
+{
+  "exports": {
+    ".": { "import": "./dist/index.mjs", "require": "./dist/index.cjs" },
+    "./addressing": { "import": "./dist/capabilities/addressing.mjs" },
+    "./explorer": { "import": "./dist/capabilities/explorer.mjs" },
+    "./network-catalog": { "import": "./dist/capabilities/network-catalog.mjs" },
+    "./ui-labels": { "import": "./dist/capabilities/ui-labels.mjs" },
+    "./contract-loading": { "import": "./dist/capabilities/contract-loading.mjs" },
+    "./schema": { "import": "./dist/capabilities/schema.mjs" },
+    "./type-mapping": { "import": "./dist/capabilities/type-mapping.mjs" },
+    "./query": { "import": "./dist/capabilities/query.mjs" },
+    "./execution": { "import": "./dist/capabilities/execution.mjs" },
+    "./wallet": { "import": "./dist/capabilities/wallet.mjs" },
+    "./ui-kit": { "import": "./dist/capabilities/ui-kit.mjs" },
+    "./relayer": { "import": "./dist/capabilities/relayer.mjs" },
+    "./access-control": { "import": "./dist/capabilities/access-control.mjs" },
+    "./profiles/declarative": { "import": "./dist/profiles/declarative.mjs" },
+    "./profiles/viewer": { "import": "./dist/profiles/viewer.mjs" },
+    "./profiles/transactor": { "import": "./dist/profiles/transactor.mjs" },
+    "./profiles/composer": { "import": "./dist/profiles/composer.mjs" },
+    "./profiles/operator": { "import": "./dist/profiles/operator.mjs" },
+    "./metadata": { "import": "./dist/metadata.mjs" },
+    "./networks": { "import": "./dist/networks.mjs" },
+    "./vite-config": { "import": "./dist/vite-config.mjs" }
+  }
+}
+```
+
+This ensures that importing `@openzeppelin/adapter-stellar/addressing` does
+not pull in wallet, transaction, or access-control dependencies regardless of
+bundler configuration.
 
 ## Module Responsibilities
 
-The sections below describe the core module families that appear across most
-adapters, followed by additional module families that show up when an ecosystem
-has richer needs.
+### `capabilities/`
 
-### `adapter.ts`
+Each file exports a factory function (`createAddressing`, `createExplorer`,
+etc.) that returns an object satisfying the corresponding capability interface
+from `@openzeppelin/ui-types`. Tier 1 factories may accept an optional
+`NetworkConfig`; Tier 2+ factories require it.
 
-- implements `ContractAdapter`
-- owns adapter instance state such as `networkConfig`
-- orchestrates calls into lower-level modules
-- should avoid burying all chain logic in one large class
+### `profiles/`
+
+Profile factories compose capabilities with shared internal state (capability
+cache, event bus, wallet manager). The `shared-state.ts` module wraps
+`@openzeppelin/adapter-runtime-utils` with adapter-specific wiring. The
+`index.ts` barrel exports `createRuntime` which validates profile requirements
+and delegates to the appropriate profile factory.
 
 ### `networks/`, `metadata.ts`, `networks.ts`
 
@@ -132,162 +368,44 @@ has richer needs.
 - keep lightweight data exports separate from heavy adapter runtime imports
 - power consumer patterns like eager metadata loading and lazy runtime loading
 
-### `configuration/`
+### Internal modules (`contract/`, `query/`, `transaction/`, `wallet/`, `mapping/`, `validation/`)
 
-- resolve explorer URLs, RPC endpoints, execution defaults, and service forms
-- integrate with shared runtime configuration services when supported by the
-  ecosystem
-
-### `query/`
-
-- implement read/view execution
-- use the adapter's network context to connect to the right RPC or client
-
-### `transaction/`
-
-- format writes
-- validate execution inputs
-- execute transactions through one or more submission strategies
-
-### `wallet/`
-
-- isolate wallet-library-specific behavior
-- expose optional React/UI helper capabilities through the shared adapter
-  contract instead of coupling consumer apps to wallet SDKs directly
-
-### `mapping/` and `transform/`
-
-- map chain-native types into UI-friendly field definitions
-- parse user inputs into chain-native values
-- format results back into display-friendly output
-
-## Additional Common Module Families
-
-These modules are not required for every adapter, but they are common enough in
-this repository that they should be treated as first-class architectural
-patterns rather than one-off exceptions.
-
-### `contract/` or ecosystem-definition loaders
-
-- load chain-native contract definitions and convert them into shared schemas
-- may appear as `contract/`, `abi/`, or another ecosystem-specific name
-- often own format-specific parsing, transformation, and metadata extraction
-
-Examples:
-
-- `adapter-midnight/src/contract/`
-- `adapter-stellar/src/contract/`
-- `adapter-polkadot/src/evm/abi/`
-
-### `validation/`
-
-- provide adapter-specific validation rules beyond the shared interface surface
-- commonly cover addresses, relayer config, execution constraints, or
-  chain-specific invariants
-
-Examples:
-
-- `adapter-midnight/src/validation/`
-- `adapter-stellar/src/validation/`
-
-### `access-control/`
-
-- encapsulate access-control feature detection, service implementations, action
-  assembly, and optional indexer-backed lookups
-- especially relevant for adapters that implement the richer
-  `AccessControlService` contract
-
-Examples:
-
-- `adapter-stellar/src/access-control/`
-
-### `export/`
-
-- provide adapter-led export hooks such as `getExportBootstrapFiles()`
-- generate files or initialization code that exported apps need at runtime
-- keep ecosystem-specific export logic out of consumer app templates
-
-Examples:
-
-- `adapter-midnight/src/export/`
-
-### `analysis/`
-
-- host ecosystem-specific inspection or decoration logic that influences UI
-  behavior without belonging directly to mapping, transform, query, or
-  transaction code
-- useful for feature detection, function decoration, or organizer-only analysis
-
-Examples:
-
-- `adapter-midnight/src/analysis/`
-
-### `types/`
-
-- contain adapter-internal types that should not be forced into shared packages
-- useful when a package has enough internal type surface to justify a dedicated
-  module rather than a single `types.ts`
-
-Examples:
-
-- `adapter-midnight/src/types/`
-- `adapter-evm/src/types/`
-
-### Runtime bootstrap helpers such as `config.ts`, `browser-init.ts`, or `configuration.ts`
-
-- provide package-level setup or lightweight runtime wiring outside the main
-  adapter class
-- often handle environment initialization, browser shims, or package-level
-  configuration exports
-
-Examples:
-
-- `adapter-midnight/src/browser-init.ts`
-- `adapter-evm/src/config.ts`
-- `adapter-stellar/src/config.ts`
-- `adapter-stellar/src/configuration.ts`
-
-### Wallet submodules: `components/`, `hooks/`, `context/`, `implementation/`, `services/`, `utils/`
-
-- the top-level `wallet/` module often contains its own internal architecture
-- keep React UI, provider context, SDK integration, and facade hooks separated
-  instead of collapsing them into one file tree
-
-Examples:
-
-- `adapter-evm/src/wallet/components/`
-- `adapter-stellar/src/wallet/context/`
-- `adapter-stellar/src/wallet/services/`
-- `adapter-midnight/src/wallet/implementation/`
-
-### Ecosystem-specific subtrees such as `evm/`
-
-- group a secondary architectural layer when an adapter embeds or wraps another
-  family of behavior
-- useful when a public adapter is ecosystem-branded but still delegates large
-  parts of its runtime to a reusable subsystem
-
-Examples:
-
-- `adapter-polkadot/src/evm/`
+- contain chain-specific implementation details
+- are wrapped by capability factory functions in `capabilities/`
+- are not exported directly from the package
 
 ## Shared EVM Core
 
 `@openzeppelin/adapter-evm-core` exists to prevent duplication across
 EVM-compatible adapters.
 
-It centralizes reusable EVM logic such as:
+It centralizes reusable EVM capability implementations including:
 
-- ABI loading and transformation
+- ABI loading and transformation (ContractLoading)
 - proxy handling
-- input/output conversion
-- query helpers
-- transaction formatting and execution flows
-- wallet infrastructure
-- network service resolution
+- input/output conversion (TypeMapping)
+- query helpers (Query)
+- transaction formatting and execution flows (Execution)
+- wallet infrastructure (Wallet)
+- network service resolution (Relayer)
+- access control service (AccessControl)
 
 Public EVM-oriented adapters should prefer composition through
 `adapter-evm-core` over copy-pasting EVM runtime logic into multiple packages.
+
+## Shared Runtime Utilities
+
+`@openzeppelin/adapter-runtime-utils` centralizes profile composition and
+runtime lifecycle management shared across all adapters:
+
+- `PROFILE_REQUIREMENTS`: the canonical profile-capability matrix
+- `createRuntimeFromFactories`: composes a profile runtime from a factory map
+  with lazy capability instantiation, caching, and staged disposal
+- `isProfileName`: type guard for valid profile names
+- Runtime event bus, capability caching, and dispose orchestration
+
+Adapter-specific `profiles/shared-state.ts` modules wrap these utilities,
+keeping the shared logic DRY while allowing adapter-specific wiring.
 
 ## Build-Time Integration
 
@@ -372,14 +490,23 @@ If an adapter implements export bootstrap behavior, it should:
 
 When adding or refactoring an adapter:
 
-1. Keep the adapter network-aware and aligned with `ContractAdapter`.
-2. Prefer small modules over expanding `adapter.ts` into a monolith.
-3. Reuse `adapter-evm-core` when building another EVM-compatible adapter.
-4. Add or update `metadata`, `networks`, and `vite-config` exports as needed.
-5. Validate build-time requirements with `pnpm validate:vite-configs`.
-6. Add focused tests for the changed runtime or build-time behavior.
-7. Update package documentation and this guide when architectural conventions
-   change.
+1. Implement capability interfaces from `@openzeppelin/ui-types`. Start with
+   all 4 Tier 1 capabilities for Declarative-profile support.
+2. Export each capability as a factory function in `src/capabilities/`.
+3. Wire profile factories in `src/profiles/` using
+   `@openzeppelin/adapter-runtime-utils`.
+4. Add sub-path exports to `package.json` and entry points to
+   `tsdown.config.ts` for every implemented capability and profile.
+5. Export `ecosystemDefinition` conforming to `EcosystemExport` with
+   `capabilities` and `createRuntime`.
+6. Add or update `metadata`, `networks`, and `vite-config` exports as needed.
+7. Validate build-time requirements with `pnpm validate:vite-configs`.
+8. Add tests for each capability factory and profile runtime creation, including
+   `UnsupportedProfileError` assertions for unsupported profiles.
+9. Verify tier isolation: Tier 1 sub-path imports must not pull Tier 2/3
+   dependencies.
+10. Update package documentation and this guide when architectural conventions
+    change.
 
 ## Related Documentation
 

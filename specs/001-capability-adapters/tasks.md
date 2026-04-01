@@ -290,9 +290,9 @@
 
 ### Implementation
 
-- [ ] T122 [US6] Create example/test of a minimal adapter implementing only `AddressingCapability`, `ExplorerCapability`, `NetworkCatalogCapability` — verify it satisfies the `CapabilityFactoryMap` type with all other entries as `undefined`
-- [ ] T123 [US6] Verify `createRuntime('declarative', config)` succeeds with a minimal adapter and `createRuntime('operator', config)` throws `UnsupportedProfileError` listing missing capabilities
-- [ ] T124 [US6] Update `docs/ADAPTER_ARCHITECTURE.md` — document the minimal capability set for new adapter authors and the profile-capability matrix
+- [X] T122 [US6] Create example/test of a minimal adapter implementing only `AddressingCapability`, `ExplorerCapability`, `NetworkCatalogCapability` — verify it satisfies the `CapabilityFactoryMap` type with all other entries as `undefined`
+- [X] T123 [US6] Verify `createRuntime('declarative', config)` succeeds with a minimal adapter and `createRuntime('operator', config)` throws `UnsupportedProfileError` listing missing capabilities
+- [X] T124 [US6] Update `docs/ADAPTER_ARCHITECTURE.md` — document the minimal capability set for new adapter authors and the profile-capability matrix
 
 **Checkpoint**: Partial adapter support verified. Adapter author documentation updated.
 
