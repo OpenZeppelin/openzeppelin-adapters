@@ -17,10 +17,10 @@
     "src"
   ],
   "peerDependencies": {
-    "@openzeppelin/ui-types": "^1.12.0"
+    "@openzeppelin/ui-types": "^2.0.0"
   },
   "devDependencies": {
-    "@openzeppelin/ui-types": "^1.12.0",
+    "@openzeppelin/ui-types": "^2.0.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

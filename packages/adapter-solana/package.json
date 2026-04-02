@@ -55,8 +55,8 @@
     "lodash-es": "^4.17.23"
   },
   "devDependencies": {
-    "@openzeppelin/ui-types": "^1.12.0",
-    "@openzeppelin/ui-utils": "^1.4.0",
+    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-utils": "^2.0.0",
     "@types/lodash-es": "^4.17.12",
     "eslint": "^9.32.0",
     "react": "^19.0.0",
@@ -64,8 +64,8 @@
     "vitest": "^3.2.4"
   },
   "peerDependencies": {
-    "@openzeppelin/ui-types": "^1.12.0",
-    "@openzeppelin/ui-utils": "^1.4.0",
+    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-utils": "^2.0.0",
     "react": "^19.0.0"
   },
   "exports": {
