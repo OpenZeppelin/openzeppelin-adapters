@@ -44,7 +44,7 @@ export function createQuery(
         networkConfig,
         params,
         contractSchema,
-        artifactContext.getArtifacts()?.contractModule ?? null
+        artifactContext.getArtifacts()?.contractModule ?? undefined
       );
     },
     formatFunctionResult(decodedValue: unknown, functionDetails: ContractFunction) {
