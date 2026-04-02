@@ -37,7 +37,7 @@ export function createRelayer(config: NetworkConfig): RelayerCapability {
     },
     validateNetworkServiceConfig: validateSolanaNetworkServiceConfig,
     testNetworkServiceConnection: testSolanaNetworkServiceConnection,
-    validateRpcEndpoint(rpcConfig: UserRpcProviderConfig) {
+    async validateRpcEndpoint(rpcConfig: UserRpcProviderConfig) {
       return validateSolanaRpcEndpoint(rpcConfig);
     },
     testRpcConnection(rpcConfig: UserRpcProviderConfig) {
