@@ -14,7 +14,6 @@ import { VERSION as UI_COMPONENTS_V } from '@openzeppelin/ui-components';
 import { VERSION as UI_REACT_V } from '@openzeppelin/ui-react';
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
 import type {
-  AdapterExportBootstrap,
   AdapterExportContext,
   CapabilityFactoryMap,
   EcosystemExport,
@@ -58,11 +57,7 @@ export * from './profiles';
 
 export const capabilities: CapabilityFactoryMap = capabilityFactories;
 
-export const ecosystemDefinition: EcosystemExport & {
-  getExportBootstrapFiles?: (
-    context: AdapterExportContext
-  ) => Promise<AdapterExportBootstrap | null>;
-} = {
+export const ecosystemDefinition: EcosystemExport = {
   ...ecosystemMetadata,
   networks: midnightNetworks,
   capabilities,
