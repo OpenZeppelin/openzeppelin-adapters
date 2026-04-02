@@ -18,7 +18,7 @@ Decompose the monolithic `ContractAdapter` interface into 13 composable capabili
 **Build**: tsdown (dual ESM .mjs / CJS .cjs + .d.mts/.d.cts), per-adapter Vite config exports  
 **Performance Goals**: Tier 1 imports must not pull Tier 2/3 dependencies — zero-cost abstraction for lightweight consumers  
 **Constraints**: Physical sub-path isolation (not tree-shaking-dependent); dispose-and-recreate on network switch (no mutable state)  
-**Scale/Scope**: 6 adapter packages across two waves (initial: adapter-evm-core, adapter-evm, adapter-stellar; follow-on: adapter-polkadot, adapter-solana, adapter-midnight), plus 1 internal runtime utility package (`adapter-runtime-utils`), 1 types package updated, 3 consumer apps migrated (UI Builder, Role Manager, RWA Wizard), shared UI component packages updated
+**Scale/Scope**: 6 adapter packages across two waves (initial: adapter-evm-core, adapter-evm, adapter-stellar; follow-on: adapter-polkadot, adapter-solana, adapter-midnight), plus 1 internal runtime utility package (`adapter-runtime-utils`), 1 types package updated, 2 runtime-consuming consumer apps migrated (UI Builder, Role Manager), RWA Wizard package/wiring alignment for its current codegen-first scope, shared UI component packages updated
 
 ## Constitution Check
 

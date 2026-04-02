@@ -56,8 +56,8 @@ export interface EvmAccessControlContext {
 /**
  * Transaction executor callback type.
  *
- * Provided by `EvmAdapter` to decouple the access control service from
- * wallet/signing infrastructure. The service assembles transaction data
+ * Provided by the adapter runtime's execution wiring to decouple the access control
+ * service from wallet/signing infrastructure. The service assembles transaction data
  * (as `WriteContractParameters`) and delegates execution to this callback.
  *
  * @param txData - Assembled transaction parameters (address, abi, functionName, args)

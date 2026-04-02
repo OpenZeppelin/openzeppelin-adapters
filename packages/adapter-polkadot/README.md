@@ -31,13 +31,14 @@ pnpm add @openzeppelin/adapter-polkadot
 ### Basic Usage
 
 ```typescript
-import { PolkadotAdapter, polkadotHubMainnet } from '@openzeppelin/adapter-polkadot';
+import type { ProfileName } from '@openzeppelin/ui-types';
+import { ecosystemDefinition, polkadotHubMainnet } from '@openzeppelin/adapter-polkadot';
 
-// Create adapter for Polkadot Hub
-const adapter = new PolkadotAdapter(polkadotHubMainnet);
+const profile: ProfileName = 'composer';
+const runtime = ecosystemDefinition.createRuntime(profile, polkadotHubMainnet);
 
-// Load a contract
-const schema = await adapter.loadContract('0x1234...');
+// Load a contract via the composed runtime
+const schema = await runtime.contractLoading?.loadContract('0x1234...');
 ```
 
 ### Network Selection
@@ -90,18 +91,13 @@ function App() {
 
 ## Architecture
 
-The adapter uses a modular architecture that delegates all EVM operations to `@openzeppelin/adapter-evm-core`:
+The adapter uses a modular capability-based architecture and delegates shared EVM behavior to `@openzeppelin/adapter-evm-core`:
 
 ```
 adapter-polkadot/
 ├── src/
-│   ├── adapter.ts           # Main PolkadotAdapter class (orchestrator)
-│   ├── evm/                  # EVM module - thin wrappers over evm-core
-│   │   ├── abi/              # ABI loading (delegates to core)
-│   │   ├── configuration/    # RPC/Explorer config (delegates to core)
-│   │   ├── query/            # View function queries (delegates to core)
-│   │   ├── transaction/      # Transaction execution (delegates to core)
-│   │   └── ui/               # UI utilities
+│   ├── capabilities/         # Capability factories and Polkadot-specific wrappers
+│   ├── profiles/             # Profile composition + createRuntime()
 │   ├── networks/
 │   │   ├── mainnet.ts        # Mainnet configurations (Hub, Moonbeam, etc.)
 │   │   ├── testnet.ts        # Testnet configurations
@@ -123,7 +119,7 @@ This adapter uses `@openzeppelin/adapter-evm-core` for all shared EVM functional
 - Input parsing and output formatting
 - RPC and explorer configuration utilities
 
-The core package is bundled internally via `tsup` with `noExternal` configuration, ensuring the adapter is self-contained when published.
+The core package is bundled internally with the adapter's published entry points, ensuring the adapter remains self-contained when published.
 
 ### Extending for Non-EVM Networks
 
@@ -136,7 +132,7 @@ The architecture supports future addition of non-EVM (Substrate/Wasm) modules:
 // └── substrate/ (future - native Substrate/Wasm networks)
 ```
 
-The `PolkadotAdapter` routes operations based on `executionType`:
+Runtime composition routes operations based on `executionType`:
 
 - `'evm'` → EVM module (current implementation)
 - `'substrate'` → Substrate module (future)

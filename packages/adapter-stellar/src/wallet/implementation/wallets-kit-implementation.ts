@@ -20,8 +20,8 @@ const LOG_SYSTEM = 'StellarWalletImplementation';
 
 /**
  * Class responsible for encapsulating StellarWalletsKit logic for wallet interactions.
- * This class should not be used directly by UI components. The StellarAdapter
- * exposes a standardized interface for wallet operations.
+ * This class should not be used directly by UI components. The adapter runtime's
+ * wallet capability exposes the standardized wallet interface consumed by apps.
  * It manages StellarWalletsKit instances and provides methods for wallet actions.
  */
 export class WalletsKitImplementation {

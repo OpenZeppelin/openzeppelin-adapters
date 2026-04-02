@@ -106,18 +106,18 @@ A contributor adding support for a new blockchain ecosystem (e.g., Polkadot, Sol
 
 ### User Story 7 - Consumer Apps Migrate to Capability-Based Consumption (Priority: P1)
 
-All existing consumer apps (RWA Wizard, UI Builder, Role Manager) must migrate from full `ContractAdapter` consumption to profile-based or direct capability consumption. This is a breaking change — no legacy fallback is provided.
+All existing consumer apps that actively instantiate adapters (UI Builder, Role Manager, and the OpenZeppelin UI example app) must migrate from full `ContractAdapter` consumption to profile-based or direct capability consumption. This is a breaking change — no legacy fallback is provided. RWA Wizard is currently codegen-first and does not yet instantiate adapter runtimes in application code, so this release only requires its adapter package namespace and local-development wiring to align with the capability-era packages.
 
-**Why this priority**: Since there is no backward compatibility, consumer migration is part of the core deliverable, not a deferred follow-up. All apps must be updated as part of the same release cycle.
+**Why this priority**: Since there is no backward compatibility, consumer migration is part of the core deliverable, not a deferred follow-up. All apps that currently consume adapters at runtime must be updated in the same release cycle.
 
-**Independent Test**: Can be fully tested by migrating each consumer app to its target profile and verifying all existing functionality works using capability-based props.
+**Independent Test**: Can be fully tested by migrating each adapter-consuming consumer app to its target profile and verifying all existing functionality works using capability-based props.
 
 **Acceptance Scenarios**:
 
-1. **Given** RWA Wizard currently instantiating a full adapter, **When** it migrates to `DeclarativeProfile` consumption, **Then** all existing wizard functionality works with reduced bundle size and no wallet/RPC initialization.
+1. **Given** RWA Wizard's current codegen-first implementation does not instantiate adapters, **When** this release lands, **Then** its package namespace and local-development wiring use `@openzeppelin/adapter-*`, and future adapter-backed wizard surfaces can adopt `DeclarativeProfile` without another namespace migration.
 2. **Given** UI Builder using `ContractAdapter`, **When** it migrates to `ComposerProfile`, **Then** all existing builder functionality is preserved using capability-based consumption.
 3. **Given** Role Manager using `ContractAdapter` + `getAccessControlService()`, **When** it migrates to `OperatorProfile`, **Then** all existing role management functionality works via `AccessControlCapability` directly from the profile runtime.
-4. **Given** all three consumer apps, **When** the migration is complete, **Then** no app imports `ContractAdapter`, `createAdapter`, or the monolithic adapter classes.
+4. **Given** all adapter-consuming consumer apps, **When** the migration is complete, **Then** no app imports `ContractAdapter`, `createAdapter`, or the monolithic adapter classes.
 
 ---
 
@@ -156,7 +156,7 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - **FR-001**: System MUST define 13 capability interfaces in the shared types package (`@openzeppelin/ui-types`), replacing the monolithic `ContractAdapter` interface.
 - **FR-002**: System MUST define a `RuntimeCapability` base interface with `readonly networkConfig: NetworkConfig` that all Tier 2 and Tier 3 capability interfaces extend.
 - **FR-003**: System MUST restructure adapter packages (adapter-evm-core, adapter-evm, adapter-stellar) to implement each capability in a dedicated module under `src/capabilities/`. EVM capabilities are implemented in `adapter-evm-core`; `adapter-evm` re-exports them via sub-path exports. The monolithic adapter classes are removed.
-- **FR-004**: System MUST expose all 13 capabilities and all 5 profiles as sub-path exports in each adapter package's `package.json`.
+- **FR-004**: System MUST expose all 5 profiles as sub-path exports in each adapter package's `package.json`. Initial-wave adapters (`adapter-evm-core`, `adapter-evm`, `adapter-stellar`) MUST expose all 13 capabilities as sub-path exports. Follow-on adapters with partial capability coverage MUST expose sub-path exports for every implemented capability; unsupported capabilities may be omitted from sub-path exports and remain `undefined` in `CapabilityFactoryMap`.
 - **FR-005**: *(Merged into FR-003 — monolithic class removal is covered there.)*
 - **FR-006**: System MUST enforce tier isolation via sub-path exports — importing a Tier 1 capability (e.g., `@openzeppelin/adapter-evm/addressing`) MUST NOT physically include any Tier 2 or Tier 3 code (wallet, RPC, access-control) in the import graph, regardless of bundler configuration.
 - **FR-007**: System MUST replace the `createAdapter` factory on `EcosystemExport` with a `capabilities` map that provides factory functions for each capability and a `createRuntime` function for profile-based consumption.
@@ -168,14 +168,14 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
   - Components with `FullContractAdapter` props: `TransactionStatusDisplay`, `ContractStateWidget`
   - Hooks/Providers: `AdapterProvider` (`resolveAdapter` function), `useNetworkErrorAwareAdapter`, `useExecutionValidation`, field registry typing
   - The `FullContractAdapter` type alias is removed alongside `ContractAdapter`.
-- **FR-012**: System MUST update all existing consumer apps (RWA Wizard, UI Builder, Role Manager) to use capability-based or profile-based consumption in the same release cycle.
+- **FR-012**: System MUST update all existing consumer apps that currently instantiate adapters at runtime (UI Builder, Role Manager, and the OpenZeppelin UI example app) to use capability-based or profile-based consumption in the same release cycle. RWA Wizard, which is currently codegen-first, MUST adopt the `@openzeppelin/adapter-*` package family and aligned local-development wiring, with declarative runtime consumption deferred until adapter-backed UI flows are introduced.
 - **FR-013**: System MUST promote the existing `AccessControlService` interface (19 methods + 20 supporting types + 5 error classes) to `AccessControlCapability` as a direct rename — not a redesign.
 - **FR-014**: All functionality currently delivered through the monolithic adapter MUST be preserved in the capability-based architecture — no features are lost in the migration.
 - **FR-015**: `createRuntime` MUST be synchronous — it composes pre-built capability instances and returns the `EcosystemRuntime` immediately. Async initialization (RPC connection, wallet discovery) happens lazily on first capability method call. If the adapter does not support all capabilities required by the requested profile, `createRuntime` MUST throw `UnsupportedProfileError` synchronously.
 - **FR-016**: The `ContractStateCapabilities` interface (`isViewFunction`, `queryViewFunction`, `formatFunctionResult`) MUST be absorbed into the `QueryCapability` and `SchemaCapability` interfaces. The `FullContractAdapter` type alias is removed as part of FR-003's monolithic interface removal.
 - **FR-017**: The `initialAppServiceKitName` property MUST move to an optional `options` parameter on `createRuntime` (e.g., `createRuntime(profile, config, { uiKit?: string })`). The `getExportBootstrapFiles` method MUST remain on `EcosystemExport` as a build-time concern, not a runtime capability.
 - **FR-018**: Tier 2+ standalone capabilities created via `CapabilityFactoryMap` MUST expose a `dispose()` method for resource cleanup, matching the lifecycle contract of profile runtimes.
-- **FR-019**: System MUST define follow-up migration work for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` so all published adapters converge on the `capabilities` + `createRuntime` surface. Adapters with incomplete capability coverage MUST expose unsupported capabilities as `undefined` and reject unsupported profiles with `UnsupportedProfileError`.
+- **FR-019**: System MUST define follow-up migration work for `@openzeppelin/adapter-polkadot`, `@openzeppelin/adapter-solana`, and `@openzeppelin/adapter-midnight` so all published adapters converge on the `capabilities` + `createRuntime` surface. Adapters with incomplete capability coverage MUST expose unsupported capabilities as `undefined`, may omit dedicated sub-path exports for unsupported capabilities, and MUST reject unsupported profiles with `UnsupportedProfileError`.
 - **FR-020**: Consumer-facing wallet orchestration MUST treat `EcosystemRuntime` instances as network-scoped and disposable while allowing wallet provider/session lifetime to be ecosystem-scoped. Disposing a runtime MUST release runtime-owned listeners, subscriptions, and async work without forcing an external wallet disconnect; explicit disconnect remains a user-owned action.
 
 ### Key Entities
@@ -217,6 +217,11 @@ The remaining published adapter packages (`adapter-polkadot`, `adapter-solana`, 
 - Q: Who owns reconnect behavior after the capability refactor? → A: The ecosystem wallet session owns restoration semantics. Same-ecosystem network changes should preserve the active wallet session, while cross-ecosystem reactivation may restore a dormant session when the underlying wallet library supports it.
 - Q: Is explicit disconnect part of runtime disposal? → A: No. Disconnect remains an explicit user action and must not be triggered as a side effect of runtime recreation.
 
+### Session 2026-04-02
+
+- Q: Must every migrated consumer app instantiate a profile runtime immediately, even if it does not currently consume adapters at runtime? → A: No. RWA Wizard is currently codegen-first and only needs package-namespace + local-development alignment in this rollout; declarative runtime consumption begins when adapter-backed wizard UI flows are introduced.
+- Q: Do partial follow-on adapters need sub-path exports for unsupported capabilities? → A: No. Follow-on adapters expose sub-path exports for implemented capabilities plus all profile entry points; unsupported capabilities stay `undefined` in `CapabilityFactoryMap` and unsupported profiles throw `UnsupportedProfileError`.
+
 ### Non-Functional Requirements
 
 - **NFR-001**: Build time for adapter packages with 23 tsdown entry points MUST NOT exceed 2x the current build time with 5 entry points. If it does, investigate tsdown parallel compilation or entry point batching.
@@ -247,13 +252,13 @@ If the coordinated release encounters a blocking issue after partial publication
 ## Assumptions
 
 - The monolithic `ContractAdapter` interface, `StellarAdapter` class, and `EvmAdapter` class will be removed. No backward-compatible facades or shims are provided.
-- All existing consumer apps (RWA Wizard, UI Builder, Role Manager) will be migrated to capability-based consumption in the same release cycle. This is a coordinated breaking change across the ecosystem. Open Accounts is excluded from this scope — it will be built against capability interfaces from the start.
+- All existing consumer apps that currently instantiate adapters at runtime (UI Builder, Role Manager, and the OpenZeppelin UI example app) will be migrated to capability-based consumption in the same release cycle. This is a coordinated breaking change across the ecosystem. Open Accounts is excluded from this scope — it will be built against capability interfaces from the start.
 - The existing `AccessControlService` interface is mature and battle-tested — it is promoted to `AccessControlCapability` as a direct rename with no method changes.
 - `adapter-evm-core`, `adapter-evm`, and `adapter-stellar` are the only adapter packages actively restructured in the initial rollout. `adapter-polkadot`, `adapter-solana`, and `adapter-midnight` are covered by an explicit follow-on migration wave after the initial ecosystem rollout stabilizes.
 - The `@openzeppelin/ui-types` package is the single source of truth for all capability interfaces and will be the first package updated.
 - Per-capability conformance test suites are a stretch goal for the initial rollout — type-level conformance is sufficient initially.
 - Shared UI component packages (`@openzeppelin/ui-components`, `@openzeppelin/ui-renderer`, `@openzeppelin/ui-react`) will be updated simultaneously with the adapter refactoring since no backward compatibility shims are provided.
-- RWA Wizard currently depends on legacy `@openzeppelin/ui-builder-adapter-*` packages (not the current `@openzeppelin/adapter-*` namespace). Migration includes updating these dependency names to the new `@openzeppelin/adapter-*` namespace as part of the capability migration.
+- RWA Wizard is currently codegen-first and does not yet instantiate adapter runtimes in application code. Its current migration scope is limited to adopting the `@openzeppelin/adapter-*` package family and aligned local-development wiring; declarative runtime consumption is deferred until adapter-backed wizard UI flows exist.
 - `adapter-polkadot` depends on `adapter-evm-core` for shared EVM logic. Its follow-on migration preserves the current EVM-backed execution path first; substrate-specific execution remains an explicit package-level follow-up inside that adapter.
 - The `lint:adapters` CI check currently validates `ContractAdapter` interface compliance. It will break when `ContractAdapter` is removed and MUST be updated (or temporarily disabled) in Phase B, then replaced with capability conformance validation in Phase E.
 - The `adapters-vite` package (`createOpenZeppelinAdapterIntegration`, `defineOpenZeppelinAdapterViteConfig`) does NOT require changes — it operates on build configuration, not runtime adapter interfaces. The `ecosystemDefinition` export name on each adapter module is preserved.

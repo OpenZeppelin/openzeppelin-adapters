@@ -96,32 +96,32 @@ The implementation must follow this dependency order. Each phase produces artifa
 
 ### Phase D: Consumer App Migration
 
-**Scope**: Update ecosystem managers, React hooks, and component callsites in UI Builder, Role Manager, and RWA Wizard.
+**Scope**: Update ecosystem managers, React hooks, and component callsites in UI Builder, Role Manager, and any adapter-consuming RWA Wizard surfaces. RWA Wizard is currently codegen-first, so its in-scope work for this rollout is limited to adapter package namespace/local-development alignment unless and until adapter-backed UI flows are added.
 
 **Depends on**: Phases A, B, C (all upstream packages must be published to npm)
 
 **Key changes per app**:
 
-1. **`ecosystemManager.ts` migration** (all three apps):
+1. **`ecosystemManager.ts` migration** (all adapter-consuming apps):
    - Replace `getAdapter(networkConfig): Promise<ContractAdapter>` with `getRuntime(profile, networkConfig): Promise<EcosystemRuntime>`
    - The `loadAdapterModule` function and its caching pattern (`adapterPromiseCache`) remain unchanged — only the factory call changes from `def.createAdapter(config)` to `def.createRuntime(profile, config)`
    - The `loadNetworksModule` function and network caching are unchanged
    - The `getEcosystemMetadata` and `getEcosystemDefinition` exports are unchanged
    - Error handling on module load remains the same (clear cache on failure, retry)
 
-2. **React hooks migration** (per app):
+2. **React hooks migration** (per adapter-consuming app):
    - Hooks that hold `ContractAdapter | null` state change to `EcosystemRuntime | null`
    - Hooks that extract capabilities (e.g., `useAccessControlService` in Role Manager) are simplified — the capability is accessed directly from the runtime (`runtime.accessControl`) instead of extracted via `adapter.getAccessControlService()`
    - `useEffect` cleanup functions MUST call `runtime.dispose()` when the runtime is replaced (network switch, unmount)
 
-3. **Component callsites** (per app):
+3. **Component callsites** (per adapter-consuming app):
    - Where apps pass `adapter` to shared UI components, they pass specific capabilities from the runtime (e.g., `runtime.addressing`, `runtime.execution`)
    - This is a prop renaming at each callsite — the component behavior is unchanged
 
 **Profile assignments**:
 - UI Builder → `composer`
 - Role Manager → `operator`
-- RWA Wizard → `declarative` (also: update dependency names from `@openzeppelin/ui-builder-adapter-*` to `@openzeppelin/adapter-*`)
+- RWA Wizard → package namespace + local-development alignment now; `declarative` profile when adapter-backed wizard UI flows are introduced
 
 **Verification**: All app test suites pass (test suites themselves are updated as part of migration). No `ContractAdapter` imports remain. Apps function identically.
 

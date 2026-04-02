@@ -193,7 +193,7 @@ const { wallet, networkCatalog, accessControl } = runtime;
 
 Network configurations for Stellar networks are exported from `src/networks/index.ts` (`stellarPublic`, `stellarTestnet`, arrays `stellarMainnetNetworks`, `stellarTestnetNetworks`, and `stellarNetworks`).
 
-> **Note:** Internal classes such as `StellarAdapter` may still exist for layering and tests, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**, not `new StellarAdapter(...)`.
+> **Note:** Legacy docs or examples may still reference the old monolithic adapter class, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**.
 
 ## Soroban RPC URL Configuration
 

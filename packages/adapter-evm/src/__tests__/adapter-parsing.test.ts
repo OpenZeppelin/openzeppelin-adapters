@@ -22,7 +22,7 @@ const createParam = (
   components,
 });
 
-describe('EvmAdapter Input Parsing', () => {
+describe('EVM capability input parsing', () => {
   // Define valid address constants accessible to multiple test blocks
   const validAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
   const checksummedAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'; // viem getAddress checksums

@@ -33,7 +33,7 @@ In `public/app.config.json` for an exported app:
 }
 ```
 
-The `EvmAdapter`, when performing operations like view function queries (specifically its fallback public client) or when initializing its underlying Wagmi configuration for wallet interactions, will prioritize these runtime-configured RPC URLs.
+The EVM capability/runtime surface, when performing operations like view function queries (specifically its fallback public client) or when initializing Wagmi-backed wallet infrastructure, will prioritize these runtime-configured RPC URLs.
 
 ### Automatic Wagmi Integration
 

@@ -4,11 +4,11 @@ This directory contains the wallet integration layer for the EVM adapter, provid
 
 ## Architectural Approach: UI Kit Extensibility
 
-The EVM ecosystem is mature and features a wide variety of wallet libraries and UI kits (e.g., RainbowKit, ConnectKit, Web3Modal). To accommodate this, the `EvmAdapter`'s wallet module is designed to be highly extensible. It uses a singleton manager (`EvmUiKitManager`) to dynamically configure and load different UI kits at runtime.
+The EVM ecosystem is mature and features a wide variety of wallet libraries and UI kits (e.g., RainbowKit, ConnectKit, Web3Modal). To accommodate this, the EVM wallet capability stack is designed to be highly extensible. It uses a singleton manager (`EvmUiKitManager`) to dynamically configure and load different UI kits at runtime.
 
 This architecture allows applications to switch between different wallet UIs (like RainbowKit or a set of custom-styled components) through configuration, without changing the application code.
 
-**Note:** This complex, manager-based architecture is specific to the needs of the EVM ecosystem. Other adapters for ecosystems with a single, primary wallet (like the `MidnightAdapter` for the Lace wallet) can use a much simpler, more direct implementation. The `MidnightWalletProvider` serves as a good example of a minimal implementation without UI kit management.
+**Note:** This complex, manager-based architecture is specific to the needs of the EVM ecosystem. Other adapters for ecosystems with a single, primary wallet can use a much simpler, more direct implementation. The Midnight wallet provider is a good example of a minimal implementation without UI kit management.
 
 ## Purpose
 
@@ -42,7 +42,7 @@ wallet/
 
 ## Key Components & Concepts
 
-- **`EvmAdapter` UI Methods**:
+- **EVM UI kit capability surface**:
   - `getEcosystemReactUiContextProvider()`: Returns the `EvmWalletUiRoot` component.
   - `configureUiKit(programmaticOverrides, options)`: Configures the desired UI kit (`kitName`, `kitConfig`) and triggers the `EvmUiKitManager`.
   - `getEcosystemWalletComponents()`: Returns UI components (e.g., ConnectButton) for the active kit.
@@ -167,7 +167,7 @@ The `customizations.connectButton` section supports all native RainbowKit Connec
 
 ### 3. `loadConfigModule` (Application-Provided Importer)
 
-The consuming application (via the `loadConfigModule` prop on `WalletStateProvider` in `react-core`) must provide a function that can dynamically import the user-native kit-specific configuration file described above. The adapter uses this callback to load the file.
+The consuming application (via the `loadConfigModule` prop on `WalletStateProvider` in `@openzeppelin/ui-react`) must provide a function that can dynamically import the user-native kit-specific configuration file described above. The adapter uses this callback to load the file.
 
 **Example from `packages/builder/src/App.tsx` or exported app's `main.tsx`:**
 
@@ -192,9 +192,9 @@ const loadAppConfigModule = async (
 // This function is then passed to <WalletStateProvider loadConfigModule={loadAppConfigModule} />
 ```
 
-### 4. Programmatic Overrides (via `EvmAdapter.configureUiKit`)
+### 4. Programmatic Overrides (via `UiKitCapability.configureUiKit`)
 
-Applications can also call `adapter.configureUiKit(programmaticUiKitConfig, { loadUiKitNativeConfig: loadAppConfigModule })` at runtime to provide specific overrides.
+Applications can also call `runtime.uiKit?.configureUiKit(programmaticUiKitConfig, { loadUiKitNativeConfig: loadAppConfigModule })` at runtime to provide specific overrides.
 
 ### Configuration Precedence
 
@@ -205,14 +205,14 @@ Applications can also call `adapter.configureUiKit(programmaticUiKitConfig, { lo
 
 ## Automatic CSS Loading (RainbowKit)
 
-When `kitName` is configured to `'rainbowkit'`, the `EvmAdapter` (via `EvmUiKitManager` and `rainbowkitAssetManager.ts`) will automatically attempt to dynamically import and inject RainbowKit's required CSS (`@rainbow-me/rainbowkit/styles.css`). **Manual import of this CSS file in the application's entry point is no longer necessary.**
+When `kitName` is configured to `'rainbowkit'`, the EVM UI kit capability (via `EvmUiKitManager` and `rainbowkitAssetManager.ts`) will automatically attempt to dynamically import and inject RainbowKit's required CSS (`@rainbow-me/rainbowkit/styles.css`). **Manual import of this CSS file in the application's entry point is no longer necessary.**
 
 ## Usage within Application
 
 The primary way to interact with wallet functionalities and UI components is through `@openzeppelin/ui-react`:
 
 - **`WalletStateProvider`**: Wraps the application (or relevant parts) to provide wallet context.
-- **`useWalletState()`**: Hook to access `activeAdapter`, `activeNetworkConfig`, `walletFacadeHooks`, `isAdapterLoading`, etc.
+- **`useWalletState()`**: Hook to access `activeRuntime`, `activeNetworkConfig`, `walletFacadeHooks`, `isRuntimeLoading`, etc.
 - **Derived Hooks** (e.g., `useDerivedAccountStatus`, `useDerivedConnectStatus`): Provide convenient, memoized state from facade hooks.
 
 ### Example: Rendering Wallet UI in a Header
@@ -224,18 +224,18 @@ import {
 } from '@openzeppelin/ui-react';
 
 function WalletConnectionHeader() {
-  const { activeAdapter, isAdapterLoading } = useWalletState();
+  const { activeRuntime, isRuntimeLoading } = useWalletState();
   const { isConnected } = useDerivedAccountStatus();
 
-  if (isAdapterLoading && !activeAdapter) {
-    return <div>Loading Wallet Adapter...</div>;
+  if (isRuntimeLoading && !activeRuntime) {
+    return <div>Loading wallet runtime...</div>;
   }
 
-  if (!activeAdapter?.supportsWalletConnection()) {
+  if (!activeRuntime?.wallet?.supportsWalletConnection()) {
     return null; // Or message indicating wallet connection not supported
   }
 
-  const walletComponents = activeAdapter.getEcosystemWalletComponents?.();
+  const walletComponents = activeRuntime.uiKit?.getEcosystemWalletComponents?.();
   const ConnectButton = walletComponents?.ConnectButton;
   const AccountDisplay = walletComponents?.AccountDisplay;
 

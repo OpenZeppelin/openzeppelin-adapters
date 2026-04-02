@@ -7,8 +7,8 @@ import { getStellarDefaultServiceConfig } from '../configuration/network-service
 /**
  * Tests for getStellarDefaultServiceConfig function.
  *
- * Note: We test the pure function directly instead of instantiating StellarAdapter
- * to avoid loading heavy Stellar SDK dependencies (WASM modules, etc.) which can
+ * Note: We test the pure function directly instead of constructing the full Stellar
+ * runtime/capability graph to avoid loading heavy Stellar SDK dependencies (WASM modules, etc.) which can
  * cause memory issues during test execution.
  */
 describe('getStellarDefaultServiceConfig', () => {

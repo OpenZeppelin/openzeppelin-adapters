@@ -242,9 +242,9 @@
 
 ## Phase 7: US7 — Consumer App Migration (Priority: P1)
 
-**Goal**: Migrate UI Builder, Role Manager, RWA Wizard, and the OpenZeppelin UI basic example app from `ContractAdapter` consumption to profile-based capability consumption.
+**Goal**: Migrate UI Builder, Role Manager, and the OpenZeppelin UI basic example app from `ContractAdapter` consumption to profile-based capability consumption, while aligning RWA Wizard's adapter package namespace/local-development wiring for its current codegen-first scope.
 
-**Independent Test**: Each app's test suite passes. No app imports `ContractAdapter`, `createAdapter`, or monolithic adapter classes.
+**Independent Test**: Each adapter-consuming app's test suite passes. No migrated app imports `ContractAdapter`, `createAdapter`, or monolithic adapter classes.
 
 ### UI Builder (ui-builder repo) — Composer Profile
 
@@ -262,7 +262,7 @@
 - [X] T116 [US7] Update all component callsites in role-manager that pass `adapter` prop — pass specific capabilities
 - [X] T117 [US7] Run `pnpm test` in role-manager — update test mocks, fix broken tests
 
-### RWA Wizard (rwa-wizard repo) — Declarative Profile
+### RWA Wizard (rwa-wizard repo) — Codegen-First Alignment / Future Declarative Profile
 
 - [X] T118 [US7] Update `apps/rwa-wizard/package.json` — replace legacy `@openzeppelin/ui-builder-adapter-evm` and `@openzeppelin/ui-builder-adapter-stellar` dependencies with `@openzeppelin/adapter-evm` and `@openzeppelin/adapter-stellar`
 - [X] T119 [US7] Update ecosystem/adapter loading in rwa-wizard (if present) to use `createRuntime('declarative', networkConfig)` pattern

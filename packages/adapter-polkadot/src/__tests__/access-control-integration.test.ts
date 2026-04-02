@@ -1,7 +1,7 @@
 /**
  * Access Control Integration Tests for Polkadot Adapter
  *
- * Tests the full integration path: PolkadotAdapter.getAccessControlService() → registerContract()
+ * Tests the full integration path: createAccessControl() → registerContract()
  * → getCapabilities() → getOwnership() → transferOwnership() with mocked RPC and indexer.
  *
  * Verifies:
@@ -163,7 +163,7 @@ const OWNABLE_TWO_STEP_FUNCTIONS = [
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('PolkadotAdapter — Access Control Integration', () => {
+describe('Polkadot access control capability integration', () => {
   let accessControl: AccessControlCapability;
 
   beforeEach(() => {

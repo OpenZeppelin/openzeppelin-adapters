@@ -114,7 +114,7 @@ const { wallet, networkCatalog, execution } = runtime;
 
 Network configurations for various EVM chains (mainnets and testnets) are exported from this package (e.g., `ethereumMainnet`, `polygonMainnet`, `ethereumSepolia`, `polygonAmoy`). The full list is available as `evmNetworks`.
 
-> **Note:** Internal classes such as `EvmAdapter` may still exist for layering and tests, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**, not `new EvmAdapter(...)`.
+> **Note:** Legacy docs or examples may still reference the old monolithic adapter class, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**.
 
 ## RPC URL Configuration
 

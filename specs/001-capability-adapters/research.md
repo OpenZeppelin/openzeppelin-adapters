@@ -75,7 +75,7 @@ Consumer ecosystem managers (`getAdapter()`) become `getRuntime()` or `getCapabi
 **Per-app profile mapping**:
 - **UI Builder** → `Composer` profile (full design-time + runtime surface)
 - **Role Manager** → `Operator` profile (wallet + execution + access control)
-- **RWA Wizard** → `Declarative` profile (metadata only, no wallet/RPC)
+- **RWA Wizard** → codegen-first for the current rollout; package namespace/local-dev alignment now, `Declarative` profile when adapter-backed UI flows are introduced
 
 **Role Manager's `useAccessControlService` hook**: Currently extracts `AccessControlService` via `adapter.getAccessControlService()`. Post-migration, the hook receives `AccessControlCapability` directly from the `Operator` profile runtime — no extraction needed, the capability *is* the service.
 
