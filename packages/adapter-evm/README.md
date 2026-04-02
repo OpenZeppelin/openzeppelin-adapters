@@ -1,10 +1,10 @@
 # EVM Adapter (`@openzeppelin/adapter-evm`)
 
-This package provides the `ContractAdapter` implementation for EVM-compatible blockchains (Ethereum, Polygon, BSC, etc.) for the UI Builder.
+This package provides the **EVM ecosystem definition** for OpenZeppelin UI: capability factories, network metadata, and **`createRuntime`** to build a per-network `EcosystemRuntime` for Ethereum-compatible chains (Ethereum, Polygon, BSC, etc.).
 
 It is responsible for:
 
-- Implementing the `ContractAdapter` interface from `@openzeppelin/ui-types`.
+- Exposing **`ecosystemDefinition`** (`EcosystemExport`) with `networks`, `capabilities`, and `createRuntime(profile, networkConfig, options)` aligned with `@openzeppelin/ui-types`.
 - Defining and exporting specific EVM network configurations (e.g., Ethereum Mainnet, Sepolia Testnet) as `EvmNetworkConfig` objects. These are located in `src/networks/` and include details like RPC URLs, Chain IDs, explorer URLs, and native currency information.
 - Loading contract ABIs (from JSON strings or via Etherscan, using the `apiUrl` from the provided `EvmNetworkConfig`).
 - Mapping EVM-specific data types to the form field types used by the builder app.
@@ -31,7 +31,7 @@ The adapter selects the appropriate strategy at runtime based on the `ExecutionC
 
 In the UI Builder, the execution method is configured in the "Customize" step. The UI provides options to select between `EOA` and `Relayer` and configure their specific parameters (e.g., Relayer API credentials, EOA address restrictions).
 
-This configuration is then passed to the `EvmAdapter`'s `signAndBroadcast` method, which uses a factory to instantiate the correct execution strategy.
+This configuration is then passed to the execution capability’s transaction path (`signAndBroadcast` on the runtime’s **`execution`** capability for transactor-style profiles), which uses a factory to instantiate the correct execution strategy.
 
 ---
 
@@ -39,7 +39,7 @@ This configuration is then passed to the `EvmAdapter`'s `signAndBroadcast` metho
 
 All wallet integration logic, UI components, facade hooks, and the UI context provider (e.g., `EvmBasicUiContextProvider` for Wagmi) for EVM-compatible chains are located in the [`src/wallet/`](./src/wallet/) module of this adapter.
 
-The `EvmAdapter` implements the optional UI facilitation methods from the `ContractAdapter` interface (`getEcosystemReactUiContextProvider`, `getEcosystemReactHooks`, `getEcosystemWalletComponents`). These capabilities are consumed by the `builder` application's `WalletStateProvider`, which manages the global wallet state and makes these hooks and components accessible to the rest of the application via the `useWalletState()` hook.
+Wallet and UI kit behavior is exposed through the **`wallet`** and **`uiKit`** entries on the `EcosystemRuntime` returned by `createRuntime`. Applications wire these into `@openzeppelin/ui-react`’s `WalletStateProvider`, which surfaces facade hooks via `useWalletState()`.
 
 **For full documentation on the `src/wallet/` module, its exports, configuration, and usage examples, see [`src/wallet/README.md`](./src/wallet/README.md).**
 
@@ -62,8 +62,8 @@ adapter-evm/
 │   │   ├── implementation/      # Wagmi wallet implementation
 │   │   ├── rainbowkit/          # RainbowKit component factories
 │   │   └── utils/               # Wallet utilities
-│   ├── adapter.ts               # Main EvmAdapter class implementation
-│   └── index.ts                 # Public package exports
+│   ├── adapter.ts               # Internal composition helpers (not the primary public API)
+│   └── index.ts                 # ecosystemDefinition, createRuntime, networks, capabilities
 ├── package.json
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -93,22 +93,28 @@ The core package is bundled internally (not a runtime dependency) via `tsup` wit
 
 ---
 
-## Usage (Adapter Instantiation)
+## Usage (runtime creation)
 
-The `EvmAdapter` class is instantiated with a specific `EvmNetworkConfig` object, making it aware of the target network from its creation:
+**Consumers should use `ecosystemDefinition.createRuntime`** with a `ProfileName` and an `EvmNetworkConfig`. That returns an `EcosystemRuntime` whose optional fields (`wallet`, `execution`, `query`, …) match the selected profile.
 
 ```typescript
-import { ethereumSepolia, EvmAdapter } from '@openzeppelin/adapter-evm';
+import type { ProfileName } from '@openzeppelin/ui-types';
+import { ecosystemDefinition, ethereumSepolia } from '@openzeppelin/adapter-evm';
 
-// Or any other exported EvmNetworkConfig
-
+const profile: ProfileName = 'composer';
 const networkConfig = ethereumSepolia;
-const evmAdapter = new EvmAdapter(networkConfig);
 
-// Now use evmAdapter for operations on the Ethereum Sepolia testnet
+const runtime = await ecosystemDefinition.createRuntime(profile, networkConfig, {
+  /* optional: UI kit overrides, relayer options, etc. */
+});
+
+// Example: pass runtime (or individual capabilities) into @openzeppelin/ui-react / ui-renderer
+const { wallet, networkCatalog, execution } = runtime;
 ```
 
-Network configurations for various EVM chains (mainnets and testnets) are exported from `src/networks/index.ts` within this package (e.g., `ethereumMainnet`, `polygonMainnet`, `ethereumSepolia`, `polygonAmoy`). The full list of available networks is exported as `evmNetworks`.
+Network configurations for various EVM chains (mainnets and testnets) are exported from this package (e.g., `ethereumMainnet`, `polygonMainnet`, `ethereumSepolia`, `polygonAmoy`). The full list is available as `evmNetworks`.
+
+> **Note:** Internal classes such as `EvmAdapter` may still exist for layering and tests, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**, not `new EvmAdapter(...)`.
 
 ## RPC URL Configuration
 
@@ -132,7 +138,7 @@ In `public/app.config.json` for an exported app:
 }
 ```
 
-The `EvmAdapter`, when performing operations like view function queries (specifically its fallback public client) or when initializing its underlying Wagmi configuration for wallet interactions, will prioritize these runtime-configured RPC URLs.
+The EVM runtime, when performing operations like view function queries (fallback public client) or when initializing its underlying Wagmi configuration for wallet interactions, will prioritize these runtime-configured RPC URLs.
 
 ### Wagmi `defaultSupportedChains` and RPC Overrides
 
