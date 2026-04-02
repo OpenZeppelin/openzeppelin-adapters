@@ -1,5 +1,9 @@
 import { createEvmAccessControlService } from '@openzeppelin/adapter-evm-core';
-import type { AccessControlCapability, NetworkConfig } from '@openzeppelin/ui-types';
+import type {
+  AccessControlCapability,
+  NetworkConfig,
+  TransactionStatusUpdate,
+} from '@openzeppelin/ui-types';
 
 import { createExecution } from './execution';
 import { asTypedPolkadotNetworkConfig, guardRuntimeCapability } from './helpers';
@@ -14,7 +18,10 @@ export function createAccessControl(config: NetworkConfig): AccessControlCapabil
       const result = await execution.signAndBroadcast(
         txData,
         executionConfig,
-        onStatusChange ?? (() => {}),
+        (onStatusChange ?? (() => {})) as (
+          status: string,
+          details: TransactionStatusUpdate
+        ) => void,
         runtimeApiKey
       );
       return { id: result.txHash };

@@ -10,6 +10,7 @@ import type {
   EcosystemRuntime,
   NetworkConfig,
   ProfileName,
+  TransactionStatusUpdate,
 } from '@openzeppelin/ui-types';
 import { UnsupportedProfileError } from '@openzeppelin/ui-types';
 
@@ -57,7 +58,10 @@ function createRuntimeCapabilityFactories(
           const result = await getCapability('execution').signAndBroadcast(
             txData,
             executionConfig,
-            onStatusChange ?? (() => {}),
+            (onStatusChange ?? (() => {})) as (
+              status: string,
+              details: TransactionStatusUpdate
+            ) => void,
             runtimeApiKey
           );
           return { id: result.txHash };

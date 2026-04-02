@@ -30,13 +30,13 @@ export function createRelayer(config: NetworkConfig): RelayerCapability {
     testNetworkServiceConnection(serviceId: string, values: Record<string, unknown>) {
       return evm.testNetworkServiceConnection(serviceId, values, networkConfig);
     },
-    validateRpcEndpoint(rpcConfig: UserRpcProviderConfig) {
+    async validateRpcEndpoint(rpcConfig: UserRpcProviderConfig) {
       return evm.validateRpcEndpoint(rpcConfig);
     },
     testRpcConnection(rpcConfig: UserRpcProviderConfig) {
       return evm.testRpcConnection(rpcConfig);
     },
-    validateExplorerConfig(explorerConfig: UserExplorerConfig) {
+    async validateExplorerConfig(explorerConfig: UserExplorerConfig) {
       return evm.validateExplorerConfig(explorerConfig);
     },
     testExplorerConnection(explorerConfig: UserExplorerConfig) {

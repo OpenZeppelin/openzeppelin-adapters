@@ -1,5 +1,4 @@
-import type { WriteContractParameters } from 'viem';
-
+import type { WriteContractParameters } from '@openzeppelin/adapter-evm-core';
 import type {
   ContractSchema,
   ExecutionCapability,
