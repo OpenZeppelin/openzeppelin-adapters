@@ -29,12 +29,6 @@ vi.mock('viem', async () => {
   };
 });
 
-vi.mock('../src/capabilities/execution', () => ({
-  createExecution: vi.fn(() => ({
-    signAndBroadcast: mockSignAndBroadcast,
-  })),
-}));
-
 const mockFetch = vi.fn();
 
 function createFunction(name: string, inputTypes: string[] = []): ContractFunction {
@@ -96,7 +90,9 @@ describe('EVM Access Control Capability Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = createAccessControl(TEST_NETWORK_CONFIG) as EvmAccessControlService;
+    service = createAccessControl(TEST_NETWORK_CONFIG, {
+      signAndBroadcast: mockSignAndBroadcast,
+    }) as EvmAccessControlService;
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ data: {} }),

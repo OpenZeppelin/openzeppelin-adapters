@@ -11,14 +11,14 @@ import type {
 } from '@openzeppelin/ui-types';
 
 import {
-  DEFAULT_DISCONNECTED_STATUS,
   executeEvmTransaction,
   formatEvmTransactionData,
-  validateEvmExecutionConfig,
   waitForEvmTransactionConfirmation,
   type EvmWalletImplementation,
-} from '../index';
+} from '../transaction';
 import type { WriteContractParameters } from '../types';
+import { validateEvmExecutionConfig } from '../validation';
+import { DEFAULT_DISCONNECTED_STATUS } from '../wallet';
 import {
   asTypedEvmNetworkConfig,
   getEvmSupportedExecutionMethods,

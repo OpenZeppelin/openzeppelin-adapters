@@ -1,14 +1,14 @@
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
-import {
-  createAccessControl as createCoreAccessControl,
-  createRuntime as createCoreRuntime,
-} from '@openzeppelin/adapter-evm-core';
+import { createRuntime as createCoreRuntime } from '@openzeppelin/adapter-evm-core';
 import { createLazyRuntimeCapabilityFactories } from '@openzeppelin/adapter-runtime-utils';
 import type {
   CapabilityFactoryMap,
   EcosystemRuntime,
+  ExecutionConfig,
   NetworkConfig,
   ProfileName,
+  TransactionStatusUpdate,
+  TxStatus,
 } from '@openzeppelin/ui-types';
 
 import {
@@ -35,6 +35,25 @@ function toTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkConfig {
   return config as TypedEvmNetworkConfig;
 }
 
+function bridgeSignAndBroadcast(
+  execution: ReturnType<typeof createExecution>
+): (
+  transactionData: unknown,
+  executionConfig: ExecutionConfig,
+  onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
+  runtimeApiKey?: string,
+  runtimeSecret?: string
+) => Promise<{ txHash: string; result?: unknown }> {
+  return (transactionData, executionConfig, onStatusChange, runtimeApiKey, runtimeSecret) =>
+    execution.signAndBroadcast(
+      transactionData,
+      executionConfig,
+      onStatusChange as (status: string, details: TransactionStatusUpdate) => void,
+      runtimeApiKey,
+      runtimeSecret
+    );
+}
+
 export const capabilityFactories: CapabilityFactoryMap = {
   addressing: (_config?: NetworkConfig) => createAddressing(),
   explorer: (config?: NetworkConfig) =>
@@ -50,7 +69,13 @@ export const capabilityFactories: CapabilityFactoryMap = {
   wallet: (config: NetworkConfig) => createWallet(toTypedEvmNetworkConfig(config)),
   uiKit: (config: NetworkConfig) => createUiKit(toTypedEvmNetworkConfig(config)),
   relayer: (config: NetworkConfig) => createRelayer(toTypedEvmNetworkConfig(config)),
-  accessControl: (config: NetworkConfig) => createAccessControl(toTypedEvmNetworkConfig(config)),
+  accessControl: (config: NetworkConfig) => {
+    const typedConfig = toTypedEvmNetworkConfig(config);
+    const execution = createExecution(typedConfig);
+    return createAccessControl(typedConfig, {
+      signAndBroadcast: bridgeSignAndBroadcast(execution),
+    });
+  },
 };
 
 function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): CapabilityFactoryMap {
@@ -71,21 +96,10 @@ function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): Capabi
     uiKit: () => createUiKit(config),
     relayer: () => createRelayer(config),
     accessControl: (_runtimeConfig, getCapability) =>
-      createCoreAccessControl(config, {
-        signAndBroadcast: (
-          transactionData,
-          executionConfig,
-          onStatusChange,
-          runtimeApiKey,
-          runtimeSecret
-        ) =>
-          getCapability('execution').signAndBroadcast(
-            transactionData,
-            executionConfig,
-            onStatusChange as Parameters<ReturnType<typeof createExecution>['signAndBroadcast']>[2],
-            runtimeApiKey,
-            runtimeSecret
-          ),
+      createAccessControl(config, {
+        signAndBroadcast: bridgeSignAndBroadcast(
+          getCapability('execution') as ReturnType<typeof createExecution>
+        ),
       }),
   });
 }

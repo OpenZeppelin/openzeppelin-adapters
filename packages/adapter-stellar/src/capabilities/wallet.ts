@@ -19,6 +19,10 @@ function getStellarWalletConnectionStatus(): WalletConnectionStatus {
   if (!implementation) {
     return {
       isConnected: false,
+      isConnecting: false,
+      isDisconnected: true,
+      isReconnecting: false,
+      status: 'disconnected',
       address: undefined,
       chainId: stellarUiKitManager.getState().networkConfig?.id || 'stellar-testnet',
     };

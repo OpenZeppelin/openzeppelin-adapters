@@ -1,4 +1,4 @@
-export { createAccessControl } from './access-control';
+export { createAccessControl, type CreateAccessControlOptions } from './access-control';
 export { createAddressing } from './addressing';
 export { createContractLoading } from './contract-loading';
 export { createExecution } from './execution';

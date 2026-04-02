@@ -11,9 +11,26 @@ const queryLoadContractSpy = vi.fn(
 );
 
 vi.mock('../capabilities', () => ({
-  createAccessControl: vi.fn(() => ({
-    dispose: vi.fn(),
-  })),
+  createAccessControl: vi.fn(
+    (
+      _config: unknown,
+      options?: {
+        signAndBroadcast?: (
+          transactionData: unknown,
+          executionConfig: unknown,
+          onStatusChange?: ((status: string, details: unknown) => void) | undefined
+        ) => Promise<{ txHash: string }>;
+      }
+    ) => ({
+      registerContract: vi.fn(),
+      grantRole: vi.fn(async () => {
+        if (!options?.signAndBroadcast) return { id: 'no-execution' };
+        const result = await options.signAndBroadcast({}, { type: 'eoa' }, () => undefined);
+        return { id: result.txHash };
+      }),
+      dispose: vi.fn(),
+    })
+  ),
   createAddressing: vi.fn(() => ({
     isValidAddress: () => true,
   })),

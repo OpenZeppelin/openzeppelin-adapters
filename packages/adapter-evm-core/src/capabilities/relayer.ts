@@ -7,13 +7,13 @@ import type {
 } from '@openzeppelin/ui-types';
 
 import {
-  RelayerExecutionStrategy,
   testEvmExplorerConnection,
   testEvmRpcConnection,
   validateEvmExplorerConfig,
   validateEvmRpcEndpoint,
-  type TypedEvmNetworkConfig,
-} from '../index';
+} from '../configuration';
+import { RelayerExecutionStrategy } from '../transaction';
+import type { TypedEvmNetworkConfig } from '../types';
 import { asTypedEvmNetworkConfig, withRuntimeCapability } from './helpers';
 
 export interface CreateRelayerOptions {

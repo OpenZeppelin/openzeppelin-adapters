@@ -290,6 +290,7 @@ export {
 // ============================================================================
 export {
   createAccessControl,
+  type CreateAccessControlOptions,
   createAddressing,
   createContractLoading,
   createExecution,
