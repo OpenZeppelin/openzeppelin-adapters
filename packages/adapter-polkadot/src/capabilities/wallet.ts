@@ -56,12 +56,18 @@ export function createWallet(config: NetworkConfig): WalletCapability {
           {
             isConnected: current.isConnected,
             isConnecting: current.isConnecting,
+            isDisconnected: current.isDisconnected,
+            isReconnecting: current.isReconnecting,
+            status: current.status,
             address: current.address,
             chainId: current.chainId,
           },
           {
             isConnected: previous.isConnected,
             isConnecting: previous.isConnecting,
+            isDisconnected: previous.isDisconnected,
+            isReconnecting: previous.isReconnecting,
+            status: previous.status,
             address: previous.address,
             chainId: previous.chainId,
           }
