@@ -38,7 +38,7 @@ export function createUiKit(config: NetworkConfig): UiKitCapability {
 
   stellarUiKitManager.setNetworkConfig(networkConfig);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'uiKit'), {
     async configureUiKit(
       programmaticOverrides: Partial<UiKitConfiguration> = {},
       runtimeOptions?: {
