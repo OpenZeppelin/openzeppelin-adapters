@@ -1,6 +1,9 @@
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
 import { createRuntime as createCoreRuntime } from '@openzeppelin/adapter-evm-core';
-import { createLazyRuntimeCapabilityFactories } from '@openzeppelin/adapter-runtime-utils';
+import {
+  createLazyRuntimeCapabilityFactories,
+  registerRuntimeCapabilityCleanup,
+} from '@openzeppelin/adapter-runtime-utils';
 import type {
   CapabilityFactoryMap,
   EcosystemRuntime,
@@ -72,9 +75,13 @@ export const capabilityFactories: CapabilityFactoryMap = {
   accessControl: (config: NetworkConfig) => {
     const typedConfig = toTypedEvmNetworkConfig(config);
     const execution = createExecution(typedConfig);
-    return createAccessControl(typedConfig, {
+    const ac = createAccessControl(typedConfig, {
       signAndBroadcast: bridgeSignAndBroadcast(execution),
     });
+
+    registerRuntimeCapabilityCleanup(ac, () => execution.dispose());
+
+    return ac;
   },
 };
 

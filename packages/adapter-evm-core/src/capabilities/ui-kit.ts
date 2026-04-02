@@ -81,7 +81,7 @@ export function createUiKit(
       const currentAppServiceConfig = options.loadCurrentUiKitConfig?.() ?? currentUiKitConfig;
       const resolvedConfig = await resolveFullUiKitConfiguration(
         programmaticConfig,
-        currentUiKitConfig.kitName,
+        currentAppServiceConfig.kitName,
         currentAppServiceConfig,
         runtimeOptions
       );

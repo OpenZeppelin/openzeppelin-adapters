@@ -38,5 +38,11 @@ export function createAccessControl(
     }
   );
 
-  return guardRuntimeCapability(service, networkConfig, 'accessControl') as AccessControlCapability;
+  return guardRuntimeCapability(
+    service,
+    networkConfig,
+    'accessControl',
+    () => service.dispose(),
+    'subscription'
+  ) as AccessControlCapability;
 }

@@ -62,7 +62,7 @@ export function getStellarSupportedExecutionMethods(): Promise<ExecutionMethodDe
     {
       type: 'relayer',
       name: 'OpenZeppelin Relayer',
-      description: 'Execute via a OpenZeppelin open source transaction relayer service.',
+      description: 'Execute via an OpenZeppelin open source transaction relayer service.',
       disabled: false,
     },
     {
