@@ -27,7 +27,8 @@ export function getStellarExplorerAddressUrl(
     return null;
   }
   // Use /contract for Soroban contract IDs, otherwise /account
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
   const path = isValidContractAddress(address) ? 'contract' : 'account';
   return `${baseUrl}/${path}/${encodeURIComponent(address)}`;
 }
@@ -48,7 +49,8 @@ export function getStellarExplorerTxUrl(
     return null;
   }
   // Construct the URL, assuming a standard /tx/ path for Stellar explorers
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
   return `${baseUrl}/tx/${encodeURIComponent(txHash)}`;
 }
 

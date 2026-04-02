@@ -15,7 +15,8 @@ export function getSolanaExplorerAddressUrl(
   }
   // Construct the URL, assuming a standard /address/ path
   // Handle potential trailing slashes in explorerUrl
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
   return `${baseUrl}/address/${address}`;
 }
 
@@ -31,7 +32,8 @@ export function getSolanaExplorerTxUrl(
     return null;
   }
   // Construct the URL, assuming a standard /tx/ path
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
   return `${baseUrl}/tx/${txHash}`;
 }
 
