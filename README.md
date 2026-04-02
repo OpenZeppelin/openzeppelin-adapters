@@ -232,6 +232,32 @@ Compatibility notes:
 - `LOCAL_UI_BUILDER_PATH` remains supported as a temporary compatibility alias in consumer `.pnpmfile.cjs` hooks and helper scripts.
 - When the configured path is wrong, consumer pnpm hooks should now fail with a direct error that names the resolved path and the env vars to update.
 
+## Local Development In This Repo
+
+This repository now uses the same managed `oz-ui-dev` bootstrap flow as the consumer repos for
+local `openzeppelin-ui` testing. The checked-in `.openzeppelin-dev.json` and `.pnpmfile.cjs`
+files let maintainers switch between published UI packages and a sibling `../openzeppelin-ui`
+checkout without hand-editing dependencies.
+
+```bash
+# Use local openzeppelin-ui packages from ../openzeppelin-ui
+pnpm dev:local
+
+# Equivalent alias in this repo
+pnpm dev:uikit:local
+
+# Switch back to published npm packages
+pnpm dev:npm
+```
+
+Notes:
+
+- `LOCAL_UI_PATH` overrides the default `../openzeppelin-ui` checkout path.
+- This repo only configures the `ui` family because the adapters monorepo is the source of truth
+  for adapter packages.
+- `pnpm exec oz-ui-dev status --project "$PWD" --json` shows the current local-dev state and
+  whether packed UI tarballs are present.
+
 ## Available Scripts
 
 - `pnpm build` - Build all adapter packages
@@ -243,6 +269,9 @@ Compatibility notes:
 - `pnpm format:check` - Check formatting without making changes
 - `pnpm typecheck` - Type check all packages
 - `pnpm fix-all` - Run Prettier and ESLint fix
+- `pnpm dev:local` - Pack and use local `@openzeppelin/ui-*` packages from `../openzeppelin-ui`
+- `pnpm dev:uikit:local` - Alias for `pnpm dev:local` in this repo
+- `pnpm dev:npm` - Restore published npm `@openzeppelin/ui-*` packages
 
 ## Documentation
 
