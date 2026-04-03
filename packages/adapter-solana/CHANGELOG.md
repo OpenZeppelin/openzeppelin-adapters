@@ -1,5 +1,21 @@
 # @openzeppelin/transaction-form-adapter-solana
 
+## 2.0.0
+
+### Major Changes
+
+- [#24](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/24) [`15ba208`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/15ba208b3207771139f1f340ed943a04624efcc0) Thanks [@pasevin](https://github.com/pasevin)! - Migrate polkadot, solana, and midnight to `capabilities` and `createRuntime` on `ecosystemDefinition`.
+  Remove monolithic adapter classes and `createAdapter` exports (Phase 10 / US8 follow-on adapters).
+
+### Patch Changes
+
+- [#27](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/27) [`481f206`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/481f206b948a4099a8fee55c44128cca279dc2ba) Thanks [@pasevin](https://github.com/pasevin)! - Move internal workspace packages (`adapter-runtime-utils`, `adapter-evm-core`) from `dependencies`
+  to `devDependencies` so they are not listed in the published package metadata. These packages are
+  bundled at build time via `tsdown` `noExternal` and are never resolved from npm by consumers.
+
+  Also add `adapter-evm-core` to `adapter-polkadot`'s `noExternal` list so it is correctly bundled
+  into the built output rather than left as a bare external import.
+
 ## 1.1.0
 
 ### Minor Changes
