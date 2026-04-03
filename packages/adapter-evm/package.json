@@ -47,7 +47,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/relayer-sdk": "1.9.0",
     "@wagmi/connectors": "5.7.13",
     "@wagmi/core": "^2.20.3",
@@ -57,6 +56,7 @@
   },
   "devDependencies": {
     "@openzeppelin/adapter-evm-core": "workspace:*",
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.0",
     "@openzeppelin/ui-types": "^2.0.0",

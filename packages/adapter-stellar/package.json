@@ -48,7 +48,6 @@
     "postinstall": "pnpm validate-stellar-types || echo '⚠️  Stellar SDK type validation warnings detected'"
   },
   "dependencies": {
-    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@creit.tech/stellar-wallets-kit": "^1.8.0",
     "@openzeppelin/relayer-sdk": "1.9.0",
     "@stellar/stellar-sdk": "^14.1.1",
@@ -59,6 +58,7 @@
     "lucide-react": "^0.510.0"
   },
   "devDependencies": {
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-types": "^2.0.0",
     "@openzeppelin/ui-utils": "^2.0.0",

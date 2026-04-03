@@ -45,7 +45,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@midnight-ntwrk/compact-runtime": "0.9.0",
     "@midnight-ntwrk/dapp-connector-api": "^3.0.0",
     "@midnight-ntwrk/ledger": "4.0.0",
@@ -67,6 +66,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.0",
     "@openzeppelin/ui-types": "^2.0.0",

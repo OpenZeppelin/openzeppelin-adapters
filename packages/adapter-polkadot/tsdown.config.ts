@@ -60,7 +60,7 @@ export default defineConfig({
     '@wagmi/connectors',
     'viem',
   ],
-  noExternal: ['@openzeppelin/adapter-runtime-utils'],
+  noExternal: ['@openzeppelin/adapter-evm-core', '@openzeppelin/adapter-runtime-utils'],
   define: {
     __OZ_PEER_MINIMUMS__: JSON.stringify(ozPeerMinimums),
   },

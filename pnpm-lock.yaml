@@ -131,9 +131,6 @@ importers:
 
   packages/adapter-evm:
     dependencies:
-      '@openzeppelin/adapter-runtime-utils':
-        specifier: workspace:*
-        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0
@@ -156,6 +153,9 @@ importers:
       '@openzeppelin/adapter-evm-core':
         specifier: workspace:*
         version: link:../adapter-evm-core
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
         specifier: ^2.0.0
         version: 2.0.0(@babel/runtime@7.29.2)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
@@ -313,9 +313,6 @@ importers:
       '@midnight-ntwrk/zswap':
         specifier: 4.0.0
         version: 4.0.0
-      '@openzeppelin/adapter-runtime-utils':
-        specifier: workspace:*
-        version: link:../adapter-runtime-utils
       '@types/jszip':
         specifier: ^3.4.1
         version: 3.4.1
@@ -332,6 +329,9 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
     devDependencies:
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
         specifier: ^2.0.0
         version: 2.0.0(@babel/runtime@7.29.2)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
@@ -371,12 +371,6 @@ importers:
 
   packages/adapter-polkadot:
     dependencies:
-      '@openzeppelin/adapter-evm-core':
-        specifier: workspace:*
-        version: link:../adapter-evm-core
-      '@openzeppelin/adapter-runtime-utils':
-        specifier: workspace:*
-        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0
@@ -399,6 +393,12 @@ importers:
         specifier: ^2.16.1
         version: 2.19.5(@react-native-async-storage/async-storage@1.24.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10)))(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4)(typescript@5.9.3)(utf-8-validate@5.0.10)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
     devDependencies:
+      '@openzeppelin/adapter-evm-core':
+        specifier: workspace:*
+        version: link:../adapter-evm-core
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/ui-types':
         specifier: ^2.0.0
         version: 2.0.0
@@ -444,9 +444,6 @@ importers:
 
   packages/adapter-solana:
     dependencies:
-      '@openzeppelin/adapter-runtime-utils':
-        specifier: workspace:*
-        version: link:../adapter-runtime-utils
       '@project-serum/anchor':
         specifier: ^0.26.0
         version: 0.26.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
@@ -472,6 +469,9 @@ importers:
         specifier: ^4.17.23
         version: 4.17.23
     devDependencies:
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/ui-types':
         specifier: ^2.0.0
         version: 2.0.0
@@ -499,9 +499,6 @@ importers:
       '@creit.tech/stellar-wallets-kit':
         specifier: ^1.8.0
         version: 1.9.5(1eb75684ff2bec38b7737740c3906b3f)
-      '@openzeppelin/adapter-runtime-utils':
-        specifier: workspace:*
-        version: link:../adapter-runtime-utils
       '@openzeppelin/relayer-sdk':
         specifier: 1.9.0
         version: 1.9.0
@@ -524,6 +521,9 @@ importers:
         specifier: ^0.510.0
         version: 0.510.0(react@19.2.4)
     devDependencies:
+      '@openzeppelin/adapter-runtime-utils':
+        specifier: workspace:*
+        version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
         specifier: ^2.0.0
         version: 2.0.0(@babel/runtime@7.29.2)(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
@@ -12178,7 +12178,7 @@ snapshots:
       debug: 4.4.3
       invariant: 2.2.4
       metro: 0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      metro-config: 0.83.5(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      metro-config: 0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       metro-core: 0.83.5
       semver: 7.7.4
     transitivePeerDependencies:
@@ -19739,6 +19739,22 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
+
+  metro-config@0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+    dependencies:
+      connect: 3.7.0
+      flow-enums-runtime: 0.0.6
+      jest-validate: 29.7.0
+      metro: 0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-cache: 0.83.5
+      metro-core: 0.83.5
+      metro-runtime: 0.83.5
+      yaml: 2.8.3
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
 
   metro-core@0.83.5:
     dependencies:
@@ -19829,6 +19845,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro-transform-worker@0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
@@ -19896,6 +19913,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro@0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
@@ -19923,7 +19941,7 @@ snapshots:
       metro-babel-transformer: 0.83.5
       metro-cache: 0.83.5
       metro-cache-key: 0.83.5
-      metro-config: 0.83.5(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      metro-config: 0.83.5(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       metro-core: 0.83.5
       metro-file-map: 0.83.5
       metro-resolver: 0.83.5
