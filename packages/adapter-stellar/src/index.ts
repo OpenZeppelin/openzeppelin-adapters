@@ -1,12 +1,16 @@
 import { VERSION as UI_COMPONENTS_V } from '@openzeppelin/ui-components';
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
-import type { EcosystemExport, StellarNetworkConfig } from '@openzeppelin/ui-types';
+import type {
+  CapabilityFactoryMap,
+  EcosystemExport,
+  StellarNetworkConfig,
+} from '@openzeppelin/ui-types';
 import { VERSION as UI_UTILS_V, validatePeerVersions } from '@openzeppelin/ui-utils';
 
-import { StellarAdapter } from './adapter';
 import { stellarAdapterConfig } from './config';
 import { ecosystemMetadata } from './metadata';
 import { stellarNetworks } from './networks';
+import { capabilityFactories, createRuntime } from './profiles';
 
 declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
 
@@ -26,12 +30,17 @@ validatePeerVersions('@openzeppelin/adapter-stellar', {
 });
 
 export { ecosystemMetadata } from './metadata';
-export { StellarAdapter } from './adapter';
+export * from './capabilities';
+export * from './profiles';
+
+export const capabilities: CapabilityFactoryMap = capabilityFactories;
 
 export const ecosystemDefinition: EcosystemExport = {
   ...ecosystemMetadata,
   networks: stellarNetworks,
-  createAdapter: (config) => new StellarAdapter(config as StellarNetworkConfig),
+  capabilities,
+  createRuntime: (profile, config, options) =>
+    createRuntime(profile, config as StellarNetworkConfig, options),
   adapterConfig: stellarAdapterConfig,
 };
 

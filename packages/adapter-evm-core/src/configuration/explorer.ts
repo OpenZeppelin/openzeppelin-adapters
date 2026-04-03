@@ -3,7 +3,6 @@ import trimEnd from 'lodash-es/trimEnd.js';
 import { UserExplorerConfig } from '@openzeppelin/ui-types';
 import { appConfigService, logger, userNetworkServiceConfigService } from '@openzeppelin/ui-utils';
 
-import { shouldUseV2Api, testEtherscanV2Connection } from '../abi/etherscan-v2';
 import { EvmCompatibleNetworkConfig } from '../types/network';
 import { isValidEvmAddress } from '../utils';
 
@@ -234,13 +233,18 @@ export async function testEvmExplorerConnection(
   error?: string;
 }> {
   // Check if this network supports V2 API and should use it
-  if (networkConfig && shouldUseV2Api(networkConfig)) {
-    // Use the V2-specific connection test
-    logger.info(
-      'testEvmExplorerConnection',
-      `Using V2 API connection test for ${networkConfig.name}`
-    );
-    return testEtherscanV2Connection(networkConfig, explorerConfig.apiKey);
+  if (networkConfig) {
+    // Keep the ABI integration on-demand so Tier 1 explorer imports stay lightweight.
+    const { shouldUseV2Api, testEtherscanV2Connection } = await import('../abi/etherscan-v2');
+
+    if (shouldUseV2Api(networkConfig)) {
+      // Use the V2-specific connection test
+      logger.info(
+        'testEvmExplorerConnection',
+        `Using V2 API connection test for ${networkConfig.name}`
+      );
+      return testEtherscanV2Connection(networkConfig, explorerConfig.apiKey);
+    }
   }
 
   // V1 API testing path

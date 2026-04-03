@@ -2,17 +2,16 @@
  * Stellar Adapter: Vite Configuration Export
  *
  * This module exports Vite configuration fragments for the Stellar adapter.
- * Currently minimal, but provides a consistent interface for adapter-specific
- * build requirements.
- *
- * USAGE:
- * 1. In the main builder app: Import and merge into packages/builder/vite.config.ts
- * 2. In exported apps: The export system injects these configs when Stellar is used
+ * Consumers inherit these requirements through `@openzeppelin/adapters-vite`.
  *
  * See: docs/ADAPTER_ARCHITECTURE.md § "Build-Time Requirements"
  */
 
+import { createRequire } from 'node:module';
 import type { UserConfig } from 'vite';
+
+const require = createRequire(import.meta.url);
+const STELLAR_SDK_NODE_ENTRY = require.resolve('@stellar/stellar-sdk');
 
 /**
  * Returns the Vite configuration required for Stellar adapter compatibility
@@ -47,6 +46,11 @@ export function getStellarViteConfig(): UserConfig {
     plugins: [],
 
     resolve: {
+      alias: {
+        // Avoid the SDK browser UMD bundle so Vite can prebundle the Node entry
+        // and preserve named imports used throughout the adapter.
+        '@stellar/stellar-sdk': STELLAR_SDK_NODE_ENTRY,
+      },
       // Module Deduplication
       // Ensure singleton instances of shared dependencies
       dedupe: [
@@ -57,10 +61,14 @@ export function getStellarViteConfig(): UserConfig {
     },
 
     optimizeDeps: {
-      // Force Pre-Bundling (CommonJS → ESM conversion)
-      // Stellar dependencies are typically already ESM, but we include them here
-      // for consistency and to ensure proper module resolution
-      include: [],
+      // Force pre-bundling of CommonJS/browser-compat dependencies used behind the
+      // Stellar adapter so Vite serves ESM wrappers during dev instead of raw CJS.
+      include: [
+        '@stellar/stellar-sdk',
+        '@creit.tech/stellar-wallets-kit',
+        '@stellar/freighter-api',
+        'buffer',
+      ],
       exclude: [],
     },
   };

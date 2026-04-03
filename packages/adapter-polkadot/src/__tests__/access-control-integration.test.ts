@@ -1,7 +1,7 @@
 /**
  * Access Control Integration Tests for Polkadot Adapter
  *
- * Tests the full integration path: PolkadotAdapter.getAccessControlService() → registerContract()
+ * Tests the full integration path: createAccessControl() → registerContract()
  * → getCapabilities() → getOwnership() → transferOwnership() with mocked RPC and indexer.
  *
  * Verifies:
@@ -15,13 +15,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EvmAccessControlService } from '@openzeppelin/adapter-evm-core';
 import type {
+  AccessControlCapability,
   AccessControlService,
   ContractFunction,
   ContractSchema,
   ExecutionConfig,
 } from '@openzeppelin/ui-types';
 
-import { PolkadotAdapter } from '../adapter';
+import { createAccessControl } from '../capabilities/access-control';
+import * as executionCapabilities from '../capabilities/execution';
 import type { TypedPolkadotNetworkConfig } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -161,12 +163,12 @@ const OWNABLE_TWO_STEP_FUNCTIONS = [
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('PolkadotAdapter — Access Control Integration', () => {
-  let adapter: PolkadotAdapter;
+describe('Polkadot access control capability integration', () => {
+  let accessControl: AccessControlCapability;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    adapter = new PolkadotAdapter(TEST_NETWORK_CONFIG);
+    accessControl = createAccessControl(TEST_NETWORK_CONFIG);
 
     mockFetch.mockResolvedValue({
       ok: true,
@@ -185,11 +187,11 @@ describe('PolkadotAdapter — Access Control Integration', () => {
   // -------------------------------------------------------------------------
 
   function getEvmService(): EvmAccessControlService {
-    return adapter.getAccessControlService() as EvmAccessControlService;
+    return accessControl as EvmAccessControlService;
   }
 
-  describe('lazy initialization', () => {
-    it('should return an AccessControlService on first call', () => {
+  describe('access control capability', () => {
+    it('should return an AccessControlService with expected methods', () => {
       const service = getEvmService();
 
       expect(service).toBeDefined();
@@ -199,19 +201,10 @@ describe('PolkadotAdapter — Access Control Integration', () => {
       expect(typeof service.transferOwnership).toBe('function');
     });
 
-    it('should return the same instance on subsequent calls', () => {
-      const first = adapter.getAccessControlService();
-      const second = adapter.getAccessControlService();
-
-      expect(first).toBe(second);
-    });
-
-    it('should not create the service during adapter construction', () => {
-      const internalAdapter = adapter as unknown as { accessControlService: unknown };
-      expect(internalAdapter.accessControlService).toBeNull();
-
-      adapter.getAccessControlService();
-      expect(internalAdapter.accessControlService).not.toBeNull();
+    it('should create distinct instances for distinct createAccessControl calls', () => {
+      const first = createAccessControl(TEST_NETWORK_CONFIG);
+      const second = createAccessControl(TEST_NETWORK_CONFIG);
+      expect(first).not.toBe(second);
     });
   });
 
@@ -328,14 +321,20 @@ describe('PolkadotAdapter — Access Control Integration', () => {
 
   describe('executeTransaction callback', () => {
     it('should wire signAndBroadcast as the transaction executor', async () => {
-      const service = getEvmService();
+      const innerExecution = executionCapabilities.createExecution(TEST_NETWORK_CONFIG);
+      const signAndBroadcastSpy = vi
+        .spyOn(innerExecution, 'signAndBroadcast')
+        .mockResolvedValue({ txHash: '0xmocktxhash123' });
+
+      const createExecutionSpy = vi
+        .spyOn(executionCapabilities, 'createExecution')
+        .mockReturnValue(innerExecution);
+
+      const localAccess = createAccessControl(TEST_NETWORK_CONFIG);
+      const service = localAccess as EvmAccessControlService;
       const schema = createSchema(OWNABLE_TWO_STEP_FUNCTIONS);
 
       await service.registerContract(CONTRACT_ADDRESS, schema);
-
-      const signAndBroadcastSpy = vi
-        .spyOn(adapter, 'signAndBroadcast')
-        .mockResolvedValue({ txHash: '0xmocktxhash123' });
 
       const mockExecutionConfig: ExecutionConfig = {
         method: 'eoa',
@@ -356,6 +355,9 @@ describe('PolkadotAdapter — Access Control Integration', () => {
       expect(callArgs[1]).toEqual(mockExecutionConfig);
 
       expect(result).toEqual({ id: '0xmocktxhash123' });
+
+      createExecutionSpy.mockRestore();
+      signAndBroadcastSpy.mockRestore();
     });
   });
 
@@ -365,7 +367,7 @@ describe('PolkadotAdapter — Access Control Integration', () => {
 
   describe('type compatibility', () => {
     it('should be assignable to AccessControlService interface', () => {
-      const service: AccessControlService = adapter.getAccessControlService()!;
+      const service: AccessControlService = accessControl;
       expect(service).toBeDefined();
     });
   });

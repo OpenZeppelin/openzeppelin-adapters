@@ -1,0 +1,27 @@
+{
+  "name": "@openzeppelin/adapter-runtime-utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "description": "Internal runtime lifecycle utilities for OpenZeppelin adapters",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "@openzeppelin/ui-types": "^2.0.0"
+  },
+  "devDependencies": {
+    "@openzeppelin/ui-types": "^2.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

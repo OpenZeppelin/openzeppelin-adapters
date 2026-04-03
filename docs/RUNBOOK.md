@@ -137,6 +137,12 @@ Before declaring migration complete:
 - Staging: resolve from `rc` channel
 - Production: resolve stable versions
 - Local dev: use `LOCAL_ADAPTERS_PATH` and `.pnpmfile.cjs` override
+- In `openzeppelin-adapters` itself, use `pnpm dev:local` or `pnpm dev:uikit:local` to point
+  `@openzeppelin/ui-*` dependencies at a sibling `../openzeppelin-ui` checkout
+- Override the default UI checkout path with `LOCAL_UI_PATH=/path/to/openzeppelin-ui`
+- Use `pnpm dev:npm` to restore published npm UI packages after local validation
+- Run `pnpm exec oz-ui-dev status --project "$PWD" --json` to inspect the current local-toggle
+  state and verify whether local tarballs are active
 
 ## References
 

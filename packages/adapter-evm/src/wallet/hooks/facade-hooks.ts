@@ -4,7 +4,6 @@ import {
   useChainId,
   useChains,
   useConnect,
-  useDisconnect,
   useSendTransaction,
   useSignMessage,
   useSignTypedData,
@@ -23,6 +22,7 @@ import {
   type UseWaitForTransactionReceiptReturnType,
 } from 'wagmi';
 
+import { useManagedWagmiDisconnect } from '@openzeppelin/adapter-evm-core';
 import type { EcosystemSpecificReactHooks } from '@openzeppelin/ui-types';
 
 /**
@@ -32,7 +32,7 @@ import type { EcosystemSpecificReactHooks } from '@openzeppelin/ui-types';
 export const evmFacadeHooks: EcosystemSpecificReactHooks = {
   useAccount,
   useConnect,
-  useDisconnect,
+  useDisconnect: useManagedWagmiDisconnect,
   useSwitchChain,
   useChainId,
   useChains,

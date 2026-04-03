@@ -1,11 +1,18 @@
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
-import type { EcosystemExport, SolanaNetworkConfig } from '@openzeppelin/ui-types';
+import type {
+  CapabilityFactoryMap,
+  EcosystemExport,
+  NetworkConfig,
+  ProfileName,
+} from '@openzeppelin/ui-types';
 import { VERSION as UI_UTILS_V, validatePeerVersions } from '@openzeppelin/ui-utils';
 
-import { SolanaAdapter } from './adapter';
+import { asSolanaNetworkConfig } from './capabilities/helpers';
+
 import { solanaAdapterConfig } from './config';
 import { ecosystemMetadata } from './metadata';
 import { solanaNetworks } from './networks';
+import { capabilityFactories, createRuntime } from './profiles';
 
 declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
 
@@ -21,17 +28,21 @@ validatePeerVersions('@openzeppelin/adapter-solana', {
 });
 
 export { ecosystemMetadata } from './metadata';
+export * from './capabilities';
+export * from './profiles';
+
+export const capabilities: CapabilityFactoryMap = capabilityFactories;
 
 export const ecosystemDefinition: EcosystemExport = {
   ...ecosystemMetadata,
   networks: solanaNetworks,
-  createAdapter: (config) => new SolanaAdapter(config as SolanaNetworkConfig),
+  capabilities,
+  createRuntime: (profile: ProfileName, config: NetworkConfig, options) =>
+    createRuntime(profile, asSolanaNetworkConfig(config), options),
   adapterConfig: solanaAdapterConfig,
 };
 
-// Adapter-specific types
 export type { SolanaContractArtifacts } from './types/artifacts';
 export { isSolanaContractArtifacts } from './types/artifacts';
 
-// Individual network exports
 export { solanaMainnetBeta, solanaDevnet, solanaTestnet } from './networks';

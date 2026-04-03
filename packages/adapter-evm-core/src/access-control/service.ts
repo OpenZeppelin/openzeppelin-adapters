@@ -1709,7 +1709,7 @@ export class EvmAccessControlService implements AccessControlService {
  * Creates an EvmAccessControlService instance.
  *
  * @param networkConfig - EVM network configuration (includes indexer URL)
- * @param executeTransaction - Callback for transaction execution (provided by EvmAdapter)
+ * @param executeTransaction - Callback for transaction execution (provided by runtime composition)
  * @returns A new EvmAccessControlService instance
  */
 export function createEvmAccessControlService(

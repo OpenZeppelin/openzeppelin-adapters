@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { MidnightNetworkConfig } from '@openzeppelin/ui-types';
 
-import { MidnightAdapter } from '../adapter';
+import { createRelayer } from '../capabilities/relayer';
 
-describe('MidnightAdapter.getDefaultServiceConfig', () => {
+describe('createRelayer().getDefaultServiceConfig', () => {
   const createMockNetworkConfig = (
     overrides: Partial<MidnightNetworkConfig> = {}
   ): MidnightNetworkConfig => ({
@@ -25,9 +25,9 @@ describe('MidnightAdapter.getDefaultServiceConfig', () => {
   describe('indexer service', () => {
     it('should return indexer config when both URLs are present', () => {
       const networkConfig = createMockNetworkConfig();
-      const adapter = new MidnightAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      const result = adapter.getDefaultServiceConfig('indexer');
+      const result = relayer.getDefaultServiceConfig('indexer');
 
       expect(result).toEqual({
         httpUrl: 'https://indexer.testnet.midnight.network/api/v1/graphql',
@@ -39,9 +39,9 @@ describe('MidnightAdapter.getDefaultServiceConfig', () => {
       const networkConfig = createMockNetworkConfig({
         indexerUri: undefined,
       });
-      const adapter = new MidnightAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      const result = adapter.getDefaultServiceConfig('indexer');
+      const result = relayer.getDefaultServiceConfig('indexer');
 
       expect(result).toBeNull();
     });
@@ -50,9 +50,9 @@ describe('MidnightAdapter.getDefaultServiceConfig', () => {
       const networkConfig = createMockNetworkConfig({
         indexerWsUri: undefined,
       });
-      const adapter = new MidnightAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      const result = adapter.getDefaultServiceConfig('indexer');
+      const result = relayer.getDefaultServiceConfig('indexer');
 
       expect(result).toBeNull();
     });
@@ -61,11 +61,11 @@ describe('MidnightAdapter.getDefaultServiceConfig', () => {
   describe('unknown service', () => {
     it('should return null for unknown service IDs', () => {
       const networkConfig = createMockNetworkConfig();
-      const adapter = new MidnightAdapter(networkConfig);
+      const relayer = createRelayer(networkConfig);
 
-      expect(adapter.getDefaultServiceConfig('rpc')).toBeNull();
-      expect(adapter.getDefaultServiceConfig('explorer')).toBeNull();
-      expect(adapter.getDefaultServiceConfig('unknown')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('rpc')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('explorer')).toBeNull();
+      expect(relayer.getDefaultServiceConfig('unknown')).toBeNull();
     });
   });
 });

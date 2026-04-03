@@ -20,8 +20,8 @@ const LOG_SYSTEM = 'StellarWalletImplementation';
 
 /**
  * Class responsible for encapsulating StellarWalletsKit logic for wallet interactions.
- * This class should not be used directly by UI components. The StellarAdapter
- * exposes a standardized interface for wallet operations.
+ * This class should not be used directly by UI components. The adapter runtime's
+ * wallet capability exposes the standardized wallet interface consumed by apps.
  * It manages StellarWalletsKit instances and provides methods for wallet actions.
  */
 export class WalletsKitImplementation {
@@ -34,6 +34,8 @@ export class WalletsKitImplementation {
   // Internal state tracking for connection status
   private currentAddress: string | null = null;
   private currentWalletId: string | null = null;
+  private isConnecting: boolean = false;
+  private isReconnecting: boolean = false;
   private connectionStatusListeners = new Set<StellarConnectionStatusListener>();
 
   /**
@@ -183,6 +185,9 @@ export class WalletsKitImplementation {
 
     try {
       const prevStatus = this.getWalletConnectionStatus();
+      this.isConnecting = true;
+      const connectingStatus = this.getWalletConnectionStatus();
+      this.notifyConnectionListeners(connectingStatus, prevStatus);
       const kit = this.getKitToUse();
 
       logger.info(LOG_SYSTEM, `Attempting to connect to wallet: ${connectorId}`);
@@ -196,10 +201,11 @@ export class WalletsKitImplementation {
       if (result.address) {
         this.currentAddress = result.address;
         this.currentWalletId = connectorId;
+        this.isConnecting = false;
 
         // Notify listeners of the connection change
         const newStatus = this.getWalletConnectionStatus();
-        this.notifyConnectionListeners(newStatus, prevStatus);
+        this.notifyConnectionListeners(newStatus, connectingStatus);
 
         logger.info(
           LOG_SYSTEM,
@@ -212,12 +218,19 @@ export class WalletsKitImplementation {
           chainId: this.networkConfig?.id,
         };
       } else {
+        this.isConnecting = false;
+        const failedStatus = this.getWalletConnectionStatus();
+        this.notifyConnectionListeners(failedStatus, connectingStatus);
         return {
           connected: false,
           error: 'Failed to get address from wallet',
         };
       }
     } catch (error) {
+      const previousStatus = this.getWalletConnectionStatus();
+      this.isConnecting = false;
+      const failedStatus = this.getWalletConnectionStatus();
+      this.notifyConnectionListeners(failedStatus, previousStatus);
       logger.error(LOG_SYSTEM, `Failed to connect to wallet ${connectorId}:`, error);
       return {
         connected: false,
@@ -241,6 +254,8 @@ export class WalletsKitImplementation {
       logger.info(LOG_SYSTEM, 'Disconnecting wallet');
 
       // Clear the current connection state
+      this.isConnecting = false;
+      this.isReconnecting = false;
       this.currentAddress = null;
       this.currentWalletId = null;
 
@@ -269,13 +284,21 @@ export class WalletsKitImplementation {
   public getWalletConnectionStatus(): StellarWalletConnectionStatus {
     const isConnected = this.currentAddress !== null;
     const chainId = this.networkConfig?.id || 'stellar-testnet';
+    const isDisconnected = !isConnected && !this.isConnecting && !this.isReconnecting;
+    const status = isConnected
+      ? 'connected'
+      : this.isReconnecting
+        ? 'reconnecting'
+        : this.isConnecting
+          ? 'connecting'
+          : 'disconnected';
 
     return {
       isConnected,
-      isConnecting: false, // We don't track intermediate connecting state yet
-      isDisconnected: !isConnected,
-      isReconnecting: false,
-      status: isConnected ? 'connected' : 'disconnected',
+      isConnecting: this.isConnecting,
+      isDisconnected,
+      isReconnecting: this.isReconnecting,
+      status,
       address: this.currentAddress || undefined,
       walletId: this.currentWalletId || undefined,
       chainId,

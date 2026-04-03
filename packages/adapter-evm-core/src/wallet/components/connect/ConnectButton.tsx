@@ -81,37 +81,17 @@ const ConnectButtonContent: React.FC<{
   showInjectedConnector,
 }) => {
   const { isConnected } = useDerivedAccountStatus();
-  const { isConnecting: isHookConnecting, error: connectError } = useDerivedConnectStatus();
-
-  // Local state to indicate the button has been clicked and dialog is open, awaiting user selection
-  const [isManuallyInitiated, setIsManuallyInitiated] = useState(false);
-
+  const { isConnecting, error: connectError } = useDerivedConnectStatus();
   const sizeProps = getWalletButtonSizeProps(size);
 
   useEffect(() => {
     if (isConnected && hideWhenConnected) {
       setDialogOpen(false);
-      setIsManuallyInitiated(false); // Reset if dialog closes due to connection
     }
   }, [isConnected, hideWhenConnected, setDialogOpen]);
 
-  // If dialog is closed, reset manual initiation state
-  useEffect(() => {
-    if (!dialogOpen) {
-      setIsManuallyInitiated(false);
-    }
-  }, [dialogOpen]);
-
-  // If wagmi hook reports it's connecting, we no longer need our manual pending state
-  useEffect(() => {
-    if (isHookConnecting) {
-      setIsManuallyInitiated(false);
-    }
-  }, [isHookConnecting]);
-
   const handleConnectClick = () => {
-    if (!isConnected) {
-      setIsManuallyInitiated(true); // User clicked, show pending on button
+    if (!isConnected && !isConnecting) {
       setDialogOpen(true);
     }
   };
@@ -120,36 +100,27 @@ const ConnectButtonContent: React.FC<{
     return null;
   }
 
-  // Button shows loading if either hook reports connecting OR if user just clicked to open dialog
-  const showButtonLoading = isHookConnecting || isManuallyInitiated;
-
   return (
     <div className={cn('flex items-center', fullWidth && 'w-full', className)}>
       <Button
         onClick={handleConnectClick}
-        disabled={showButtonLoading || isConnected}
+        disabled={isConnecting || isConnected}
         variant={variant || 'outline'}
         size={sizeProps.size}
         className={cn(sizeProps.className, fullWidth && 'w-full')}
         title={isConnected ? 'Connected' : connectError?.message || 'Connect Wallet'}
       >
-        {showButtonLoading ? (
+        {isConnecting ? (
           <Loader2 className={cn(sizeProps.iconSize, 'animate-spin mr-1')} />
         ) : (
           <Wallet className={cn(sizeProps.iconSize, 'mr-1')} />
         )}
-        {showButtonLoading ? 'Connecting...' : 'Connect Wallet'}
+        {isConnecting ? 'Connecting…' : 'Connect Wallet'}
       </Button>
 
       <ConnectorDialog
         open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          // If dialog is closed manually by user before selection, reset manual initiation
-          if (!open) {
-            setIsManuallyInitiated(false);
-          }
-        }}
+        onOpenChange={setDialogOpen}
         showInjectedConnector={showInjectedConnector}
       />
     </div>

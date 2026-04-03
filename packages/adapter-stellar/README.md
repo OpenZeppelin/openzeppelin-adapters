@@ -1,10 +1,10 @@
 # Stellar Adapter (`@openzeppelin/adapter-stellar`)
 
-This package provides the `ContractAdapter` implementation for the Stellar (Soroban) ecosystem for the UI Builder.
+This package provides the **Stellar ecosystem definition** for OpenZeppelin UI: Soroban-focused capability factories, network metadata, and **`createRuntime`** to obtain an `EcosystemRuntime` for Stellar networks.
 
 It is responsible for:
 
-- Implementing the `ContractAdapter` interface from `@openzeppelin/ui-types`.
+- Exposing **`ecosystemDefinition`** (`EcosystemExport`) with `networks`, `capabilities`, and `createRuntime(profile, networkConfig, options)` aligned with `@openzeppelin/ui-types`.
 - Defining and exporting Stellar network configurations (Public Network and Testnet) as `StellarNetworkConfig` objects in `src/networks/` (Horizon URL, Soroban RPC URL, network passphrase, explorer URL, icon, etc.).
 - Loading Stellar contract definitions and metadata and transforming them into the builder’s chain‑agnostic `ContractSchema`.
 - Mapping Soroban value types to builder form fields and validating user input.
@@ -28,7 +28,7 @@ The adapter selects the strategy at runtime based on the `ExecutionConfig` provi
 
 ### Configuration in the Builder
 
-The Builder application’s “Customize” step passes an `ExecutionConfig` to the adapter’s `signAndBroadcast` method. The adapter uses a factory to instantiate the appropriate strategy and reports live status updates via the provided `onStatusChange` callback.
+The Builder application’s “Customize” step passes an `ExecutionConfig` into the execution capability’s transaction flow (`signAndBroadcast` on the runtime’s **`execution`** capability for transactor-style profiles). The implementation uses a factory to instantiate the appropriate strategy and reports live status updates via the provided `onStatusChange` callback.
 
 ---
 
@@ -52,20 +52,23 @@ Since OpenZeppelin's Stellar contracts don't expose a `get_all_roles()` method, 
 #### 1. Explicit Role IDs (Recommended for known contracts)
 
 ```typescript
-const service = adapter.getAccessControlService();
-service.registerContract(contractAddress, schema, ['admin', 'minter', 'burner']);
+const accessControl = runtime.accessControl;
+if (!accessControl) {
+  throw new Error('Access control capability not available for this profile');
+}
+accessControl.registerContract(contractAddress, schema, ['admin', 'minter', 'burner']);
 ```
 
 #### 2. Dynamic Discovery via Indexer
 
-If no role IDs are provided, the service automatically queries the indexer for historical `ROLE_GRANTED` and `ROLE_REVOKED` events:
+If no role IDs are provided, the access control capability automatically queries the indexer for historical `ROLE_GRANTED` and `ROLE_REVOKED` events:
 
 ```typescript
 // Register without role IDs - discovery happens automatically
-service.registerContract(contractAddress, schema);
+accessControl.registerContract(contractAddress, schema);
 
 // Or explicitly discover roles
-const roles = await service.discoverKnownRoleIds(contractAddress);
+const roles = await accessControl.discoverKnownRoleIds(contractAddress);
 // => ['admin', 'minter', 'burner']
 ```
 
@@ -75,7 +78,7 @@ For newly created roles that haven't been granted yet (no historical events), yo
 
 ```typescript
 // Add roles that may not exist in historical events
-service.addKnownRoleIds(contractAddress, ['new_role', 'another_role']);
+accessControl.addKnownRoleIds(contractAddress, ['new_role', 'another_role']);
 ```
 
 Role IDs are validated against Soroban Symbol constraints:
@@ -122,11 +125,7 @@ If no indexer is configured or the indexer is unavailable:
 
 All wallet integration logic, UI components, facade hooks, and the UI context provider for Stellar are located in `src/wallet/`.
 
-The `StellarAdapter` implements the optional UI methods from `ContractAdapter`:
-
-- `getEcosystemReactUiContextProvider()` returns `StellarWalletUiRoot`, a stable provider root for Stellar wallet state.
-- `getEcosystemReactHooks()` returns `stellarFacadeHooks` for account and connection status.
-- `getEcosystemWalletComponents()` returns available wallet UI components (e.g., `ConnectButton`, `AccountDisplay`) for the active UI kit.
+Stellar wallet and UI kit behavior is exposed through the **`wallet`** and **`uiKit`** entries on the `EcosystemRuntime` from `createRuntime` (for example `StellarWalletUiRoot`, facade hooks, and wallet components resolved via the UI kit capability).
 
 For full documentation on the wallet module, see `src/wallet/README.md`.
 
@@ -162,8 +161,8 @@ adapter-stellar/
 │   │   ├── services/                  # Config resolution for wallet UI
 │   │   ├── stellar-wallets-kit/       # Kit-specific helpers
 │   │   ├── README.md                  # Detailed wallet documentation
-│   ├── adapter.ts               # Main StellarAdapter class implementation
-│   └── index.ts                 # Public package exports
+│   ├── adapter.ts               # Internal composition helpers (not the primary public API)
+│   └── index.ts                 # ecosystemDefinition, createRuntime, networks, capabilities
 ├── package.json
 ├── tsconfig.json
 ├── tsup.config.ts
@@ -173,20 +172,28 @@ adapter-stellar/
 
 ---
 
-## Usage (Adapter Instantiation)
+## Usage (runtime creation)
 
-Instantiate the adapter with a specific `StellarNetworkConfig`:
+**Consumers should use `ecosystemDefinition.createRuntime`** with a `ProfileName` and a `StellarNetworkConfig`. That returns an `EcosystemRuntime` whose optional fields (`wallet`, `query`, `accessControl`, …) depend on the profile.
 
 ```typescript
-import { StellarAdapter, stellarTestnet } from '@openzeppelin/adapter-stellar';
+import type { ProfileName } from '@openzeppelin/ui-types';
+import { ecosystemDefinition, stellarTestnet } from '@openzeppelin/adapter-stellar';
 
+const profile: ProfileName = 'composer';
 const networkConfig = stellarTestnet; // or stellarPublic
-const stellarAdapter = new StellarAdapter(networkConfig);
 
-// Use stellarAdapter for operations on the configured Stellar network
+const runtime = await ecosystemDefinition.createRuntime(profile, networkConfig, {
+  /* optional: UI kit overrides, indexer options, etc. */
+});
+
+// Example capabilities
+const { wallet, networkCatalog, accessControl } = runtime;
 ```
 
 Network configurations for Stellar networks are exported from `src/networks/index.ts` (`stellarPublic`, `stellarTestnet`, arrays `stellarMainnetNetworks`, `stellarTestnetNetworks`, and `stellarNetworks`).
+
+> **Note:** Legacy docs or examples may still reference the old monolithic adapter class, but **npm documentation and app code should treat `ecosystemDefinition` + `createRuntime` as the stable integration surface**.
 
 ## Soroban RPC URL Configuration
 
@@ -210,7 +217,7 @@ In `public/app.config.json` for an exported app:
 }
 ```
 
-The adapter resolves Soroban RPC in this order:
+The Stellar runtime resolves Soroban RPC in this order:
 
 1. User-provided RPC config from `UserRpcConfigService` (advanced user input)
 2. RPC override via `AppConfigService.getRpcEndpointOverride(networkId)`
@@ -218,7 +225,7 @@ The adapter resolves Soroban RPC in this order:
 
 ## Explorer URLs
 
-Stellar explorers are used for display only. The adapter constructs URLs using `explorerUrl` from the network config:
+Stellar explorers are used for display only. The runtime constructs URLs using `explorerUrl` from the network config:
 
 - `getExplorerUrl(address)` → `.../account/{address}` or `.../contract/{id}` (Soroban contracts)
 - `getExplorerTxUrl(txHash)` → `.../tx/{hash}`
@@ -252,7 +259,7 @@ The adapter fully supports Stellar Asset Contracts (SACs), which are special con
 1. **Detection**: When loading a contract, the adapter checks its executable type via RPC
 2. **Specification Loading**: For SAC contracts, the adapter fetches the official SAC specification from GitHub
 3. **XDR Encoding**: The JSON spec is converted to XDR format using `@stellar/stellar-xdr-json`
-4. **UI Generation**: The adapter generates the same UI fields as regular WASM contracts
+4. **UI Generation**: The contract-loading / schema pipeline generates the same UI fields as regular WASM contracts
 
 ### Technical Implementation Details
 

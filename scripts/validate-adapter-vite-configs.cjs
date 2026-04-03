@@ -37,7 +37,9 @@ function findAdapterPackages() {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
         const name = packageJson.name || '';
         const isAdapter = name.startsWith('@openzeppelin/adapter-');
-        if (isAdapter) {
+        const isInternalUtility =
+          packageJson.private === true && !packageJson.exports?.['./vite-config'];
+        if (isAdapter && !isInternalUtility) {
           adapters.push({
             name: packageJson.name,
             path: adapterPath,

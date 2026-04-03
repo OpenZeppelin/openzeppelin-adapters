@@ -19,8 +19,9 @@ export function getMidnightExplorerAddressUrl(
     return null;
   }
   // Example construction (adjust path as needed for Midnight)
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
-  return `${baseUrl}/address/${address}`; // Assuming similar path to others
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+  return `${baseUrl}/address/${address}`;
 }
 
 /**
@@ -40,8 +41,9 @@ export function getMidnightExplorerTxUrl(
     return null;
   }
   // Example construction (adjust path as needed for Midnight)
-  const baseUrl = networkConfig.explorerUrl.replace(/\/+$/, '');
-  return `${baseUrl}/tx/${txHash}`; // Assuming similar path to others
+  let baseUrl = networkConfig.explorerUrl;
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+  return `${baseUrl}/tx/${txHash}`;
 }
 
 /**

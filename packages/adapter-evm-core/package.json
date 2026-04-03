@@ -25,12 +25,13 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:adapters": "node -e \"console.log('Skipping - core package has no adapter.ts'); process.exit(0)\"",
+    "lint:adapters": "node ../../lint-adapters.cjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/relayer-sdk": "1.9.0",
     "@wagmi/connectors": "5.7.13",
     "@wagmi/core": "^2.20.3",
@@ -38,10 +39,10 @@
     "viem": "^2.33.3"
   },
   "peerDependencies": {
-    "@openzeppelin/ui-components": "^1.7.0",
-    "@openzeppelin/ui-react": "^1.2.0",
-    "@openzeppelin/ui-types": "^1.12.0",
-    "@openzeppelin/ui-utils": "^1.4.0",
+    "@openzeppelin/ui-components": "^2.0.0",
+    "@openzeppelin/ui-react": "^2.0.0",
+    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.0",
     "lucide-react": "^0.468.0",
     "react": "^18.0.0 || ^19.0.0",
@@ -62,10 +63,10 @@
     }
   },
   "devDependencies": {
-    "@openzeppelin/ui-components": "^1.7.0",
-    "@openzeppelin/ui-react": "^1.2.0",
-    "@openzeppelin/ui-types": "^1.12.0",
-    "@openzeppelin/ui-utils": "^1.4.0",
+    "@openzeppelin/ui-components": "^2.0.0",
+    "@openzeppelin/ui-react": "^2.0.0",
+    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.0",
     "@types/lodash-es": "^4.17.12",
     "eslint": "^9.32.0",
@@ -94,6 +95,186 @@
       "require": {
         "types": "./dist/vite-config.d.cts",
         "default": "./dist/vite-config.cjs"
+      }
+    },
+    "./addressing": {
+      "import": {
+        "types": "./dist/addressing.d.mts",
+        "default": "./dist/addressing.mjs"
+      },
+      "require": {
+        "types": "./dist/addressing.d.cts",
+        "default": "./dist/addressing.cjs"
+      }
+    },
+    "./explorer": {
+      "import": {
+        "types": "./dist/explorer.d.mts",
+        "default": "./dist/explorer.mjs"
+      },
+      "require": {
+        "types": "./dist/explorer.d.cts",
+        "default": "./dist/explorer.cjs"
+      }
+    },
+    "./network-catalog": {
+      "import": {
+        "types": "./dist/network-catalog.d.mts",
+        "default": "./dist/network-catalog.mjs"
+      },
+      "require": {
+        "types": "./dist/network-catalog.d.cts",
+        "default": "./dist/network-catalog.cjs"
+      }
+    },
+    "./ui-labels": {
+      "import": {
+        "types": "./dist/ui-labels.d.mts",
+        "default": "./dist/ui-labels.mjs"
+      },
+      "require": {
+        "types": "./dist/ui-labels.d.cts",
+        "default": "./dist/ui-labels.cjs"
+      }
+    },
+    "./contract-loading": {
+      "import": {
+        "types": "./dist/contract-loading.d.mts",
+        "default": "./dist/contract-loading.mjs"
+      },
+      "require": {
+        "types": "./dist/contract-loading.d.cts",
+        "default": "./dist/contract-loading.cjs"
+      }
+    },
+    "./schema": {
+      "import": {
+        "types": "./dist/schema.d.mts",
+        "default": "./dist/schema.mjs"
+      },
+      "require": {
+        "types": "./dist/schema.d.cts",
+        "default": "./dist/schema.cjs"
+      }
+    },
+    "./type-mapping": {
+      "import": {
+        "types": "./dist/type-mapping.d.mts",
+        "default": "./dist/type-mapping.mjs"
+      },
+      "require": {
+        "types": "./dist/type-mapping.d.cts",
+        "default": "./dist/type-mapping.cjs"
+      }
+    },
+    "./query": {
+      "import": {
+        "types": "./dist/query.d.mts",
+        "default": "./dist/query.mjs"
+      },
+      "require": {
+        "types": "./dist/query.d.cts",
+        "default": "./dist/query.cjs"
+      }
+    },
+    "./execution": {
+      "import": {
+        "types": "./dist/execution.d.mts",
+        "default": "./dist/execution.mjs"
+      },
+      "require": {
+        "types": "./dist/execution.d.cts",
+        "default": "./dist/execution.cjs"
+      }
+    },
+    "./wallet": {
+      "import": {
+        "types": "./dist/wallet.d.mts",
+        "default": "./dist/wallet.mjs"
+      },
+      "require": {
+        "types": "./dist/wallet.d.cts",
+        "default": "./dist/wallet.cjs"
+      }
+    },
+    "./ui-kit": {
+      "import": {
+        "types": "./dist/ui-kit.d.mts",
+        "default": "./dist/ui-kit.mjs"
+      },
+      "require": {
+        "types": "./dist/ui-kit.d.cts",
+        "default": "./dist/ui-kit.cjs"
+      }
+    },
+    "./relayer": {
+      "import": {
+        "types": "./dist/relayer.d.mts",
+        "default": "./dist/relayer.mjs"
+      },
+      "require": {
+        "types": "./dist/relayer.d.cts",
+        "default": "./dist/relayer.cjs"
+      }
+    },
+    "./access-control": {
+      "import": {
+        "types": "./dist/access-control.d.mts",
+        "default": "./dist/access-control.mjs"
+      },
+      "require": {
+        "types": "./dist/access-control.d.cts",
+        "default": "./dist/access-control.cjs"
+      }
+    },
+    "./declarative": {
+      "import": {
+        "types": "./dist/declarative.d.mts",
+        "default": "./dist/declarative.mjs"
+      },
+      "require": {
+        "types": "./dist/declarative.d.cts",
+        "default": "./dist/declarative.cjs"
+      }
+    },
+    "./viewer": {
+      "import": {
+        "types": "./dist/viewer.d.mts",
+        "default": "./dist/viewer.mjs"
+      },
+      "require": {
+        "types": "./dist/viewer.d.cts",
+        "default": "./dist/viewer.cjs"
+      }
+    },
+    "./transactor": {
+      "import": {
+        "types": "./dist/transactor.d.mts",
+        "default": "./dist/transactor.mjs"
+      },
+      "require": {
+        "types": "./dist/transactor.d.cts",
+        "default": "./dist/transactor.cjs"
+      }
+    },
+    "./composer": {
+      "import": {
+        "types": "./dist/composer.d.mts",
+        "default": "./dist/composer.mjs"
+      },
+      "require": {
+        "types": "./dist/composer.d.cts",
+        "default": "./dist/composer.cjs"
+      }
+    },
+    "./operator": {
+      "import": {
+        "types": "./dist/operator.d.mts",
+        "default": "./dist/operator.mjs"
+      },
+      "require": {
+        "types": "./dist/operator.d.cts",
+        "default": "./dist/operator.cjs"
       }
     }
   }

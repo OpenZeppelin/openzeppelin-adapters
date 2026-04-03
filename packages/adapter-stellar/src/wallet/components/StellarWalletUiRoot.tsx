@@ -16,6 +16,7 @@ import {
   type StellarWalletContextType,
 } from '../context/StellarWalletContext';
 import { stellarUiKitManager, type StellarUiKitManagerState } from '../stellar-wallets-kit';
+import type { StellarWalletConnectionStatus } from '../types';
 
 /**
  * Props for the StellarWalletUiRoot provider
@@ -37,8 +38,9 @@ export function StellarWalletUiRoot({ children, uiKitConfig }: StellarWalletUiRo
   );
 
   // Connection state
-  const [address, setAddress] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<StellarWalletConnectionStatus>(() =>
+    getStellarWalletConnectionStatus()
+  );
   const [availableWallets, setAvailableWallets] = useState<ISupportedWallet[]>([]);
 
   // Initialize UI kit on mount
@@ -70,23 +72,22 @@ export function StellarWalletUiRoot({ children, uiKitConfig }: StellarWalletUiRo
   useEffect(() => {
     const unsubscribeFromConnectionChanges = onStellarWalletConnectionChange(
       (currentStatus, _previousStatus) => {
-        setAddress(currentStatus.address || null);
+        setConnectionStatus(currentStatus);
         logger.debug(
           'StellarWalletUiRoot',
-          `Connection status changed: ${currentStatus.isConnected ? 'connected' : 'disconnected'}`,
+          `Connection status changed: ${currentStatus.status ?? (currentStatus.isConnected ? 'connected' : 'disconnected')}`,
           currentStatus.address
         );
       }
     );
 
     // Initial update to sync current state
-    const initialStatus = getStellarWalletConnectionStatus();
-    setAddress(initialStatus.address || null);
+    setConnectionStatus(getStellarWalletConnectionStatus());
 
     return () => {
       unsubscribeFromConnectionChanges();
     };
-  }, [address]);
+  }, []);
 
   // Load available wallets
   useEffect(() => {
@@ -108,21 +109,15 @@ export function StellarWalletUiRoot({ children, uiKitConfig }: StellarWalletUiRo
    * Connect to a wallet
    */
   const connect = useCallback(async (walletId: string) => {
-    setIsConnecting(true);
-
     try {
       const result = await connectStellarWallet(walletId);
 
-      if (result.connected && result.address) {
-        setAddress(result.address);
-      } else {
+      if (!result.connected || !result.address) {
         throw new Error(result.error || 'Failed to connect wallet');
       }
     } catch (error) {
       logger.error('Failed to connect:', String(error));
       throw error;
-    } finally {
-      setIsConnecting(false);
     }
   }, []);
 
@@ -133,9 +128,7 @@ export function StellarWalletUiRoot({ children, uiKitConfig }: StellarWalletUiRo
     try {
       const result = await disconnectStellarWallet();
 
-      if (result.disconnected) {
-        setAddress(null);
-      } else {
+      if (!result.disconnected) {
         throw new Error(result.error || 'Failed to disconnect wallet');
       }
     } catch (error) {
@@ -144,10 +137,24 @@ export function StellarWalletUiRoot({ children, uiKitConfig }: StellarWalletUiRo
     }
   }, []);
 
+  const isConnected = connectionStatus.isConnected;
+  const status =
+    connectionStatus.status ??
+    (isConnected
+      ? 'connected'
+      : connectionStatus.isReconnecting
+        ? 'reconnecting'
+        : connectionStatus.isConnecting
+          ? 'connecting'
+          : 'disconnected');
+
   const contextValue: StellarWalletContextType = {
-    address,
-    isConnected: address !== null,
-    isConnecting,
+    address: connectionStatus.address ?? null,
+    isConnected,
+    isConnecting: connectionStatus.isConnecting ?? false,
+    isDisconnected: connectionStatus.isDisconnected ?? !isConnected,
+    isReconnecting: connectionStatus.isReconnecting ?? false,
+    status,
     availableWallets,
     connect,
     disconnect,

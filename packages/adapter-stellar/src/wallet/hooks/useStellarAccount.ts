@@ -10,6 +10,12 @@ export interface StellarAccountInfo {
   isConnected: boolean;
   /** Whether a connection is in progress */
   isConnecting: boolean;
+  /** Whether the wallet is currently disconnected */
+  isDisconnected: boolean;
+  /** Whether the wallet is restoring a prior session */
+  isReconnecting: boolean;
+  /** Detailed connection lifecycle status */
+  status: 'connected' | 'connecting' | 'disconnected' | 'reconnecting';
 }
 
 /**
@@ -17,11 +23,15 @@ export interface StellarAccountInfo {
  * @returns Account information including address and connection status
  */
 export function useStellarAccount(): StellarAccountInfo {
-  const { address, isConnected, isConnecting } = useStellarWalletContext();
+  const { address, isConnected, isConnecting, isDisconnected, isReconnecting, status } =
+    useStellarWalletContext();
 
   return {
     address,
     isConnected,
     isConnecting,
+    isDisconnected,
+    isReconnecting,
+    status,
   };
 }

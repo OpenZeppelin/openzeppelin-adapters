@@ -1,10 +1,10 @@
-# Adding New UI Kits to `EvmAdapter`
+# Adding New UI Kits to the EVM UI Kit Capability
 
-The `EvmAdapter`'s wallet module is designed to be extensible, allowing support for various third-party UI kits built on top of Wagmi. The integration of RainbowKit serves as the primary example and pattern. This guide outlines the steps to add support for a new UI kit (referred to as "YourNewKit" in examples).
+The EVM wallet module is designed to be extensible, allowing support for various third-party UI kits built on top of Wagmi. The integration of RainbowKit serves as the primary example and pattern. This guide outlines the steps to add support for a new UI kit (referred to as "YourNewKit" in examples).
 
 ## Prerequisites
 
-- Familiarity with the existing `EvmAdapter` architecture, particularly `EvmUiKitManager`, `EvmWalletUiRoot`, `WagmiWalletImplementation`, and the configuration flow.
+- Familiarity with the existing EVM runtime/UI-kit architecture, particularly `EvmUiKitManager`, `EvmWalletUiRoot`, `WagmiWalletImplementation`, and the configuration flow.
 - Understanding of how RainbowKit is currently integrated (`packages/adapter-evm/src/wallet/rainbowkit/`).
 
 ## Steps to Add "YourNewKit"
@@ -84,4 +84,4 @@ The `EvmAdapter`'s wallet module is designed to be extensible, allowing support 
 
 10. **Testing**: Implement comprehensive unit and integration tests for the new kit's integration, covering configuration loading, asset loading, `WagmiConfig` creation, component rendering, and core functionalities like connect/disconnect and transaction signing.
 
-This pattern aims to keep kit-specific concerns isolated within their respective directories while leveraging the central orchestration provided by `EvmUiKitManager` and `EvmAdapter`. The use of dynamic imports ensures that only the assets for the currently active or configured UI kit are loaded by the browser.
+This pattern aims to keep kit-specific concerns isolated within their respective directories while leveraging the central orchestration provided by `EvmUiKitManager` and the EVM UI kit capability surface. The use of dynamic imports ensures that only the assets for the currently active or configured UI kit are loaded by the browser.
