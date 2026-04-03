@@ -126,6 +126,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
 
+      - name: Bump RC numbers for already-published versions
+        run: node scripts/bump-rc-if-published.cjs
+
       - name: Guard against first-release RC publishes
         run: |
           set -euo pipefail
