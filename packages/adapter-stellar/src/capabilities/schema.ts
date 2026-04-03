@@ -11,7 +11,7 @@ import { asStellarNetworkConfig, withRuntimeCapability } from './helpers';
 export function createSchema(config: NetworkConfig): SchemaCapability {
   const networkConfig = asStellarNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'schema'), {
     getWritableFunctions(contractSchema: ContractSchema) {
       return getStellarWritableFunctions(contractSchema);
     },

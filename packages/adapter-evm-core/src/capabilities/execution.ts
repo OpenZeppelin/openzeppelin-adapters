@@ -37,7 +37,7 @@ export function createExecution(
 ): ExecutionCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'execution'), {
     formatTransactionData(
       contractSchema: ContractSchema,
       functionId: string,

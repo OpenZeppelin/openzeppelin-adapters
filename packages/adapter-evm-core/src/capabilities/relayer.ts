@@ -40,7 +40,7 @@ export function createRelayer(
   const networkConfig = asTypedEvmNetworkConfig(config);
   const relayerStrategy = new RelayerExecutionStrategy();
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'relayer'), {
     getRelayers(serviceUrl: string, accessToken: string) {
       return relayerStrategy.getEvmRelayers(serviceUrl, accessToken, networkConfig);
     },

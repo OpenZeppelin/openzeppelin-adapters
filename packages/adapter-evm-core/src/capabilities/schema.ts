@@ -22,7 +22,7 @@ const AUTO_QUERY_SKIP_NAMES = new Set([
 export function createSchema(config: NetworkConfig): SchemaCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'schema'), {
     getWritableFunctions(contractSchema: ContractSchema) {
       return contractSchema.functions.filter((fn) => fn.modifiesState);
     },

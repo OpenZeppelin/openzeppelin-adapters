@@ -20,7 +20,7 @@ export function createRelayer(config: NetworkConfig): RelayerCapability {
   const networkConfig = asStellarNetworkConfig(config);
   const relayerStrategy = new RelayerExecutionStrategy();
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'relayer'), {
     async getRelayers(serviceUrl: string, accessToken: string) {
       try {
         return await relayerStrategy.getStellarRelayers(serviceUrl, accessToken, networkConfig);

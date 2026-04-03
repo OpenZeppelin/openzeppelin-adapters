@@ -14,8 +14,7 @@ export interface CreateAccessControlOptions {
     transactionData: unknown,
     executionConfig: ExecutionConfig,
     onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
-    runtimeApiKey?: string,
-    runtimeSecret?: string
+    runtimeApiKey?: string
   ) => Promise<{ txHash: string; result?: unknown }>;
 }
 

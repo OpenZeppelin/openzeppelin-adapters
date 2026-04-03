@@ -16,7 +16,7 @@ import { asStellarNetworkConfig, withRuntimeCapability } from './helpers';
 export function createTypeMapping(config: NetworkConfig): TypeMappingCapability {
   const networkConfig = asStellarNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'typeMapping'), {
     mapParameterTypeToFieldType(parameterType: string) {
       return mapStellarParameterTypeToFieldType(parameterType);
     },

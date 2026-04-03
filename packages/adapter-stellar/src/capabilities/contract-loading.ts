@@ -11,7 +11,7 @@ import {
 export function createContractLoading(config: NetworkConfig): ContractLoadingCapability {
   const networkConfig = asStellarNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'contractLoading'), {
     async loadContract(source: string | Record<string, unknown>) {
       const artifacts = validateAndConvertStellarArtifacts(source);
       const result = await loadStellarContract(artifacts, networkConfig);

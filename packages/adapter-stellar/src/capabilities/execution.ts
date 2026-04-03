@@ -35,7 +35,7 @@ function getStellarWalletConnectionStatus(): WalletConnectionStatus {
 export function createExecution(config: NetworkConfig): ExecutionCapability {
   const networkConfig = asStellarNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'execution'), {
     formatTransactionData(
       contractSchema: ContractSchema,
       functionId: string,

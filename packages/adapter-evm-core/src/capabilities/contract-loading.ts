@@ -17,7 +17,7 @@ import {
 export function createContractLoading(config: NetworkConfig): ContractLoadingCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'contractLoading'), {
     loadContract(source: string | Record<string, unknown>) {
       return loadContractSchema(source, networkConfig);
     },

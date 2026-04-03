@@ -71,7 +71,7 @@ export function createUiKit(
   const networkConfig = asTypedEvmNetworkConfig(config);
   let currentUiKitConfig = options.loadCurrentUiKitConfig?.() ?? { ...DEFAULT_UI_KIT_CONFIG };
 
-  return Object.assign(withRuntimeCapability(networkConfig), {
+  return Object.assign(withRuntimeCapability(networkConfig, 'uiKit'), {
     async configureUiKit(
       programmaticConfig: Partial<UiKitConfiguration> = {},
       runtimeOptions?: {

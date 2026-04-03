@@ -44,16 +44,14 @@ function bridgeSignAndBroadcast(
   transactionData: unknown,
   executionConfig: ExecutionConfig,
   onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
-  runtimeApiKey?: string,
-  runtimeSecret?: string
+  runtimeApiKey?: string
 ) => Promise<{ txHash: string; result?: unknown }> {
-  return (transactionData, executionConfig, onStatusChange, runtimeApiKey, runtimeSecret) =>
+  return (transactionData, executionConfig, onStatusChange, runtimeApiKey) =>
     execution.signAndBroadcast(
       transactionData,
       executionConfig,
       onStatusChange as (status: string, details: TransactionStatusUpdate) => void,
-      runtimeApiKey,
-      runtimeSecret
+      runtimeApiKey
     );
 }
 
