@@ -44,7 +44,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@project-serum/anchor": "^0.26.0",
     "@solana/spl-token": "^0.3.11",
     "@solana/wallet-adapter-base": "^0.9.27",
@@ -55,6 +54,7 @@
     "lodash-es": "^4.17.23"
   },
   "devDependencies": {
+    "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-types": "^2.0.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@types/lodash-es": "^4.17.12",
