@@ -1,8 +1,8 @@
-import { Wallet } from 'lucide-react';
+import { Loader2, Wallet } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { Button } from '@openzeppelin/ui-components';
-import { useDerivedAccountStatus } from '@openzeppelin/ui-react';
+import { useDerivedAccountStatus, useDerivedConnectStatus } from '@openzeppelin/ui-react';
 import type { BaseComponentProps, WalletComponentSize } from '@openzeppelin/ui-types';
 import { cn, getWalletButtonSizeProps } from '@openzeppelin/ui-utils';
 
@@ -80,10 +80,9 @@ const ConnectButtonContent: React.FC<{
   hideWhenConnected,
   showInjectedConnector,
 }) => {
-  const accountStatus = useDerivedAccountStatus();
+  const { isConnected } = useDerivedAccountStatus();
+  const { isConnecting, error: connectError } = useDerivedConnectStatus();
   const sizeProps = getWalletButtonSizeProps(size);
-
-  const isConnected = accountStatus.isConnected;
 
   useEffect(() => {
     if (isConnected && hideWhenConnected) {
@@ -92,7 +91,7 @@ const ConnectButtonContent: React.FC<{
   }, [isConnected, hideWhenConnected, setDialogOpen]);
 
   const handleConnectClick = () => {
-    if (!isConnected) {
+    if (!isConnected && !isConnecting) {
       setDialogOpen(true);
     }
   };
@@ -105,14 +104,18 @@ const ConnectButtonContent: React.FC<{
     <div className={cn('flex items-center', fullWidth && 'w-full', className)}>
       <Button
         onClick={handleConnectClick}
-        disabled={isConnected}
+        disabled={isConnecting || isConnected}
         variant={variant || 'outline'}
         size={sizeProps.size}
         className={cn(sizeProps.className, fullWidth && 'w-full')}
-        title={isConnected ? 'Connected' : 'Connect Wallet'}
+        title={isConnected ? 'Connected' : connectError?.message || 'Connect Wallet'}
       >
-        <Wallet className={cn(sizeProps.iconSize, 'mr-1')} />
-        Connect Wallet
+        {isConnecting ? (
+          <Loader2 className={cn(sizeProps.iconSize, 'animate-spin mr-1')} />
+        ) : (
+          <Wallet className={cn(sizeProps.iconSize, 'mr-1')} />
+        )}
+        {isConnecting ? 'Connecting…' : 'Connect Wallet'}
       </Button>
 
       <ConnectorDialog
