@@ -23,30 +23,30 @@ const packageExports = {
   './vite-config': './dist/vite-config.mjs',
 
   // --- Tier 1: Lightweight / Declarative ---
-  './addressing': './dist/capabilities/addressing.mjs',
-  './explorer': './dist/capabilities/explorer.mjs',
-  './network-catalog': './dist/capabilities/network-catalog.mjs',
-  './ui-labels': './dist/capabilities/ui-labels.mjs',
+  './addressing': './dist/addressing.mjs',
+  './explorer': './dist/explorer.mjs',
+  './network-catalog': './dist/network-catalog.mjs',
+  './ui-labels': './dist/ui-labels.mjs',
 
   // --- Tier 2: Schema / Definition ---
-  './contract-loading': './dist/capabilities/contract-loading.mjs',
-  './schema': './dist/capabilities/schema.mjs',
-  './type-mapping': './dist/capabilities/type-mapping.mjs',
-  './query': './dist/capabilities/query.mjs',
+  './contract-loading': './dist/contract-loading.mjs',
+  './schema': './dist/schema.mjs',
+  './type-mapping': './dist/type-mapping.mjs',
+  './query': './dist/query.mjs',
 
   // --- Tier 3: Runtime / Stateful ---
-  './execution': './dist/capabilities/execution.mjs',
-  './wallet': './dist/capabilities/wallet.mjs',
-  './ui-kit': './dist/capabilities/ui-kit.mjs',
-  './relayer': './dist/capabilities/relayer.mjs',
-  './access-control': './dist/capabilities/access-control.mjs',
+  './execution': './dist/execution.mjs',
+  './wallet': './dist/wallet.mjs',
+  './ui-kit': './dist/ui-kit.mjs',
+  './relayer': './dist/relayer.mjs',
+  './access-control': './dist/access-control.mjs',
 
   // --- Profiles ---
-  './profiles/declarative': './dist/profiles/declarative.mjs',
-  './profiles/viewer': './dist/profiles/viewer.mjs',
-  './profiles/transactor': './dist/profiles/transactor.mjs',
-  './profiles/composer': './dist/profiles/composer.mjs',
-  './profiles/operator': './dist/profiles/operator.mjs',
+  './profiles/declarative': './dist/declarative.mjs',
+  './profiles/viewer': './dist/viewer.mjs',
+  './profiles/transactor': './dist/transactor.mjs',
+  './profiles/composer': './dist/composer.mjs',
+  './profiles/operator': './dist/operator.mjs',
 };
 
 /**
@@ -54,11 +54,11 @@ const packageExports = {
  *
  * "./addressing": {
  *   "types": {
- *     "import": "./dist/capabilities/addressing.d.mts",
- *     "require": "./dist/capabilities/addressing.d.cts"
+ *     "import": "./dist/addressing.d.mts",
+ *     "require": "./dist/addressing.d.cts"
  *   },
- *   "import": "./dist/capabilities/addressing.mjs",
- *   "require": "./dist/capabilities/addressing.cjs"
+ *   "import": "./dist/addressing.mjs",
+ *   "require": "./dist/addressing.cjs"
  * }
  */
 
