@@ -1,5 +1,11 @@
 # @openzeppelin/adapter-evm-core
 
+## 1.0.0
+
+### Major Changes
+
+- [#24](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/24) [`8abc939`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/8abc939c45e3afd952c42f32be17a9680c6967b8) Thanks [@pasevin](https://github.com/pasevin)! - Add capability factories, runtime lifecycle helpers, and shared disposal infrastructure for the adapter-evm-core package.
+
 ## 1.1.2
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @openzeppelin/transaction-form-adapter-stellar
 
+## 2.0.0
+
+### Major Changes
+
+- [#24](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/24) [`fc1bf41`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fc1bf41b4ad6ebb34e7271e643a29917ca514a51) Thanks [@pasevin](https://github.com/pasevin)! - Replace monolithic adapter classes with capability factories and `createRuntime` on `ecosystemDefinition`. Remove `EvmAdapter` and `StellarAdapter` from the public API.
+
+### Patch Changes
+
+- [#27](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/27) [`481f206`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/481f206b948a4099a8fee55c44128cca279dc2ba) Thanks [@pasevin](https://github.com/pasevin)! - Move internal workspace packages (`adapter-runtime-utils`, `adapter-evm-core`) from `dependencies`
+  to `devDependencies` so they are not listed in the published package metadata. These packages are
+  bundled at build time via `tsdown` `noExternal` and are never resolved from npm by consumers.
+
+  Also add `adapter-evm-core` to `adapter-polkadot`'s `noExternal` list so it is correctly bundled
+  into the built output rather than left as a bare external import.
+
+- [#24](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/24) [`c620934`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/c62093448eef452344dc26f320bca1e731c40cde) Thanks [@pasevin](https://github.com/pasevin)! - Allow adapter ui-kit configuration to accept partial overrides while preserving default
+  initialization behavior. This keeps adapter releases aligned with the relaxed
+  `UiKitCapability.configureUiKit` contract and adds regression coverage for empty and partial
+  override merges.
+
 ## 1.1.0
 
 ### Minor Changes
