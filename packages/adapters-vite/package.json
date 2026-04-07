@@ -41,8 +41,8 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@openzeppelin/adapter-evm": "^2.0.0",
-    "@openzeppelin/adapter-midnight": "^2.0.0",
+    "@openzeppelin/adapter-evm": "^2.0.1",
+    "@openzeppelin/adapter-midnight": "^2.0.1",
     "@openzeppelin/adapter-polkadot": "^2.0.0",
     "@openzeppelin/adapter-solana": "^2.0.0",
     "@openzeppelin/adapter-stellar": "^2.0.0",
