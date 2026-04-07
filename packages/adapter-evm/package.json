@@ -58,7 +58,7 @@
     "@openzeppelin/adapter-evm-core": "workspace:*",
     "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
-    "@openzeppelin/ui-react": "^2.0.0",
+    "@openzeppelin/ui-react": "^2.0.1",
     "@openzeppelin/ui-types": "^2.0.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
@@ -78,7 +78,7 @@
   },
   "peerDependencies": {
     "@openzeppelin/ui-components": "^2.0.0",
-    "@openzeppelin/ui-react": "^2.0.0",
+    "@openzeppelin/ui-react": "^2.0.1",
     "@openzeppelin/ui-types": "^2.0.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
