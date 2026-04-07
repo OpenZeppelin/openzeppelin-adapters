@@ -1,5 +1,11 @@
 # @openzeppelin/transaction-form-adapter-evm
 
+## 2.0.1
+
+### Patch Changes
+
+- [#29](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/29) [`21ead30`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/21ead3081aec0e82d0cf167dfd1b4f895332c42a) Thanks [@pasevin](https://github.com/pasevin)! - Raise `@openzeppelin/ui-react` peer and dev dependency range to `^2.0.1` so installs align with the latest published release and runtime peer metadata reflects the current minimum.
+
 ## 2.0.0
 
 ### Major Changes
