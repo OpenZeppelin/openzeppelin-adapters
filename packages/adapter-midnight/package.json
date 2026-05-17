@@ -61,7 +61,7 @@
     "@midnight-ntwrk/zswap": "4.0.0",
     "@types/jszip": "^3.4.1",
     "jszip": "^3.10.1",
-    "lodash-es": "^4.17.23",
+    "lodash-es": "^4.18.1",
     "lucide-react": "^0.510.0",
     "rxjs": "^7.8.1"
   },

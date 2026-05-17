@@ -51,7 +51,7 @@
     "@solana/web3.js": "^1.98.4",
     "@web3icons/react": "^4.0.26",
     "bs58": "^5.0.0",
-    "lodash-es": "^4.17.23"
+    "lodash-es": "^4.18.1"
   },
   "devDependencies": {
     "@openzeppelin/adapter-runtime-utils": "workspace:*",
