@@ -62,6 +62,8 @@
     "@rainbow-me/rainbowkit": "^2.2.8",
     "@tanstack/react-query": "^5.84.1",
     "@types/lodash-es": "^4.17.12",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.0",
     "eslint": "^9.32.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
