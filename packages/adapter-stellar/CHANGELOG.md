@@ -1,5 +1,11 @@
 # @openzeppelin/transaction-form-adapter-stellar
 
+## 2.0.2
+
+### Patch Changes
+
+- [#33](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/33) [`40d0265`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/40d02656eccd57e47ea092f456239cdc1d0f83c9) Thanks [@pasevin](https://github.com/pasevin)! - Point default access control indexer URLs to Pasevin-hosted GraphQL endpoints for 21 synced networks (EVM mainnets/testnets, Polkadot hub/moonbase testnets, Stellar mainnet/testnet).
+
 ## 2.0.0
 
 ### Major Changes
