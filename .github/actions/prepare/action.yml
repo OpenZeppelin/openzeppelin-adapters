@@ -11,10 +11,6 @@ inputs:
     description: Node.js version for setup-node
     required: false
     default: "24.x"
-  pnpm-version:
-    description: pnpm major version for pnpm/action-setup
-    required: false
-    default: "11"
   package-manager-cache:
     description: Enable setup-node dependency caching (disable for release builds)
     required: false
@@ -30,7 +26,6 @@ runs:
 
     - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
       with:
-        version: ${{ inputs.pnpm-version }}
         run_install: false
 
     - name: Use Node.js ${{ inputs.node-version }}

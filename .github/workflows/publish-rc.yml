@@ -58,7 +58,6 @@ jobs:
         with:
           token: ${{ steps.gh-app-token.outputs.token }}
           node-version: "24"
-          pnpm-version: "11"
           package-manager-cache: "false"
 
       - name: Verify dependencies

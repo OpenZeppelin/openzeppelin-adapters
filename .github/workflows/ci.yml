@@ -60,7 +60,6 @@ jobs:
         with:
           token: ${{ steps.auth.outputs.token }}
           node-version: ${{ matrix.node-version }}
-          pnpm-version: "11"
 
       - name: Install dependencies
         run: pnpm install

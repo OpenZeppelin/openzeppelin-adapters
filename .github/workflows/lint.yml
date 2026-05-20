@@ -54,7 +54,6 @@ jobs:
         with:
           token: ${{ steps.auth.outputs.token }}
           node-version: "24.x"
-          pnpm-version: "11"
 
       - name: Install dependencies
         run: pnpm install

@@ -9,7 +9,7 @@
   "scripts": {
     "clean": "pnpm -r clean",
     "install-deps": "pnpm install --frozen-lockfile --ignore-scripts --prefer-offline",
-    "install-pnpm": "npm install -g pnpm@11",
+    "install-pnpm": "npm install -g pnpm@11.1.0",
     "check-file-modes": "node scripts/check-file-modes.cjs",
     "sync-patches": "node scripts/sync-patches-to-adapters.js",
     "validate:vite-configs": "node scripts/validate-adapter-vite-configs.cjs",
@@ -50,7 +50,7 @@
   "engines": {
     "node": ">=20.19.0"
   },
-  "packageManager": "pnpm@10.28.2",
+  "packageManager": "pnpm@11.1.0",
   "pnpm": {
     "overrides": {
       "use-sync-external-store": "^1.2.0",
