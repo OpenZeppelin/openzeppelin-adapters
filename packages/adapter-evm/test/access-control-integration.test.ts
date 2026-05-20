@@ -11,23 +11,19 @@ import type {
   ExecutionConfig,
 } from '@openzeppelin/ui-types';
 
-import { createAccessControl } from '../src/capabilities/access-control';
+import { createAccessControl } from '../../adapter-evm-core/src/capabilities/access-control';
 
 const mockReadContract = vi.fn();
 const mockGetBlockNumber = vi.fn();
 const mockSignAndBroadcast = vi.fn();
 
-vi.mock('viem', async () => {
-  const actual = await vi.importActual('viem');
-  return {
-    ...actual,
-    createPublicClient: vi.fn(() => ({
-      readContract: mockReadContract,
-      getBlockNumber: mockGetBlockNumber,
-    })),
-    http: vi.fn((url: string) => ({ url, type: 'http' })),
-  };
-});
+// Mock at the factory used by adapter-evm-core (vi.mock('viem') does not apply across the package boundary).
+vi.mock('../../adapter-evm-core/src/utils/public-client', () => ({
+  createEvmPublicClient: () => ({
+    readContract: mockReadContract,
+    getBlockNumber: mockGetBlockNumber,
+  }),
+}));
 
 const mockFetch = vi.fn();
 
