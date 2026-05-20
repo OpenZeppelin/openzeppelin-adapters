@@ -43,7 +43,8 @@
     "lint:adapters": "node ../../lint-adapters.cjs",
     "prepublishOnly": "[ \"$SKIP_PUBLISH_BUILD\" = \"true\" ] || pnpm build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude '**/pasevin-indexers-smoke.test.ts'",
+    "test:pasevin-smoke": "vitest run test/pasevin-indexers-smoke.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

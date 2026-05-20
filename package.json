@@ -16,6 +16,8 @@
     "validate:host-peers": "node scripts/validate-host-peer-deps.cjs",
     "build": "pnpm clean && pnpm validate:vite-configs && pnpm validate:host-peers && NODE_OPTIONS='--max-old-space-size=8192' pnpm -r build",
     "test": "pnpm -r test",
+    "test:pasevin-smoke": "pnpm --filter @openzeppelin/adapter-evm test:pasevin-smoke",
+    "test:integration": "pnpm --filter @openzeppelin/adapter-evm-core test:integration",
     "test:watch": "pnpm -r test:watch",
     "coverage": "pnpm -r coverage",
     "lint": "pnpm -r lint",
