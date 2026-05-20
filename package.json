@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "clean": "pnpm -r clean",
+    "clean": "pnpm -r --if-present run clean",
     "install-deps": "pnpm install --frozen-lockfile --ignore-scripts --prefer-offline",
     "install-pnpm": "npm install -g pnpm@11.1.0",
     "check-file-modes": "node scripts/check-file-modes.cjs",
