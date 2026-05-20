@@ -1,19 +1,16 @@
 /**
- * Integration Test: EVM Indexer Client with Real SubQuery Indexer
+ * Integration Test: EVM Indexer Client with Pasevin Indexer
  *
- * Tests the EvmIndexerClient's ability to query the deployed SubQuery indexer
+ * Tests the EvmIndexerClient against a live access-control GraphQL indexer
  * for historical access control events, role discovery, latest grants,
  * pending ownership transfers, and pending admin transfers.
  *
  * Prerequisites:
- * - SubQuery indexer deployed to SubQuery Network
- * - INDEXER_URL environment variable must be set to a SubQuery gateway URL
- *   with a valid API key
+ * - Pasevin access control indexer synced and serving GraphQL
  *
  * Environment Variable:
- * - INDEXER_URL: The full SubQuery gateway URL including API key.
- *   Example: INDEXER_URL="https://gateway.subquery.network/query/<CID>?apikey=YOUR_API_KEY"
- *   Tests will gracefully SKIP if INDEXER_URL is not set.
+ * - INDEXER_URL: optional GraphQL endpoint override. When unset, defaults to
+ *   `https://ethereum-sepolia.indexer.pasevin.com` (ethereum-sepolia network config).
  *
  * Test Contracts (deployed on Ethereum Sepolia with known access control events):
  *
@@ -49,13 +46,11 @@
  * Deploying New Test Contracts:
  *   1. Deploy an OpenZeppelin AccessControl or Ownable contract to Sepolia
  *   2. Grant/revoke roles to generate indexed events
- *   3. Wait for the SubQuery indexer to sync the new blocks
+ *   3. Wait for the indexer to sync the new blocks
  *   4. Update the contract addresses in this file
- *   5. Re-run tests with INDEXER_URL set
+ *   5. Re-run: pnpm --filter @openzeppelin/adapter-evm-core test:integration
  *
- * IMPORTANT: These tests require an active Node Operator syncing the deployed project.
- * Tests will gracefully SKIP if the indexer is not operational, which is expected
- * behavior when node operators are not yet active or during maintenance.
+ * IMPORTANT: Tests skip when the indexer is unavailable (sync lag, maintenance, etc.).
  *
  * @see packages/adapter-stellar/test/access-control/indexer-integration.test.ts — structural template
  */
@@ -71,16 +66,14 @@ import type { EvmCompatibleNetworkConfig } from '../../src/types';
 // ---------------------------------------------------------------------------
 
 /**
- * The INDEXER_URL environment variable provides the SubQuery gateway URL with API key.
+ * Indexer URL: `INDEXER_URL` override, else `ethereumSepolia.accessControlIndexerUrl`.
  *
  * To run these tests:
- *   export INDEXER_URL="https://gateway.subquery.network/query/<CID>?apikey=<YOUR_KEY>"
- *   pnpm --filter @openzeppelin/adapter-evm-core test -- indexer-integration
- *
- * Tests are SKIPPED when INDEXER_URL is not set — unit tests with mocked responses
- * provide coverage for indexer functionality in that case.
+ *   pnpm --filter @openzeppelin/adapter-evm-core test:integration
  */
-const DEPLOYED_INDEXER_URL = process.env.INDEXER_URL;
+const DEFAULT_PASEVIN_SEPOLIA_INDEXER = 'https://ethereum-sepolia.indexer.pasevin.com';
+
+const DEPLOYED_INDEXER_URL = process.env.INDEXER_URL ?? DEFAULT_PASEVIN_SEPOLIA_INDEXER;
 
 // Test contracts on Ethereum Sepolia
 // Deployer / Owner / Admin: 0xf0a9ed2663311ce436347bb6f240181ff103ca16
@@ -150,25 +143,6 @@ describe('EvmIndexerClient - Integration Test with Real Indexer', () => {
   let indexerAvailable = false;
 
   beforeAll(async () => {
-    if (!DEPLOYED_INDEXER_URL) {
-      console.warn(
-        '\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          '⚠️  INDEXER_URL NOT SET - Integration Tests Skipped\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          '\n' +
-          'The INDEXER_URL environment variable is required to run these tests.\n' +
-          'Set it with your SubQuery API key:\n' +
-          '\n' +
-          '  export INDEXER_URL="https://gateway.subquery.network/query/<CID>?apikey=<YOUR_KEY>"\n' +
-          '\n' +
-          'All integration tests will be SKIPPED. Unit tests with mocked\n' +
-          'responses provide coverage for indexer functionality.\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
-      );
-      return;
-    }
-
     client = new EvmIndexerClient(testNetworkConfig);
 
     try {
@@ -184,9 +158,9 @@ describe('EvmIndexerClient - Integration Test with Real Indexer', () => {
           '⚠️  INDEXER UNAVAILABLE - Integration Tests Skipped\n' +
           '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
           '\n' +
-          'The SubQuery indexer is not currently operational.\n' +
+          'The access control indexer is not currently operational.\n' +
           'This is EXPECTED when:\n' +
-          '  • Node operators have not yet synced the deployed project\n' +
+          '  • The indexer is still syncing\n' +
           '  • The indexer is undergoing maintenance\n' +
           '  • Network connectivity issues\n' +
           '\n' +

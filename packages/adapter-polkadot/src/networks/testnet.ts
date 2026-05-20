@@ -39,7 +39,7 @@ export const polkadotHubTestnet: TypedPolkadotNetworkConfig = {
   executionType: 'evm',
   networkCategory: 'hub',
   relayChain: 'polkadot',
-  accessControlIndexerUrl: 'https://openzeppelin-polkadot-hub-testnet.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://polkadot-hub-testnet.indexer.pasevin.com',
 };
 
 // ============================================================================
@@ -74,7 +74,7 @@ export const moonbaseAlphaTestnet: TypedPolkadotNetworkConfig = {
   executionType: 'evm',
   networkCategory: 'parachain',
   relayChain: undefined, // Testnet, no relay chain
-  accessControlIndexerUrl: 'https://openzeppelin-moonbase-alpha-testnet.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://moonbase-alpha.indexer.pasevin.com',
 };
 
 /**

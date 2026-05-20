@@ -69,7 +69,7 @@ const TEST_NETWORK_CONFIG = {
   primaryExplorerApiIdentifier: 'etherscan-v2',
   supportsEtherscanV2: true,
   nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
-  accessControlIndexerUrl: 'https://openzeppelin-ethereum-sepolia.graphql.subquery.network/',
+  accessControlIndexerUrl: 'https://ethereum-sepolia.indexer.pasevin.com',
 } as TypedEvmNetworkConfig;
 
 const CONTRACT_ADDRESS = '0x1234567890123456789012345678901234567890';

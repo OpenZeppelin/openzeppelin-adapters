@@ -49,7 +49,7 @@ export const ethereumSepolia: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemSepolia,
-  accessControlIndexerUrl: 'https://openzeppelin-ethereum-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://ethereum-sepolia.indexer.pasevin.com',
 };
 
 export const arbitrumSepolia: TypedEvmNetworkConfig = {
@@ -121,7 +121,7 @@ export const polygonZkEvmCardona: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemPolygonZkEvmCardona,
-  accessControlIndexerUrl: 'https://openzeppelin-polygon-zkevm-cardona.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://polygon-zkevm-cardona.indexer.pasevin.com',
 };
 
 export const baseSepolia: TypedEvmNetworkConfig = {
@@ -145,7 +145,7 @@ export const baseSepolia: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemBaseSepolia,
-  accessControlIndexerUrl: 'https://openzeppelin-base-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://base-sepolia.indexer.pasevin.com',
 };
 
 export const bscTestnet: TypedEvmNetworkConfig = {
@@ -169,7 +169,7 @@ export const bscTestnet: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemBscTestnet,
-  accessControlIndexerUrl: 'https://openzeppelin-bsc-testnet.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://bsc-testnet.indexer.pasevin.com',
 };
 
 export const optimismSepolia: TypedEvmNetworkConfig = {
@@ -193,7 +193,7 @@ export const optimismSepolia: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemOptimismSepolia,
-  accessControlIndexerUrl: 'https://openzeppelin-optimism-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://optimism-sepolia.indexer.pasevin.com',
 };
 
 export const avalancheFuji: TypedEvmNetworkConfig = {
@@ -218,7 +218,7 @@ export const avalancheFuji: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemAvalancheFuji,
-  accessControlIndexerUrl: 'https://openzeppelin-avalanche-fuji.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://avalanche-fuji.indexer.pasevin.com',
 };
 
 // TODO: test and setup the api and explorer config
@@ -243,7 +243,7 @@ export const zksyncSepoliaTestnet: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemZkSyncSepoliaTestnet,
-  accessControlIndexerUrl: 'https://openzeppelin-zksync-era-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://zksync-era-sepolia.indexer.pasevin.com',
 };
 
 export const scrollSepolia: TypedEvmNetworkConfig = {
@@ -267,7 +267,7 @@ export const scrollSepolia: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemScrollSepolia,
-  accessControlIndexerUrl: 'https://openzeppelin-scroll-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://scroll-sepolia.indexer.pasevin.com',
 };
 
 export const lineaSepolia: TypedEvmNetworkConfig = {
@@ -291,7 +291,7 @@ export const lineaSepolia: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemLineaSepolia,
-  accessControlIndexerUrl: 'https://openzeppelin-linea-sepolia.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://linea-sepolia.indexer.pasevin.com',
 };
 
 export const monadTestnet: TypedEvmNetworkConfig = {
@@ -315,7 +315,7 @@ export const monadTestnet: TypedEvmNetworkConfig = {
     decimals: 18,
   },
   viemChain: viemMonadTestnet,
-  accessControlIndexerUrl: 'https://openzeppelin-monad-testnet.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://monad-testnet.indexer.pasevin.com',
 };
 
 // TODO: Add other EVM testnet networks as needed (e.g., Arbitrum Sepolia)

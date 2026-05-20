@@ -27,7 +27,8 @@
     "lint:fix": "eslint . --fix",
     "lint:adapters": "node ../../lint-adapters.cjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --exclude '**/indexer-integration.test.ts'",
+    "test:integration": "vitest run test/access-control/indexer-integration.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

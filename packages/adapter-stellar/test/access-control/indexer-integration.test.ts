@@ -1,21 +1,25 @@
 /**
- * Integration Test: Stellar Adapter with Real SubQuery Indexer
+ * Integration Test: Stellar Adapter with Pasevin Indexer
  *
- * Tests the adapter's ability to query the deployed SubQuery indexer
+ * Tests the adapter against a live access-control GraphQL indexer
  * for historical access control events, ownership transfers, and admin transfers.
  *
  * Prerequisites:
- * - SubQuery indexer deployed to SubQuery Network
- * - Indexer URL must be provided via INDEXER_URL environment variable
- *   (API key is required for SubQuery Network gateway access)
+ * - Pasevin access control indexer synced and serving GraphQL
  *
- * Test Contracts (deployed after Stellar testnet reset Dec 2025):
- * - Primary: CAOLL3NFZA62ZROJSYL23WKKNGWBE3JYCI7UIHR6EWJHPPOAY4JKFXU5
- * - Additional: CD6DIFINFA5UZPYX43NDCVNBCK4ULGBXQM25XI6BROX4ADMHIEXZEYA3
+ * Environment Variable:
+ * - INDEXER_URL: optional GraphQL endpoint override. When unset, defaults to
+ *   `https://stellar-testnet.indexer.pasevin.com` (stellar-testnet network config).
  *
- * IMPORTANT: These tests require an active Node Operator syncing the deployed project.
- * Tests will gracefully SKIP if the indexer is not operational, which is expected
- * behavior when node operators are not yet active or during maintenance.
+ * Test Contract (Stellar testnet, indexed on Pasevin):
+ * - CAY5WHNBXMBFAFGCGYWZUXLPCSGXNUWQUYATPHDVRDKN2OKKY33OCCKC
+ *
+ * Deploy fresh fixtures when testnet RPC retention drops historical ledger data
+ * before the indexer can sync (Stellar testnet has a short retention window).
+ *
+ * Run: pnpm --filter @openzeppelin/adapter-stellar test:integration
+ *
+ * IMPORTANT: Tests skip when the indexer is unavailable (sync lag, maintenance, etc.).
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -24,22 +28,32 @@ import type { StellarNetworkConfig } from '@openzeppelin/ui-types';
 
 import { StellarIndexerClient } from '../../src/access-control/indexer-client';
 
-// Test configuration
-// API key is required for SubQuery Network gateway access - must be provided via environment variable
-// Example: INDEXER_URL="https://gateway.subquery.network/query/<CID>?apikey=YOUR_API_KEY"
-// Tests will be skipped if INDEXER_URL is not set
-const DEPLOYED_INDEXER_URL = process.env.INDEXER_URL;
+const DEFAULT_PASEVIN_STELLAR_TESTNET_INDEXER = 'https://stellar-testnet.indexer.pasevin.com';
 
-// Test contracts on the reset indexer (deployed after Stellar testnet reset Dec 2025)
-const TEST_CONTRACT = 'CAOLL3NFZA62ZROJSYL23WKKNGWBE3JYCI7UIHR6EWJHPPOAY4JKFXU5';
-const TEST_CONTRACT_2 = 'CD6DIFINFA5UZPYX43NDCVNBCK4ULGBXQM25XI6BROX4ADMHIEXZEYA3';
-// TEST_CONTRACT_3 uses TEST_CONTRACT_2 for additional tests (only 2 contracts deployed)
-const TEST_CONTRACT_3 = TEST_CONTRACT_2;
+const DEPLOYED_INDEXER_URL = process.env.INDEXER_URL ?? DEFAULT_PASEVIN_STELLAR_TESTNET_INDEXER;
 
-// Note: With the reset indexer, event discovery is done dynamically in tests
-// The EXPECTED_ROLES array is used for fallback in role enumeration tests
-// Includes 'minter' as a known role on the test contracts (verified via on-chain RPC)
-const EXPECTED_ROLES: string[] = ['minter'];
+/** Stellar testnet contract with access-control activity (indexed on Pasevin). */
+const TEST_CONTRACT = 'CAY5WHNBXMBFAFGCGYWZUXLPCSGXNUWQUYATPHDVRDKN2OKKY33OCCKC';
+
+/** Minimum events required for pagination tests (contract currently has 30+ indexed). */
+const MIN_INDEXED_EVENTS = 10;
+
+/** Returns true when the indexer responds and the fixture contract has indexed events. */
+async function verifyFixtureContractIndexed(client: StellarIndexerClient): Promise<boolean> {
+  if (!(await client.checkAvailability())) {
+    return false;
+  }
+
+  try {
+    const probe = await client.queryHistory(TEST_CONTRACT, { limit: 1 });
+    return probe.items.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// Roles present on the fixture contract (verified via Pasevin indexer)
+const EXPECTED_ROLES: string[] = ['minter', 'burner', 'approver', 'pauser', 'viewer'];
 
 // Mock network config with deployed indexer
 const testNetworkConfig: StellarNetworkConfig = {
@@ -59,34 +73,15 @@ const testNetworkConfig: StellarNetworkConfig = {
 describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
   let client: StellarIndexerClient;
   let indexerAvailable: boolean = false;
+  /** True when the fixture contract has at least one indexed access-control event. */
+  let fixtureContractIndexed = false;
 
   beforeAll(async () => {
-    // Check if INDEXER_URL environment variable is set
-    if (!DEPLOYED_INDEXER_URL) {
-      console.warn(
-        '\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          '⚠️  INDEXER_URL NOT SET - Integration Tests Skipped\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
-          '\n' +
-          'The INDEXER_URL environment variable is required to run these tests.\n' +
-          'Set it with your SubQuery API key:\n' +
-          '\n' +
-          '  export INDEXER_URL="https://gateway.subquery.network/query/<CID>?apikey=<YOUR_KEY>"\n' +
-          '\n' +
-          'All integration tests will be SKIPPED. Unit tests with mocked\n' +
-          'responses provide coverage for indexer functionality.\n' +
-          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
-      );
-      return;
-    }
-
     client = new StellarIndexerClient(testNetworkConfig);
-    // Check availability once for all tests (with timeout handling)
-    try {
-      indexerAvailable = await client.checkAvailability();
-    } catch {
-      indexerAvailable = false;
+    indexerAvailable = await client.checkAvailability();
+
+    if (indexerAvailable) {
+      fixtureContractIndexed = await verifyFixtureContractIndexed(client);
     }
 
     if (!indexerAvailable) {
@@ -96,9 +91,9 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
           '⚠️  INDEXER UNAVAILABLE - Integration Tests Skipped\n' +
           '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
           '\n' +
-          'The SubQuery indexer is not currently operational.\n' +
+          'The access control indexer is not currently operational.\n' +
           'This is EXPECTED when:\n' +
-          '  • Node operators have not yet synced the deployed project\n' +
+          '  • The indexer is still syncing\n' +
           '  • The indexer is undergoing maintenance\n' +
           '  • Network connectivity issues\n' +
           '\n' +
@@ -108,6 +103,20 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
           'responses provide coverage for indexer functionality.\n' +
           '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
       );
+    } else if (!fixtureContractIndexed) {
+      console.warn(
+        '\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+          '⚠️  FIXTURE CONTRACT NOT INDEXED - Data Tests Skipped\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
+          '\n' +
+          `Contract ${TEST_CONTRACT} has no indexed events yet.\n` +
+          'Deploy a new fixture and update TEST_CONTRACT if testnet RPC retention\n' +
+          'expired before the indexer synced.\n' +
+          '\n' +
+          `Indexer URL: ${DEPLOYED_INDEXER_URL}\n` +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+      );
     } else {
       console.log(
         '\n' +
@@ -115,15 +124,35 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
           '✅ INDEXER AVAILABLE - Running Integration Tests\n' +
           '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n' +
           `Indexer URL: ${DEPLOYED_INDEXER_URL}\n` +
+          `Fixture contract: ${TEST_CONTRACT}\n` +
           '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
       );
     }
   }, 30000); // 30 second timeout for indexer availability check
 
+  /** Indexer is up and the fixture contract has indexed data. */
+  const integrationReady = (): boolean => indexerAvailable && fixtureContractIndexed;
+
+  describe('Fixture contract indexing', () => {
+    it('should have indexed access control events for the fixture contract', async () => {
+      expect(await client.checkAvailability()).toBe(true);
+
+      const result = await client.queryHistory(TEST_CONTRACT);
+      expect(result.items.length).toBeGreaterThanOrEqual(MIN_INDEXED_EVENTS);
+
+      const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
+      expect(roleIds.length).toBeGreaterThan(0);
+
+      console.log(
+        `  ✅ Fixture verified: ${result.items.length} events, ${roleIds.length} role(s) indexed`
+      );
+    }, 20000);
+  });
+
   describe('Connectivity', () => {
     it('should successfully connect to the deployed indexer', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       expect(indexerAvailable).toBe(true);
     }, 10000); // 10s timeout for network call
@@ -141,8 +170,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Basic', () => {
     it('should query all history for the test contract', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT);
 
@@ -178,8 +207,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should query history with pagination limit', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 5 });
 
@@ -190,8 +219,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should support cursor-based pagination', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       // Get first page
       const firstPage = await client.queryHistory(TEST_CONTRACT, { limit: 2 });
@@ -221,11 +250,11 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
    */
   describe('History Query - Pagination Verification', () => {
     // Use one of our test contracts for pagination testing
-    const PAGINATION_TEST_CONTRACT = TEST_CONTRACT_2;
-    const MIN_EXPECTED_EVENTS = 1; // Relaxed - indexer was reset
+    const PAGINATION_TEST_CONTRACT = TEST_CONTRACT;
+    const MIN_EXPECTED_EVENTS = MIN_INDEXED_EVENTS;
 
     it('should have enough events for pagination testing', async () => {
-      if (!indexerAvailable) {
+      if (!integrationReady()) {
         return;
       }
 
@@ -237,7 +266,7 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 20000);
 
     it('should correctly paginate through all events with small page size', async () => {
-      if (!indexerAvailable) {
+      if (!integrationReady()) {
         return;
       }
 
@@ -319,7 +348,7 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 90000); // Longer timeout for multiple pages
 
     it('should return consistent results with different page sizes', async () => {
-      if (!indexerAvailable) {
+      if (!integrationReady()) {
         return;
       }
 
@@ -355,7 +384,7 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 30000);
 
     it('should respect limit while maintaining cursor continuity', async () => {
-      if (!indexerAvailable) {
+      if (!integrationReady()) {
         return;
       }
 
@@ -399,7 +428,7 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 30000);
 
     it('should work with filters and pagination combined', async () => {
-      if (!indexerAvailable) {
+      if (!integrationReady()) {
         return;
       }
 
@@ -460,8 +489,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Filtering', () => {
     it('should filter history by specific account', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       // First get all history to find a valid account
       const allResult = await client.queryHistory(TEST_CONTRACT);
@@ -482,8 +511,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by specific role', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       // Query without filter first to see what roles exist
       const allResult = await client.queryHistory(TEST_CONTRACT);
@@ -511,8 +540,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by changeType GRANTED (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Query with changeType filter for GRANTED events only
@@ -532,12 +561,11 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by changeType REVOKED (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
-      // Try TEST_CONTRACT_2 first, then fallback to TEST_CONTRACT
-      const contracts = [TEST_CONTRACT_2, TEST_CONTRACT];
+      const contracts = [TEST_CONTRACT];
       let revokedResult = null;
 
       for (const contract of contracts) {
@@ -567,12 +595,12 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by changeType OWNERSHIP_TRANSFER_COMPLETED (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Try both contracts to find ownership transfer events
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2];
+      const contracts = [TEST_CONTRACT];
       let ownershipResult = null;
 
       for (const contract of contracts) {
@@ -606,8 +634,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should combine changeType filter with pagination', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Get first page of GRANTED events
@@ -647,12 +675,12 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 20000);
 
     it('should combine changeType filter with roleId filter', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Try both contracts to find GRANTED events with roles
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2];
+      const contracts = [TEST_CONTRACT];
       let grantedEntry = null;
       let targetContract = '';
 
@@ -695,12 +723,12 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should combine changeType filter with account filter', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Try both contracts to find GRANTED events
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2];
+      const contracts = [TEST_CONTRACT];
       let grantedEntry = null;
       let targetContract = '';
 
@@ -741,8 +769,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by txId (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First get all history to find a valid txId
@@ -770,8 +798,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by ledger/blockHeight (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First get all history to find a valid ledger number
@@ -799,8 +827,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter history by timestamp range (server-side)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First, get all events to discover available timestamps
@@ -846,8 +874,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should filter with timestampFrom only (events after date)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First, discover actual timestamps from the contract data
@@ -883,8 +911,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Event Discovery', () => {
     it('should discover events from the indexed contracts', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT);
 
@@ -919,8 +947,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Event Timeline', () => {
     it('should return events in descending timestamp order', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 10 });
 
@@ -935,8 +963,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should include valid timestamps in ISO8601 format', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 5 });
 
@@ -953,8 +981,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Error Handling', () => {
     it('should return empty result for contract with no events', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       // Use a valid but non-existent contract address
       const fakeContract = 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4';
@@ -981,8 +1009,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('History Query - Data Integrity', () => {
     it('should have valid transaction hashes for all events', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 10 });
 
@@ -995,8 +1023,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should have valid block heights for all events', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 10 });
 
@@ -1008,8 +1036,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should have valid role identifiers', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       const result = await client.queryHistory(TEST_CONTRACT, { limit: 10 });
 
@@ -1024,8 +1052,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('Real-World Usage Scenario', () => {
     it('should support typical audit trail query (recent activity for specific account)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
       // Scenario: Check recent activity for a specific account
       const allResult = await client.queryHistory(TEST_CONTRACT, { limit: 20 });
@@ -1057,8 +1085,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('Role Discovery', () => {
     it('should discover role IDs from historical events', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
@@ -1081,8 +1109,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should return unique role IDs (no duplicates)', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
@@ -1094,8 +1122,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should return role IDs as strings', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
@@ -1107,8 +1135,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should return empty array for contract with no role events', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Use a valid but non-existent contract address
@@ -1133,8 +1161,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should discover roles consistent with history query', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Get discovered role IDs
@@ -1158,8 +1186,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 20000);
 
     it('should discover roles from the indexed contracts', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
@@ -1178,8 +1206,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
 
   describe('queryLatestGrants()', () => {
     it('should query latest grants for known members', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First discover any roles that exist
@@ -1216,8 +1244,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should return empty map for accounts with no grants', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // Discover a role first
@@ -1234,18 +1262,17 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 15000);
 
     it('should handle multiple accounts in a single query', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
-      // Use TEST_CONTRACT_2 which has many grants
-      const roleIds = await client.discoverRoleIds(TEST_CONTRACT_2);
+      const roleIds = await client.discoverRoleIds(TEST_CONTRACT);
 
       // Contract MUST have roles - fail if missing
       expect(roleIds.length).toBeGreaterThan(0);
 
       // Get some history to find accounts with grants
-      const result = await client.queryHistory(TEST_CONTRACT_2, {
+      const result = await client.queryHistory(TEST_CONTRACT, {
         roleId: roleIds[0],
         changeType: 'GRANTED',
         limit: 10,
@@ -1260,11 +1287,7 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
         return;
       }
 
-      const grantMap = await client.queryLatestGrants(
-        TEST_CONTRACT_2,
-        roleIds[0],
-        accountsWithRole
-      );
+      const grantMap = await client.queryLatestGrants(TEST_CONTRACT, roleIds[0], accountsWithRole);
 
       expect(grantMap).toBeInstanceOf(Map);
       // Should find grants for the accounts we queried
@@ -1281,8 +1304,8 @@ describe('StellarIndexerClient - Integration Test with Real Indexer', () => {
     }, 20000);
 
     it('should return the latest grant when account was granted multiple times', async () => {
-      if (!indexerAvailable) {
-        return; // Skip test if indexer is not available
+      if (!integrationReady()) {
+        return;
       }
 
       // First discover roles and find an account with grants
@@ -1348,12 +1371,6 @@ describe('Ownership Status Viewing - Integration Test (US1)', () => {
   let getCurrentLedger: typeof import('../../src/access-control/onchain-reader').getCurrentLedger;
 
   beforeAll(async () => {
-    // Check if INDEXER_URL environment variable is set
-    if (!DEPLOYED_INDEXER_URL) {
-      console.log('⚠️  INDEXER_URL not set - integration tests will be skipped');
-      return;
-    }
-
     // Dynamically import on-chain reader
     const onchainReader = await import('../../src/access-control/onchain-reader');
     readOwnership = onchainReader.readOwnership;
@@ -1371,12 +1388,14 @@ describe('Ownership Status Viewing - Integration Test (US1)', () => {
       console.log('⚠️  Soroban RPC not available - on-chain tests will be skipped');
     }
 
-    // Check indexer availability
+    // Check indexer availability and fixture contract data
     const indexerClient = new StellarIndexerClient(testNetworkConfig);
-    indexerAvailable = await indexerClient.checkAvailability();
+    indexerAvailable = await verifyFixtureContractIndexed(indexerClient);
 
     if (!indexerAvailable) {
-      console.log('⚠️  Indexer not available - state detection tests will be limited');
+      console.log(
+        '⚠️  Indexer unavailable or fixture contract not indexed - state detection tests will be limited'
+      );
     }
   }, 30000);
 
@@ -1698,12 +1717,6 @@ describe('On-Chain Role Enumeration - Integration Test', () => {
   let getRoleMemberCount: typeof import('../../src/access-control/onchain-reader').getRoleMemberCount;
 
   beforeAll(async () => {
-    // Check if INDEXER_URL environment variable is set
-    if (!DEPLOYED_INDEXER_URL) {
-      console.log('⚠️  INDEXER_URL not set - integration tests will be skipped');
-      return;
-    }
-
     // Dynamically import on-chain reader to avoid module resolution issues
     const onchainReader = await import('../../src/access-control/onchain-reader');
     enumerateRoleMembers = onchainReader.enumerateRoleMembers;
@@ -1731,12 +1744,14 @@ describe('On-Chain Role Enumeration - Integration Test', () => {
       }
     }
 
-    // Check indexer availability separately
+    // Check indexer availability and fixture contract data
     indexerClient = new StellarIndexerClient(testNetworkConfig);
-    indexerAvailable = await indexerClient.checkAvailability();
+    indexerAvailable = await verifyFixtureContractIndexed(indexerClient);
 
     if (!indexerAvailable) {
-      console.log('⚠️  Indexer not available - discovery tests will use known roles');
+      console.log(
+        '⚠️  Indexer unavailable or fixture contract not indexed - discovery tests will use known roles'
+      );
     }
   }, 30000);
 
@@ -1886,18 +1901,8 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
   let indexerAvailable: boolean = false;
 
   beforeAll(async () => {
-    // Check if INDEXER_URL environment variable is set
-    if (!DEPLOYED_INDEXER_URL) {
-      console.log('⚠️  INDEXER_URL not set - integration tests will be skipped');
-      return;
-    }
-
     client = new StellarIndexerClient(testNetworkConfig);
-    try {
-      indexerAvailable = await client.checkAvailability();
-    } catch {
-      indexerAvailable = false;
-    }
+    indexerAvailable = await verifyFixtureContractIndexed(client);
 
     if (indexerAvailable) {
       console.log(
@@ -1917,7 +1922,7 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
       }
 
       // Test each contract for pending admin transfers
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2, TEST_CONTRACT_3];
+      const contracts = [TEST_CONTRACT];
 
       for (const contract of contracts) {
         try {
@@ -1974,7 +1979,7 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
       }
 
       // Try both contracts to find admin transfer events
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2];
+      const contracts = [TEST_CONTRACT];
       let targetContract: string | null = null;
       let history: Awaited<ReturnType<typeof client.queryHistory>> = {
         items: [],
@@ -2028,7 +2033,7 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
         return;
       }
 
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2, TEST_CONTRACT_3];
+      const contracts = [TEST_CONTRACT];
 
       for (const contract of contracts) {
         try {
@@ -2065,7 +2070,7 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
       }
 
       // Try both contracts to find ownership transfer events
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2];
+      const contracts = [TEST_CONTRACT];
       let targetContract: string | null = null;
       let history: Awaited<ReturnType<typeof client.queryHistory>> = {
         items: [],
@@ -2109,7 +2114,7 @@ describe('StellarIndexerClient - Admin Transfer Integration Tests', () => {
         return;
       }
 
-      const contracts = [TEST_CONTRACT, TEST_CONTRACT_2, TEST_CONTRACT_3];
+      const contracts = [TEST_CONTRACT];
       const allEventTypes = new Set<string>();
 
       for (const contract of contracts) {
