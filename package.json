@@ -9,7 +9,7 @@
   "scripts": {
     "clean": "pnpm -r clean",
     "install-deps": "pnpm install --frozen-lockfile --ignore-scripts --prefer-offline",
-    "install-pnpm": "npm install -g pnpm",
+    "install-pnpm": "npm install -g pnpm@11",
     "check-file-modes": "node scripts/check-file-modes.cjs",
     "sync-patches": "node scripts/sync-patches-to-adapters.js",
     "validate:vite-configs": "node scripts/validate-adapter-vite-configs.cjs",

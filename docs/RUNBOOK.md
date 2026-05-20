@@ -125,7 +125,7 @@ Before declaring migration complete:
 
 ### Publish Failures
 
-- Verify `NPM_TOKEN` is set and has publish scope
+- Verify npm [trusted publishing](https://docs.npmjs.com/trusted-publishers) is configured for the workflow filename (`publish.yml` or `publish-rc.yml`) and `id-token: write` is set
 - Check npm registry connectivity
 - Ensure no version conflicts (linked packages must version together)
 - RC prereleases are published by `publish-rc.yml` using Changesets prerelease mode; do not reuse the stable release-PR path for RC validation

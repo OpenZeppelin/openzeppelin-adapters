@@ -7,9 +7,18 @@ inputs:
   token:
     description: GitHub token for checkout and authentication
     required: true
-  npm-token:
-    description: Optional npm token for registry authentication
+  node-version:
+    description: Node.js version for setup-node
     required: false
+    default: "24.x"
+  pnpm-version:
+    description: pnpm major version for pnpm/action-setup
+    required: false
+    default: "11"
+  package-manager-cache:
+    description: Enable setup-node dependency caching (disable for release builds)
+    required: false
+    default: "true"
 
 runs:
   using: composite
@@ -21,19 +30,22 @@ runs:
 
     - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
       with:
+        version: ${{ inputs.pnpm-version }}
         run_install: false
 
-    - name: Use node@22
-      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+    - name: Use Node.js ${{ inputs.node-version }}
+      if: ${{ inputs.package-manager-cache == 'true' }}
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
       with:
-        node-version: 22.18.0
-        cache: 'pnpm'
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
 
-    - name: Configure npm authentication for npm registry
-      if: ${{ inputs.npm-token != '' }}
-      run: |
-        echo "//registry.npmjs.org/:_authToken=${{ inputs.npm-token }}" >> ~/.npmrc
-      shell: bash
+    - name: Use Node.js ${{ inputs.node-version }} (no dependency cache)
+      if: ${{ inputs.package-manager-cache != 'true' }}
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        package-manager-cache: false
 
     - name: Install dependencies
       run: |

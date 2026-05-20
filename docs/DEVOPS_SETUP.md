@@ -7,7 +7,7 @@
 
 The adapter repository publishes packages under the `@openzeppelin/adapter-*` namespace. Release automation requires:
 
-- npm publish credentials for `@openzeppelin` scope
+- npm trusted publishing (OIDC) for `@openzeppelin` scope releases
 - GitHub App or PAT for release PR creation and workflow triggers
 - Provenance attestation for stable published packages
 
@@ -15,15 +15,23 @@ The adapter repository publishes packages under the `@openzeppelin/adapter-*` na
 
 - Access to create and configure the `OpenZeppelin/openzeppelin-adapters` repository
 - npm publish permissions for `@openzeppelin/adapter-*` packages
-- GitHub Actions secrets configured for the repository
+- GitHub Actions variables/secrets for the GitHub App (optional; no npm secrets required)
 
 ## Release Credentials
 
 ### npm
 
-- **NPM_TOKEN**: npm automation token with publish permissions for `@openzeppelin` scope
-- Token must be configured in GitHub repository secrets
-- Used by `publish.yml`, `publish-rc.yml`, and CI (`ci.yml`) when registry access is required
+Cross-checked with [npm trusted publishers — Step 2](https://docs.npmjs.com/trusted-publishers#step-2-configure-your-cicd-workflow).
+
+- **Trusted publishing (publish only)**: On npmjs.com → package Settings → Trusted publishing, set workflow filename to the workflow that runs `changeset publish` — **`publish.yml`** for stable releases, or **`publish-rc.yml`** for RC (npm allows **one trusted publisher per package**; use separate packages or reconfigure if both workflows must publish).
+- **Workflow requirements** (both release workflows):
+  - `permissions.id-token: write` at workflow level
+  - `actions/setup-node@v6` immediately before publish with `node-version: '24'`, `registry-url: 'https://registry.npmjs.org'`, `package-manager-cache: false`
+  - No `NPM_TOKEN` on publish (OIDC only). Installs use the public registry and workspace packages — no npm secrets required.
+  - npm CLI ≥ 11.5.1 (bundled with Node 24) and Node ≥ 22.14.0
+- **`repository.url`** in each published package must match `https://github.com/OpenZeppelin/openzeppelin-adapters.git` (already set on `@openzeppelin/adapter-*`).
+- **Provenance**: Generated automatically when publishing via trusted publishing from a public repo + public package; `NPM_CONFIG_PROVENANCE: true` in the workflow is optional redundancy.
+- **After verification**: Consider package Settings → Publishing access → “Require 2FA and disallow tokens” for maximum security (trusted publishers keep working).
 
 ### GitHub
 
@@ -35,7 +43,7 @@ The adapter repository publishes packages under the `@openzeppelin/adapter-*` na
 
 Stable releases MUST produce verifiable provenance for published packages.
 
-1. **OIDC / id-token**: `publish.yml` requests `id-token: write` so npm can attest the publishing workflow.
+1. **OIDC / trusted publishing**: `publish.yml` and `publish-rc.yml` request `id-token: write` and authenticate to `registry.npmjs.org` via `actions/setup-node` (trusted publisher), so npm can attest the publishing workflow.
 2. **Environment**: Publish steps set `NPM_CONFIG_PROVENANCE: true` so `pnpm changeset publish` requests npm provenance for eligible packages.
 3. **Verification**: Consumers can inspect `npm view <package> provenance` after publish.
 
@@ -62,7 +70,7 @@ RC publishes use the same provenance flag where the registry accepts it; treat R
 
 ## CI Configuration
 
-- **prepare** action: Checkout, pnpm setup, Node 22, `pnpm install-deps`
+- **prepare** action: Checkout, pnpm 11+, Node 24, `pnpm install-deps` (no npm secrets); release uses `package-manager-cache: false`; `Configure npm trusted publishing` runs only before publish
 - **ci.yml**: Lint, typecheck, test, build
 - **publish.yml**: Changesets release PR + stable publish
 - **publish-rc.yml**: Same SLSA + attestations path as `publish.yml`, with `changeset publish --tag rc`; **`workflow_dispatch` only** (no `push` trigger)
