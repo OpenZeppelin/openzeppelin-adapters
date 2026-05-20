@@ -24,7 +24,37 @@ import { stellarPublic } from '../../adapter-stellar/src/networks/mainnet';
 import { stellarTestnet } from '../../adapter-stellar/src/networks/testnet';
 import { evmMainnetNetworks, evmTestnetNetworks } from '../src/networks';
 
-const PASEVIN_HOST = 'indexer.pasevin.com';
+const PASEVIN_HOST_SUFFIX = '.indexer.pasevin.com';
+
+/** Validates HTTPS URLs with hostname `<slug>.indexer.pasevin.com` (no path/query). */
+function isPasevinIndexerUrl(url: string | undefined): url is string {
+  if (!url) {
+    return false;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== 'https:') {
+    return false;
+  }
+
+  const { hostname, pathname, search, hash } = parsed;
+  if (pathname !== '/' || search !== '' || hash !== '') {
+    return false;
+  }
+
+  if (!hostname.endsWith(PASEVIN_HOST_SUFFIX)) {
+    return false;
+  }
+
+  const slug = hostname.slice(0, -PASEVIN_HOST_SUFFIX.length);
+  return slug.length > 0 && /^[a-z0-9-]+$/.test(slug);
+}
 
 /** Networks whose default indexer URL uses the Pasevin deployment. */
 function collectPasevinIndexerNetworks(): Array<{
@@ -36,21 +66,21 @@ function collectPasevinIndexerNetworks(): Array<{
 
   for (const network of [...evmMainnetNetworks, ...evmTestnetNetworks]) {
     const url = network.accessControlIndexerUrl;
-    if (url?.includes(PASEVIN_HOST)) {
+    if (isPasevinIndexerUrl(url)) {
       entries.push({ id: network.id, url, ecosystem: network.ecosystem });
     }
   }
 
   for (const network of [polkadotHubTestnet, moonbaseAlphaTestnet]) {
     const url = network.accessControlIndexerUrl;
-    if (url?.includes(PASEVIN_HOST)) {
+    if (isPasevinIndexerUrl(url)) {
       entries.push({ id: network.id, url, ecosystem: network.ecosystem });
     }
   }
 
   for (const network of [stellarPublic, stellarTestnet]) {
     const url = network.accessControlIndexerUrl;
-    if (url?.includes(PASEVIN_HOST)) {
+    if (isPasevinIndexerUrl(url)) {
       entries.push({ id: network.id, url, ecosystem: network.ecosystem });
     }
   }
@@ -80,7 +110,7 @@ describe('Pasevin access control indexers (network config smoke)', () => {
   it.each(PASEVIN_INDEXERS)(
     '$id ($ecosystem) responds to GraphQL health check at $url',
     async ({ id, url, ecosystem }) => {
-      expect(url).toMatch(new RegExp(`^https://[a-z0-9-]+\\.${PASEVIN_HOST.replace('.', '\\.')}$`));
+      expect(isPasevinIndexerUrl(url)).toBe(true);
 
       if (ecosystem === 'stellar') {
         expect(await checkGraphqlHealth(url)).toBe(true);
