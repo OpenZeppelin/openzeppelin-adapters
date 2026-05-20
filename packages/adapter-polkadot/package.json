@@ -51,12 +51,15 @@
     "@wagmi/core": "^2.20.3",
     "@web3icons/react": "^4.0.19",
     "lodash-es": "^4.18.1",
+    "lucide-react": "^0.510.0",
     "viem": "^2.33.3",
     "wagmi": "^2.16.1"
   },
   "devDependencies": {
     "@openzeppelin/adapter-evm-core": "workspace:*",
     "@openzeppelin/adapter-runtime-utils": "workspace:*",
+    "@openzeppelin/ui-components": "^2.0.0",
+    "@openzeppelin/ui-react": "^2.0.1",
     "@openzeppelin/ui-types": "^2.0.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.8",

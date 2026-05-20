@@ -367,6 +367,9 @@ importers:
       lodash-es:
         specifier: ^4.18.1
         version: 4.18.1
+      lucide-react:
+        specifier: ^0.510.0
+        version: 0.510.0(react@19.2.4)
       viem:
         specifier: ^2.33.3
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -380,6 +383,12 @@ importers:
       '@openzeppelin/adapter-runtime-utils':
         specifier: workspace:*
         version: link:../adapter-runtime-utils
+      '@openzeppelin/ui-components':
+        specifier: ^2.0.0
+        version: 2.0.0(@babel/runtime@7.29.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+      '@openzeppelin/ui-react':
+        specifier: ^2.0.1
+        version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
         specifier: ^2.0.0
         version: 2.0.0
