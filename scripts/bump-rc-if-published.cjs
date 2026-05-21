@@ -3,7 +3,7 @@
 /**
  * Ensure every RC version produced by `changeset version` is unique on npm.
  *
- * Problem: publish-rc.yml runs on a fresh checkout every time, so
+ * Problem: publish.yml RC runs (workflow_dispatch) use a fresh checkout every time, so
  * `changeset pre enter rc` + `changeset version` always starts from the
  * versions in package.json on main and produces the same X.Y.Z-rc.0.
  *

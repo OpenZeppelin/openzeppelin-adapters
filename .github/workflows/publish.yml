@@ -1,6 +1,8 @@
-# Public npm release workflow
-# ===========================
-# This workflow handles CI and publishing to the public npm registry using Changesets.
+# Public npm release workflow (stable + RC)
+# =======================================
+# Stable: push to main → Changesets version PR / publish.
+# RC: workflow_dispatch → prerelease publish to npm `rc` dist-tag.
+# Single workflow file for npm trusted publishing (one publisher filename per package).
 
 name: Release
 
@@ -8,10 +10,10 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
-# Prevent concurrent release operations and coordinate with staging workflow
 concurrency:
-  group: release-publishing-${{ github.ref }}
+  group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -117,6 +119,42 @@ jobs:
           # Find and make any other executable files non-executable (except in .husky/)
           find . -type f -executable ! -path "./.husky/*" ! -path "./node_modules/*" ! -path "./.git/*" -exec chmod -x {} \; 2>/dev/null || true
 
+      - name: Prepare RC versions
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          pnpm changeset pre enter rc
+          pnpm changeset version
+        env:
+          GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
+
+      - name: Bump RC numbers for already-published versions
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/bump-rc-if-published.cjs
+
+      - name: Guard against first-release RC publishes
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+
+          unpublished_packages=()
+          for package in \
+            "@openzeppelin/adapter-evm" \
+            "@openzeppelin/adapter-midnight" \
+            "@openzeppelin/adapter-polkadot" \
+            "@openzeppelin/adapter-solana" \
+            "@openzeppelin/adapter-stellar"; do
+            if ! npm view "$package" version >/dev/null 2>&1; then
+              unpublished_packages+=("$package")
+            fi
+          done
+
+          if [ "${#unpublished_packages[@]}" -gt 0 ]; then
+            echo "::error title=Initial RC publish blocked::Changesets prerelease mode publishes first-time packages to the latest dist-tag instead of rc. Publish the first stable adapter release before using the RC workflow."
+            printf 'Unpublished package: %s\n' "${unpublished_packages[@]}"
+            exit 1
+          fi
+
       - name: Configure npm trusted publishing
         uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
@@ -125,6 +163,7 @@ jobs:
           package-manager-cache: false
 
       - name: Create Release Pull Request or Publish to npm
+        if: github.event_name == 'push'
         id: changesets
         uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
         with:
@@ -139,6 +178,43 @@ jobs:
           TARBALL: ${{ needs.provenance.outputs.package-name }}
           NPM_CONFIG_ACCESS: public
           SKIP_PUBLISH_BUILD: true
+
+      - name: Publish RC packages to npm
+        if: github.event_name == 'workflow_dispatch'
+        run: pnpm changeset publish --no-git-checks
+        env:
+          GITHUB_TOKEN: ${{ steps.gh-app-token.outputs.token }}
+          NPM_CONFIG_PROVENANCE: true
+          TARBALL: ${{ needs.provenance.outputs.package-name }}
+          NPM_CONFIG_ACCESS: public
+          SKIP_PUBLISH_BUILD: true
+
+      - name: Verify RC dist-tags are available
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+
+          for package in \
+            "@openzeppelin/adapter-evm" \
+            "@openzeppelin/adapter-midnight" \
+            "@openzeppelin/adapter-polkadot" \
+            "@openzeppelin/adapter-solana" \
+            "@openzeppelin/adapter-stellar"; do
+            for attempt in 1 2 3 4 5 6; do
+              rc_version=$(npm view "$package" dist-tags.rc --json 2>/dev/null | tr -d '"')
+              if [ -n "$rc_version" ] && [ "$rc_version" != "null" ]; then
+                echo "$package rc -> $rc_version"
+                break
+              fi
+
+              if [ "$attempt" -eq 6 ]; then
+                echo "RC dist-tag not available for $package after publish"
+                exit 1
+              fi
+
+              sleep 5
+            done
+          done
 
       - name: Extract version from package.json
         id: extract_version
