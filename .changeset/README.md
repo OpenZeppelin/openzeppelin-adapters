@@ -13,8 +13,8 @@ This repository uses [Changesets](https://github.com/changesets/changesets) to v
 
 Staging consumers (for example ui-builder staging) resolve adapters via the npm `rc` dist-tag.
 
-- **Release RC** (`.github/workflows/publish-rc.yml`) mirrors **Release** (`publish.yml`): SLSA Node.js provenance, tarball unpack, `check-file-modes`, `changesets/action`, SBOM, and attestations—the only intentional difference is `pnpm changeset publish --tag rc --no-git-checks`.
-- Trigger: **`workflow_dispatch` only** (Actions → Release RC → Run workflow). Run it when you want to push the current `main` state to the npm `rc` dist-tag without doubling SLSA on every merge.
+- **RC path** in `.github/workflows/publish.yml`: same SLSA provenance, tarball unpack, `check-file-modes`, SBOM, and attestations as stable; uses Changesets prerelease (`pre enter rc`) and `changeset publish` to the `rc` dist-tag (no `changesets/action` on this path).
+- Trigger: **`workflow_dispatch`** on the **Release** workflow (Actions → Release → Run workflow). Run when you want to push the current `main` state to the npm `rc` dist-tag without running the stable release PR flow on every merge.
 
 If a run reports that there is nothing to publish, no action is required.
 

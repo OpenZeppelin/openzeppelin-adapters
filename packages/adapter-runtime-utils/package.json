@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@openzeppelin/ui-types": "^2.0.0",
+    "@types/node": "^25.0.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

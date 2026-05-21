@@ -53,10 +53,7 @@ jobs:
         uses: ./.github/actions/prepare
         with:
           token: ${{ steps.auth.outputs.token }}
-
-      - name: Configure npm authentication for npm registry
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+          node-version: "24.x"
 
       - name: Install dependencies
         run: pnpm install

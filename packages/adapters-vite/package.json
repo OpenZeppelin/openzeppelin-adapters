@@ -71,6 +71,7 @@
     "@openzeppelin/adapter-polkadot": "workspace:*",
     "@openzeppelin/adapter-solana": "workspace:*",
     "@openzeppelin/adapter-stellar": "workspace:*",
+    "@types/node": "^25.0.0",
     "eslint": "^9.32.0",
     "typescript": "^5.9.2",
     "vite": "^8.0.5",
