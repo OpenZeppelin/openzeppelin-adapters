@@ -36,7 +36,7 @@ export const polkadotHubMainnet: TypedPolkadotNetworkConfig = {
   executionType: 'evm',
   networkCategory: 'hub',
   relayChain: 'polkadot',
-  accessControlIndexerUrl: 'https://openzeppelin-polkadot-hub-mainnet.graphql.subquery.network',
+  accessControlIndexerUrl: 'https://polkadot-hub.indexer.pasevin.com',
 };
 
 /**
