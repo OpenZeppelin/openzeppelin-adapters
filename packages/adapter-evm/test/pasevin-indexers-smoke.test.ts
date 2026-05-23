@@ -16,6 +16,7 @@ import { describe, expect, it } from 'vitest';
 import { EvmIndexerClient } from '@openzeppelin/adapter-evm-core';
 import type { EvmCompatibleNetworkConfig } from '@openzeppelin/adapter-evm-core';
 
+import { polkadotHubMainnet } from '../../adapter-polkadot/src/networks/mainnet';
 import {
   moonbaseAlphaTestnet,
   polkadotHubTestnet,
@@ -71,7 +72,7 @@ function collectPasevinIndexerNetworks(): Array<{
     }
   }
 
-  for (const network of [polkadotHubTestnet, moonbaseAlphaTestnet]) {
+  for (const network of [polkadotHubMainnet, polkadotHubTestnet, moonbaseAlphaTestnet]) {
     const url = network.accessControlIndexerUrl;
     if (isPasevinIndexerUrl(url)) {
       entries.push({ id: network.id, url, ecosystem: network.ecosystem });
@@ -90,7 +91,7 @@ function collectPasevinIndexerNetworks(): Array<{
 
 const PASEVIN_INDEXERS = collectPasevinIndexerNetworks();
 
-const EXPECTED_PASEVIN_INDEXER_COUNT = 21;
+const EXPECTED_PASEVIN_INDEXER_COUNT = 22;
 
 async function checkGraphqlHealth(url: string): Promise<boolean> {
   const response = await fetch(url, {
