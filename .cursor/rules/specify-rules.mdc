@@ -33,3 +33,8 @@ TypeScript ^5.9.x (strict mode), ES2020 target, ESM packages: Follow standard co
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
