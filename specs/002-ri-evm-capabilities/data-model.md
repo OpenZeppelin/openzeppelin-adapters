@@ -103,6 +103,7 @@ Mirror the `AccessControlError` pattern: an abstract base + concrete classes, ea
 | `InsufficientShares` | `INSUFFICIENT_SHARES` | `holder`, `requested`, `available?` | vault-withdraw |
 | `IdentityAlreadyRegistered` | `ALREADY_ONBOARDED` | `holder`, `onchainId?` | registerIdentity when already present |
 | `IdentityOperationFailed` | `IRS_OPERATION_FAILED` | `operation`, `cause?` | deploy/registration/claim failures |
+| `InvalidAmount` | `INVALID_AMOUNT` | `value`, `reason` | malformed/fractional/negative/signed/sci-notation amount `string` at factory boundary |
 | `RICapabilityOperationFailed` | `OPERATION_FAILED` | `operation`, `cause?` | generic write failure / unmapped revert |
 
 > Codes are chosen to line up 1:1 with the plugin's documented route error codes (Plugin doc §3b) so the consumer can map `error.code → pluginError(code, …)` directly. Final code names are confirmable during implementation; the set and shape are the contract.
@@ -122,6 +123,6 @@ EcosystemRuntime      → + erc3643?, erc4626?, irs?  (optional accessors, undef
 ## Validation rules
 
 - Addresses validated via the adapter's existing `isValidAddress` before any RPC/write (Constitution II).
-- `Amount` strings validated as non-negative base-unit decimals at the factory boundary before `string → bigint` conversion; invalid input → `RICapabilityOperationFailed`/`ConfigurationInvalid`.
+- `Amount` strings validated as non-negative base-unit decimals at the factory boundary before `string → bigint` conversion; invalid input (malformed, fractional, negative, signed, or scientific-notation) → `InvalidAmount` (`INVALID_AMOUNT`), thrown before any RPC or submission.
 - `isVerified` and `simulateTransfer` never throw for the expected negative case — they return `false` / `{ allowed: false, … }`.
 - Identity writes are idempotent on retry (registration/claim attachment safe to re-run) to support partial-failure recovery.

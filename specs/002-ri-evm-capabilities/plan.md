@@ -11,7 +11,7 @@ Add three new Tier 3 capabilities — `ERC3643Capability` (T-REX token), `ERC462
 - **`@openzeppelin/adapter-evm-core`** — implement viem-based services + capability factories (`createERC3643`, `createERC4626`, `createIRS`) that read over RPC and write through an injected `signAndBroadcast` execution callback (no `WalletCapability`, no React/Wagmi, no Relayer coupling); add sub-path exports and tsdown entries.
 - **`@openzeppelin/adapter-evm`** — re-export the three capabilities, add them to `capabilityFactories`/`ecosystemDefinition.capabilities`, and add matching `package.json` exports + tsdown entries.
 
-Amounts are base-unit decimal `string` at the interface boundary (factory converts `string ↔ bigint`). The async `AdapterExecutionStrategy` submit-then-poll model is verified (not extended) so the plugin's future `RelayerPluginExecutionStrategy` fits without a new primitive. No new smart contracts; capabilities bundle existing audited ABIs.
+Amounts are base-unit decimal `string` at the interface boundary (factory converts `string ↔ bigint`). The async submit-then-poll model expressed by `ExecutionCapability.signAndBroadcast` + optional `waitForTransactionConfirmation` (the injected-callback shape `createAccessControl` consumes, not the wallet-bound `AdapterExecutionStrategy.execute`) is verified (not extended), so the plugin's future `RelayerPluginExecutionStrategy` fits without a new primitive — see research.md R6. No new smart contracts; capabilities bundle existing audited ABIs.
 
 ## Technical Context
 
