@@ -32,9 +32,9 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 **Purpose**: Prepare both repos and the local cross-repo dev loop
 
-- [ ] T001 [P] In `openzeppelin-ui`, confirm the local build/test loop for `@openzeppelin/ui-types` (`pnpm --filter @openzeppelin/ui-types build` / `test`) runs clean on the feature branch
-- [ ] T002 [P] In `openzeppelin-adapters`, confirm `pnpm build`, `pnpm test`, `pnpm lint:adapters`, and `pnpm typecheck` run clean on `002-ri-evm-capabilities`
-- [ ] T003 Configure local cross-repo linking so `adapter-evm-core` resolves the in-progress `@openzeppelin/ui-types` (per `LOCAL_ADAPTERS_PATH` / `docs/LOCAL_DEVELOPMENT.md`) so adapter work can type-check against the new interfaces before publish
+- [X] T001 [P] In `openzeppelin-ui`, confirm the local build/test loop for `@openzeppelin/ui-types` (`pnpm --filter @openzeppelin/ui-types build` / `test`) runs clean on the feature branch
+- [X] T002 [P] In `openzeppelin-adapters`, confirm `pnpm build`, `pnpm test`, `pnpm lint:adapters`, and `pnpm typecheck` run clean on `002-ri-evm-capabilities`
+- [X] T003 Configure local cross-repo linking so `adapter-evm-core` resolves the in-progress `@openzeppelin/ui-types` (per `LOCAL_ADAPTERS_PATH` / `docs/LOCAL_DEVELOPMENT.md`) so adapter work can type-check against the new interfaces before publish (mechanism: pnpm `link:` override to sibling `../openzeppelin-ui/packages/types`; activated at US2 when adapter code first imports the new types)
 
 ---
 
@@ -44,9 +44,9 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 **⚠️ CRITICAL**: No adapter-story (US2–US7) work can begin until this phase is complete and the types are consumable (published or locally linked).
 
-- [ ] T004 [P] Create the common `Amount` alias + `OnboardingClaim` + `ClaimPayload` + `IdentityRegistration` + `OnchainIdLookup` + `TransferSimulationResult` types in `openzeppelin-ui/packages/types/src/adapters/erc3643.ts`, `erc4626.ts`, `irs.ts` (per data-model.md) with JSDoc
-- [ ] T005 Create the typed error model in `openzeppelin-ui/packages/types/src/adapters/ri-capability-errors.ts`: abstract `RICapabilityError` base + the 9 concrete classes with stable codes/detail fields per FR-012a — including `InvalidAmount` (`INVALID_AMOUNT`, details `value`/`reason`) for malformed-amount rejection (FR-003a) — mirroring `access-control-errors.ts`
-- [ ] T006 Export the new domain types + error classes from `openzeppelin-ui/packages/types/src/adapters/index.ts` (additive; alongside `access-control` / `access-control-errors`)
+- [X] T004 [P] Create the common `Amount` alias + `OnboardingClaim` + `ClaimPayload` + `IdentityRegistration` + `OnchainIdLookup` + `TransferSimulationResult` types in `openzeppelin-ui/packages/types/src/adapters/erc3643.ts`, `erc4626.ts`, `irs.ts` (per data-model.md) with JSDoc (`Amount` placed in shared `common.ts` as a single source to avoid duplicate `export *` bindings; `erc3643.ts` adds `TransferSimulationResult`/`HolderTokenState`, `erc4626.ts` adds `VaultDepositResult`/`VaultWithdrawResult`, `irs.ts` adds claim/identity/lookup types + `DeployOnchainIdResult`)
+- [X] T005 Create the typed error model in `openzeppelin-ui/packages/types/src/adapters/ri-capability-errors.ts`: abstract `RICapabilityError` base + the 9 concrete classes with stable codes/detail fields per FR-012a — including `InvalidAmount` (`INVALID_AMOUNT`, details `value`/`reason`) for malformed-amount rejection (FR-003a) — mirroring `access-control-errors.ts`
+- [X] T006 Export the new domain types + error classes from `openzeppelin-ui/packages/types/src/adapters/index.ts` (additive; alongside `access-control` / `access-control-errors`)
 
 **Checkpoint**: Shared types/errors exist — capability interfaces (US1) can be authored on top.
 
