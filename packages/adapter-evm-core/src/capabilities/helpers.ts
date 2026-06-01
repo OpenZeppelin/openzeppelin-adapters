@@ -5,13 +5,65 @@ import {
   type RuntimeCleanupStage,
 } from '@openzeppelin/adapter-runtime-utils';
 import type {
+  ExecutionConfig,
   ExecutionMethodDetail,
   FormFieldType,
   NetworkConfig,
+  OperationResult,
   RuntimeCapability,
+  TransactionStatusUpdate,
+  TxStatus,
 } from '@openzeppelin/ui-types';
 
-import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
+import {
+  EvmProviderKeys,
+  type TypedEvmNetworkConfig,
+  type WriteContractParameters,
+} from '../types';
+
+/**
+ * The injected transaction-submission callback shared by every write-capable capability
+ * factory (`createAccessControl`, `createIRS`, `createERC3643`, …). The adapter runtime
+ * supplies this; capabilities never touch wallet/signing infrastructure directly.
+ */
+export type SignAndBroadcast = (
+  transactionData: unknown,
+  executionConfig: ExecutionConfig,
+  onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
+  runtimeApiKey?: string
+) => Promise<{ txHash: string; result?: unknown }>;
+
+/**
+ * Executor shape consumed by capability services: assembled calldata in, an
+ * {@link OperationResult} out. Matches the per-service executor types
+ * (`EvmTransactionExecutor`, `EvmIRSExecutor`, …).
+ */
+export type CapabilityExecutor = (
+  txData: WriteContractParameters,
+  executionConfig: ExecutionConfig,
+  onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
+  runtimeApiKey?: string
+) => Promise<OperationResult>;
+
+/**
+ * Adapt an injected {@link SignAndBroadcast} into the {@link CapabilityExecutor} that
+ * services delegate to, normalizing the result to `{ id: txHash }`.
+ *
+ * Extracted so write-capable factories share one submission adapter instead of each
+ * re-implementing the same closure.
+ */
+export function adaptSignAndBroadcast(signAndBroadcast: SignAndBroadcast): CapabilityExecutor {
+  return async (txData, executionConfig, onStatusChange, runtimeApiKey) => {
+    const result = await signAndBroadcast(
+      txData,
+      executionConfig,
+      onStatusChange ?? (() => {}),
+      runtimeApiKey
+    );
+
+    return { id: result.txHash };
+  };
+}
 
 export function asTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkConfig {
   if (config.ecosystem !== 'evm') {

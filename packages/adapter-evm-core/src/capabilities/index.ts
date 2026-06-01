@@ -3,6 +3,7 @@ export { createAddressing } from './addressing';
 export { createContractLoading } from './contract-loading';
 export { createExecution } from './execution';
 export { createExplorer } from './explorer';
+export { createIRS, type CreateIRSOptions } from './irs';
 export { createNetworkCatalog } from './network-catalog';
 export { createQuery } from './query';
 export { createRelayer } from './relayer';

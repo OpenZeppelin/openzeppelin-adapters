@@ -34,7 +34,7 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 - [X] T001 [P] In `openzeppelin-ui`, confirm the local build/test loop for `@openzeppelin/ui-types` (`pnpm --filter @openzeppelin/ui-types build` / `test`) runs clean on the feature branch
 - [X] T002 [P] In `openzeppelin-adapters`, confirm `pnpm build`, `pnpm test`, `pnpm lint:adapters`, and `pnpm typecheck` run clean on `002-ri-evm-capabilities`
-- [X] T003 Configure local cross-repo linking so `adapter-evm-core` resolves the in-progress `@openzeppelin/ui-types` (per `LOCAL_ADAPTERS_PATH` / `docs/LOCAL_DEVELOPMENT.md`) so adapter work can type-check against the new interfaces before publish (mechanism: pnpm `link:` override to sibling `../openzeppelin-ui/packages/types`; activated at US2 when adapter code first imports the new types)
+- [X] T003 Configure local cross-repo linking so `adapter-evm-core` resolves the in-progress `@openzeppelin/ui-types` so adapter work can type-check against the new interfaces before publish. ACTIVATED at US2 via `pnpm dev:local` (the `oz-ui-dev` + `.pnpmfile.cjs` `LOCAL_UI` mechanism), which packs the sibling `../openzeppelin-ui` packages to `.packed-packages/local-dev/` and resolves the local `@openzeppelin/ui-types@3.0.0` (incl. the new ERC3643/ERC4626/IRS capability interfaces) into the consumer. No publish required.
 
 ---
 
@@ -85,18 +85,18 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T014 [P] [US2] Factory-creation test for `createIRS(config, { signAndBroadcast })`, including an idempotent-`dispose()` assertion (FR-016), in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.factory.test.ts`
-- [ ] T015 [P] [US2] Mocked-RPC behavioral tests for reads (`isVerified` true/false, `getOnchainId` found/not-found, `getJurisdiction`) in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.reads.test.ts` (FR-019 — IRS pre-check tests live in the adapter repo)
-- [ ] T016 [P] [US2] Mocked-execution behavioral tests for writes (`deployOnchainId`, idempotent `registerTrustedIssuer`, pre-signed `attachClaim`, `registerIdentity` → `IdentityAlreadyRegistered` on re-run) + pure `buildClaimPayload` determinism in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.writes.test.ts`
+- [X] T014 [P] [US2] Factory-creation test for `createIRS(config, { signAndBroadcast })`, including an idempotent-`dispose()` assertion (FR-016), in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.factory.test.ts`
+- [X] T015 [P] [US2] Mocked-RPC behavioral tests for reads (`isVerified` true/false, `getOnchainId` found/not-found, `getJurisdiction`) in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.reads.test.ts` (FR-019 — IRS pre-check tests live in the adapter repo)
+- [X] T016 [P] [US2] Mocked-execution behavioral tests for writes (`deployOnchainId`, idempotent `registerTrustedIssuer`, pre-signed `attachClaim`, `registerIdentity` → `IdentityAlreadyRegistered` on re-run) + pure `buildClaimPayload` determinism in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/__tests__/irs.writes.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Implement the shared base-unit amount codec (`parseAmount`/`formatAmount`: `string ↔ bigint` with `InvalidAmount` rejection of malformed/fractional/negative/signed/sci-notation input) + unit tests in `openzeppelin-adapters/packages/adapter-evm-core/src/shared/amount.ts` — reused by all three capability services (FR-003a, FR-012a)
-- [ ] T018 [P] [US2] Vendor + pin/document ABIs (IRS/IdentityRegistry, ONCHAINID, ClaimTopics, TrustedIssuersRegistry, IdentityVerifier) under `openzeppelin-adapters/packages/adapter-evm-core/src/irs/abi/` with source-repo + tag/commit + contract-name headers (FR-017, FR-017a)
-- [ ] T019 [US2] Implement the viem onchain reader + service in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/onchain-reader.ts` and `service.ts` (reads over RPC; amount codec from T017 at the boundary; map reverts → typed errors)
-- [ ] T020 [US2] Implement write actions + pre-signed claim handling + key-free `buildClaimPayload` in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/actions.ts` and `claim-payload.ts` (FR-008a — no issuer key)
-- [ ] T021 [US2] Implement `createIRS(config, { signAndBroadcast })` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/irs.ts` (mirror `createAccessControl`; wrap with `guardRuntimeCapability`; reuse `asTypedEvmNetworkConfig`) (FR-009, FR-010, FR-010a, FR-016)
-- [ ] T022 [US2] Export `createIRS` + types from `openzeppelin-adapters/packages/adapter-evm-core/src/irs/index.ts` and add to `src/capabilities/index.ts`
+- [X] T017 [US2] Implement the shared base-unit amount codec (`parseAmount`/`formatAmount`: `string ↔ bigint` with `InvalidAmount` rejection of malformed/fractional/negative/signed/sci-notation input) + unit tests in `openzeppelin-adapters/packages/adapter-evm-core/src/shared/amount.ts` — reused by all three capability services (FR-003a, FR-012a)
+- [X] T018 [P] [US2] Vendor + pin/document ABIs (IRS/IdentityRegistry, ONCHAINID, ClaimTopics, TrustedIssuersRegistry, IdentityVerifier) with source-repo + tag/commit + contract-name headers (FR-017, FR-017a). NOTE: vendored as inline fragments in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/abis.ts` (single file, matching the established `access-control/abis.ts` convention rather than an `abi/` directory); covers `IIdentityRegistry`, `ITrustedIssuersRegistry`, ONCHAINID `IIdentity` (ERC-735), and the ONCHAINID `IdFactory`.
+- [X] T019 [US2] Implement the viem onchain reader + service in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/onchain-reader.ts` and `service.ts` (reads over RPC; map reverts → typed errors). NOTE: IRS reads/writes carry no token amounts, so the shared amount codec (T017) is exercised by the ERC-3643/ERC-4626 services (US3/US4) rather than IRS.
+- [X] T020 [US2] Implement write actions + pre-signed claim handling + key-free `buildClaimPayload` in `openzeppelin-adapters/packages/adapter-evm-core/src/irs/actions.ts` and `claim-payload.ts` (FR-008a — no issuer key; digest = `keccak256(abi.encode(onchainId, topic, data))` per ONCHAINID/ERC-735)
+- [X] T021 [US2] Implement `createIRS(config, options)` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/irs.ts` (mirror `createAccessControl`; wrap with `guardRuntimeCapability`; reuse `asTypedEvmNetworkConfig`) (FR-009, FR-010, FR-010a, FR-016). NOTE: `CreateIRSOptions` extends `{ signAndBroadcast }` with the deployment-specific `addresses` (identityRegistry/identityFactory/trustedIssuersRegistry) + optional `trustedIssuer`, since the capability methods take holder/claim args rather than per-call contract addresses.
+- [X] T022 [US2] Export `createIRS` + types from `openzeppelin-adapters/packages/adapter-evm-core/src/irs/index.ts` and add to `src/capabilities/index.ts` (and the package root `src/index.ts`)
 
 **Checkpoint**: IRS capability passes its factory + behavioral tests; the IRS pre-check (the most-important shared helper) is adapter-side.
 
@@ -120,8 +120,8 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 - [ ] T026 [P] [US3] Vendor + pin/document the T-REX (ERC-3643) token ABI under `openzeppelin-adapters/packages/adapter-evm-core/src/erc3643/abi.ts` with provenance header (FR-017, FR-017a)
 - [ ] T027 [US3] Implement viem onchain reader + service (incl. `simulateTransfer` compliance-module evaluation, amount codec from T017) in `openzeppelin-adapters/packages/adapter-evm-core/src/erc3643/onchain-reader.ts` and `service.ts`
-- [ ] T028 [US3] Implement write actions + revert→typed-error mapping in `openzeppelin-adapters/packages/adapter-evm-core/src/erc3643/actions.ts` (FR-012, FR-012a)
-- [ ] T029 [US3] Implement `createERC3643(config, { signAndBroadcast })` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/erc3643.ts` (FR-009, FR-010a, FR-016)
+- [ ] T028 [US3] Implement write actions + revert→typed-error mapping in `openzeppelin-adapters/packages/adapter-evm-core/src/erc3643/actions.ts` (FR-012, FR-012a). REFACTOR (deferred from US2): with IRS + ERC-3643 now providing two concrete revert-mappers, consolidate the shared write skeleton (run executor → catch → log → wrap-with-fallback) into a small `capabilities/helpers.ts` helper that takes a capability-specific `mapError` (e.g. `runCapabilityWrite(operation, action, exec, mapError)`), and refactor `EvmIRSService.execute` to use it. Keep the per-capability error mapping itself local.
+- [ ] T029 [US3] Implement `createERC3643(config, { signAndBroadcast })` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/erc3643.ts` (FR-009, FR-010a, FR-016). Reuse the shared `adaptSignAndBroadcast` + `SignAndBroadcast` helpers from `capabilities/helpers.ts` (added in US2) rather than re-implementing the executor adapter.
 - [ ] T030 [US3] Export from `openzeppelin-adapters/packages/adapter-evm-core/src/erc3643/index.ts` and add to `src/capabilities/index.ts`
 
 **Checkpoint**: ERC-3643 capability passes tests; the mutating-route chain layer is ready.

@@ -295,6 +295,8 @@ export {
   createContractLoading,
   createExecution,
   createExplorer,
+  createIRS,
+  type CreateIRSOptions,
   createNetworkCatalog,
   createQuery,
   createRelayer,
@@ -304,6 +306,22 @@ export {
   createUiLabels,
   createWallet,
 } from './capabilities';
+
+// ============================================================================
+// IRS / ONCHAINID Module - identity registry capability internals
+// ============================================================================
+export {
+  buildClaimPayload,
+  createEvmIRSService,
+  EvmIRSService,
+  getJurisdiction as getIrsJurisdiction,
+  getOnchainId,
+  isTrustedIssuer,
+  isVerified as isIrsVerified,
+  type EvmIRSAddresses,
+  type EvmIRSExecutor,
+  type EvmIRSServiceOptions,
+} from './irs';
 
 // ============================================================================
 // Profile Module - runtime composition helpers
