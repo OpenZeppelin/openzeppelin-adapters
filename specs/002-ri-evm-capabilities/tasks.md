@@ -60,16 +60,16 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T007 [P] [US1] Add a type-level conformance test (stub-implements-interface) for all three capabilities, and assert the published type surface matches the `contracts/*.md` method/return shapes (SC-008), in `openzeppelin-ui/packages/types/src/adapters/__tests__/ri-capabilities.types.test.ts` (must fail until interfaces exist)
+- [X] T007 [P] [US1] Add a type-level conformance test (stub-implements-interface) for all three capabilities, and assert the published type surface matches the `contracts/*.md` method/return shapes (SC-008), in `openzeppelin-ui/packages/types/src/adapters/__tests__/ri-capabilities.types.test.ts` (must fail until interfaces exist) — also dropped the `**/*.test.ts` exclude from `packages/types/tsconfig.json` so `tsc --noEmit` genuinely enforces the `satisfies` checks (vitest erases `import type`/`satisfies`, so the runtime run alone gave a false green)
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Define `ERC3643Capability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/erc3643.ts` — reads `balanceOf`/`isVerified`/`isFrozen`/`getJurisdiction`/`simulateTransfer`, writes `mint`/`burn`/`transfer`/`freeze`/`unfreeze`; amounts as `Amount`; writes accept `ExecutionConfig` + optional status callback + runtime API key (FR-006, FR-003a, FR-004)
-- [ ] T009 [P] [US1] Define `ERC4626Capability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/erc4626.ts` — reads `convertToAssets`/`convertToShares`/`totalAssets`, writes `deposit`/`withdraw` (with optional `sharesIssued`/`amountReturned` as `Amount`) (FR-007)
-- [ ] T010 [P] [US1] Define `IRSCapability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/irs.ts` — reads `getOnchainId`(→`OnchainIdLookup`)/`isVerified`/`getJurisdiction`, pure `buildClaimPayload`, writes `deployOnchainId`/`registerTrustedIssuer`/`attachClaim`/`registerIdentity` (FR-008, FR-008a, FR-008b, FR-008c)
-- [ ] T011 [US1] Re-export the three interfaces from `openzeppelin-ui/packages/types/src/adapters/capabilities/index.ts` (alongside `AccessControlCapability`)
-- [ ] T012 [US1] Add optional `erc3643?`/`erc4626?`/`irs?` factory entries to `CapabilityFactoryMap` and optional accessors to `EcosystemRuntime` in `openzeppelin-ui/packages/types/src/adapters/runtime.ts` (FR-005)
-- [ ] T013 [US1] Run `@openzeppelin/ui-types` build + type-check; ensure T007 passes and the package exports the new surface
+- [X] T008 [P] [US1] Define `ERC3643Capability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/erc3643.ts` — reads `balanceOf`/`isVerified`/`isFrozen`/`getJurisdiction`/`simulateTransfer`, writes `mint`/`burn`/`transfer`/`freeze`/`unfreeze`; amounts as `Amount`; writes accept `ExecutionConfig` + optional status callback + runtime API key (FR-006, FR-003a, FR-004)
+- [X] T009 [P] [US1] Define `ERC4626Capability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/erc4626.ts` — reads `convertToAssets`/`convertToShares`/`totalAssets`, writes `deposit`/`withdraw` (with optional `sharesIssued`/`amountReturned` as `Amount`) (FR-007)
+- [X] T010 [P] [US1] Define `IRSCapability` in `openzeppelin-ui/packages/types/src/adapters/capabilities/irs.ts` — reads `getOnchainId`(→`OnchainIdLookup`)/`isVerified`/`getJurisdiction`, pure `buildClaimPayload`, writes `deployOnchainId`/`registerTrustedIssuer`/`attachClaim`/`registerIdentity` (FR-008, FR-008a, FR-008b, FR-008c)
+- [X] T011 [US1] Re-export the three interfaces from `openzeppelin-ui/packages/types/src/adapters/capabilities/index.ts` (alongside `AccessControlCapability`)
+- [X] T012 [US1] Add optional `erc3643?`/`erc4626?`/`irs?` factory entries to `CapabilityFactoryMap` and optional accessors to `EcosystemRuntime` in `openzeppelin-ui/packages/types/src/adapters/runtime.ts` (FR-005)
+- [X] T013 [US1] Run `@openzeppelin/ui-types` build + type-check; ensure T007 passes and the package exports the new surface (typecheck + test + lint + build all green; `ERC3643Capability`/`ERC4626Capability`/`IRSCapability` present in `dist/index.d.mts`)
 
 **Checkpoint**: Interfaces are stable and consumable (SC-008). Publish ui-types as a MINOR / pre-release so adapter stories can link (FR-022). This is the MVP for the plugin team to start typing their `Capabilities` port.
 
