@@ -9,17 +9,15 @@ import type {
   ExecutionMethodDetail,
   FormFieldType,
   NetworkConfig,
-  OperationResult,
   RuntimeCapability,
   TransactionStatusUpdate,
   TxStatus,
 } from '@openzeppelin/ui-types';
 
-import {
-  EvmProviderKeys,
-  type TypedEvmNetworkConfig,
-  type WriteContractParameters,
-} from '../types';
+import type { CapabilityExecutor } from '../shared/executor';
+import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
+
+export type { CapabilityExecutor } from '../shared/executor';
 
 /**
  * The injected transaction-submission callback shared by every write-capable capability
@@ -32,18 +30,6 @@ export type SignAndBroadcast = (
   onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
   runtimeApiKey?: string
 ) => Promise<{ txHash: string; result?: unknown }>;
-
-/**
- * Executor shape consumed by capability services: assembled calldata in, an
- * {@link OperationResult} out. Matches the per-service executor types
- * (`EvmTransactionExecutor`, `EvmIRSExecutor`, …).
- */
-export type CapabilityExecutor = (
-  txData: WriteContractParameters,
-  executionConfig: ExecutionConfig,
-  onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
-  runtimeApiKey?: string
-) => Promise<OperationResult>;
 
 /**
  * Adapt an injected {@link SignAndBroadcast} into the {@link CapabilityExecutor} that

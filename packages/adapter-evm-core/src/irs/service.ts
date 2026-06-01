@@ -28,7 +28,8 @@ import { IdentityAlreadyRegistered, IdentityOperationFailed } from '@openzeppeli
 import { logger } from '@openzeppelin/ui-utils';
 
 import { resolveRpcUrl } from '../configuration/rpc';
-import type { EvmCompatibleNetworkConfig } from '../types';
+import { runCapabilityWrite } from '../shared/executor';
+import type { EvmCompatibleNetworkConfig, WriteContractParameters } from '../types';
 import {
   assembleAddTrustedIssuerAction,
   assembleAttachClaimAction,
@@ -207,24 +208,31 @@ export class EvmIRSService {
     return resolveRpcUrl(this.networkConfig);
   }
 
-  private async execute(
+  private execute(
     operation: string,
-    action: Awaited<ReturnType<typeof assembleRegisterIdentityAction>>,
+    action: WriteContractParameters,
     executionConfig: ExecutionConfig,
     onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
     runtimeApiKey?: string
   ): Promise<OperationResult> {
-    try {
-      return await this.executeTransaction(action, executionConfig, onStatusChange, runtimeApiKey);
-    } catch (error) {
-      logger.error(LOG_SYSTEM, `${operation} failed:`, error);
-      throw new IdentityOperationFailed(
-        `IRS ${operation} failed: ${(error as Error).message}`,
+    return runCapabilityWrite(
+      {
         operation,
-        error as Error,
-        action.address
-      );
-    }
+        action,
+        executor: this.executeTransaction,
+        executionConfig,
+        onStatusChange,
+        runtimeApiKey,
+      },
+      // All IRS write failures map to a single typed error.
+      (error, op, contractAddress) =>
+        new IdentityOperationFailed(
+          `IRS ${op} failed: ${error.message}`,
+          op,
+          error,
+          contractAddress
+        )
+    );
   }
 }
 

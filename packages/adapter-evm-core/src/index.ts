@@ -293,6 +293,8 @@ export {
   type CreateAccessControlOptions,
   createAddressing,
   createContractLoading,
+  createERC3643,
+  type CreateERC3643Options,
   createExecution,
   createExplorer,
   createIRS,
@@ -322,6 +324,18 @@ export {
   type EvmIRSExecutor,
   type EvmIRSServiceOptions,
 } from './irs';
+
+// ============================================================================
+// ERC-3643 / T-REX Module - permissioned-token capability internals
+// ============================================================================
+export {
+  createEvmErc3643Service,
+  EvmErc3643Service,
+  mapErc3643Error,
+  type EvmErc3643Executor,
+  type EvmErc3643ServiceOptions,
+  type Erc3643ErrorContext,
+} from './erc3643';
 
 // ============================================================================
 // Profile Module - runtime composition helpers
