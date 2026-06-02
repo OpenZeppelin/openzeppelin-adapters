@@ -123,8 +123,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -208,8 +208,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -320,8 +320,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -390,8 +390,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -432,8 +432,8 @@ importers:
   packages/adapter-runtime-utils:
     devDependencies:
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@types/node':
         specifier: ^25.0.0
         version: 25.9.1
@@ -475,8 +475,8 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -536,8 +536,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0(@babel/runtime@7.29.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^3.1.0
+        version: 3.1.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -1788,6 +1788,9 @@ packages:
 
   '@openzeppelin/ui-types@2.0.0':
     resolution: {integrity: sha512-wJE+oxiPo/Syu4Gcm9C8yhWzGN/fOD66IjKFUxMIgr0ddZxjSgQmho00m7NlFM7xQwYRG/e5y1s+Iyjg233l1w==}
+
+  '@openzeppelin/ui-types@3.1.0':
+    resolution: {integrity: sha512-1syRJvRXGgRF/jJJz5HyAnCijBnKL5xIOmAFttiPUNt9AvKXrjUU+AVCn+KZuy7f5IQL9pAfrU3JEl8tl59R+Q==}
 
   '@openzeppelin/ui-utils@2.0.0':
     resolution: {integrity: sha512-nOFe2H8Yeg/gGX64NDHDPg4icPCCLKo9Y4S0LJFOmucFJ7o7VhG/WYf+lXRxCgUgkShd8ctTB0hDg/vDVnWrkA==}
@@ -11529,6 +11532,8 @@ snapshots:
 
   '@openzeppelin/ui-types@2.0.0': {}
 
+  '@openzeppelin/ui-types@3.1.0': {}
+
   '@openzeppelin/ui-utils@2.0.0':
     dependencies:
       '@openzeppelin/ui-types': 2.0.0
@@ -12690,7 +12695,7 @@ snapshots:
       debug: 4.4.3
       invariant: 2.2.4
       metro: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      metro-config: 0.83.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      metro-config: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       metro-core: 0.83.7
       semver: 7.8.0
     transitivePeerDependencies:
@@ -21394,6 +21399,22 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
+
+  metro-config@0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+    dependencies:
+      connect: 3.7.0
+      flow-enums-runtime: 0.0.6
+      jest-validate: 29.7.0
+      metro: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-cache: 0.83.7
+      metro-core: 0.83.7
+      metro-runtime: 0.83.7
+      yaml: 2.9.0
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
 
   metro-core@0.83.7:
     dependencies:
@@ -21484,6 +21505,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro-transform-worker@0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
@@ -21550,6 +21572,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   metro@0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
@@ -21576,7 +21599,7 @@ snapshots:
       metro-babel-transformer: 0.83.7
       metro-cache: 0.83.7
       metro-cache-key: 0.83.7
-      metro-config: 0.83.7(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      metro-config: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       metro-core: 0.83.7
       metro-file-map: 0.83.7
       metro-resolver: 0.83.7
