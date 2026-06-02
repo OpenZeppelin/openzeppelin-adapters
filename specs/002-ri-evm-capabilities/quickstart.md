@@ -117,7 +117,7 @@ interfaces they implement are on npm.
 
 | Package | Branch pin | Notes |
 |---------|------------|-------|
-| `@openzeppelin/ui-types` | `^2.0.0` in adapter-evm | Satisfies semver once ui-types MINOR lands on npm; bump to explicit floor after step 1 |
+| `@openzeppelin/ui-types` | `^3.1.0` in adapter-evm / adapter-evm-core | Step 1 complete — ui-types `3.1.0` published to npm; floor bumped across all adapter packages (`dependencies` + `peerDependencies`) |
 | `@openzeppelin/adapter-evm` | `2.0.2` (in-repo) | MINOR bump via Changesets on merge |
 | `@openzeppelin/adapter-evm-core` | `1.0.0`, `"private": true` | Bundled into adapter-evm; not published separately |
 

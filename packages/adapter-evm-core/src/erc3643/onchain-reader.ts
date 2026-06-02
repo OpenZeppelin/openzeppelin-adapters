@@ -192,12 +192,23 @@ export async function simulateTransfer(
     );
   }
 
-  const allowed = (await client.readContract({
-    address: compliance as `0x${string}`,
-    abi: CAN_TRANSFER_ABI,
-    functionName: 'canTransfer',
-    args: [input.from as `0x${string}`, input.to as `0x${string}`, amount],
-  })) as boolean;
+  let allowed: boolean;
+  try {
+    allowed = (await client.readContract({
+      address: compliance as `0x${string}`,
+      abi: CAN_TRANSFER_ABI,
+      functionName: 'canTransfer',
+      args: [input.from as `0x${string}`, input.to as `0x${string}`, amount],
+    })) as boolean;
+  } catch (error) {
+    logger.error(LOG_SYSTEM, 'simulateTransfer canTransfer failed:', error);
+    throw new RICapabilityOperationFailed(
+      `Failed to evaluate canTransfer: ${(error as Error).message}`,
+      'simulateTransfer',
+      error as Error,
+      tokenAddress
+    );
+  }
 
   const modulesEvaluated = modules.length;
 

@@ -9,7 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ExecutionConfig, IRSCapability, OnboardingClaim } from '@openzeppelin/ui-types';
-import { IdentityAlreadyRegistered } from '@openzeppelin/ui-types';
+import { IdentityAlreadyRegistered, IdentityOperationFailed } from '@openzeppelin/ui-types';
 
 import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
 
@@ -123,6 +123,21 @@ describe('IRS writes', () => {
       expect(action.functionName).toBe('addClaim');
       expect(action.address).toBe(ONCHAINID);
       expect(action.args).toEqual([1n, 1n, ISSUER, '0xc0ffee', '0xdeadbeef', '']);
+    });
+
+    it('rejects with IdentityOperationFailed when no issuer is resolvable', async () => {
+      const { capability, signAndBroadcast } = makeCapability();
+      const claim: OnboardingClaim = {
+        topic: '1',
+        scheme: 1,
+        data: '0xdeadbeef',
+        signature: '0xc0ffee',
+      };
+
+      await expect(
+        capability.attachClaim({ onchainId: ONCHAINID, claim }, EXEC_CONFIG)
+      ).rejects.toBeInstanceOf(IdentityOperationFailed);
+      expect(signAndBroadcast).not.toHaveBeenCalled();
     });
   });
 

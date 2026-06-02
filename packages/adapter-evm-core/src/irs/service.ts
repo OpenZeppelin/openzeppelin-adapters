@@ -91,6 +91,14 @@ export class EvmIRSService {
 
   // ---- Writes ----
 
+  /**
+   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the factory.
+   *
+   * Precondition: the injected execution strategy MUST resolve `signAndBroadcast`
+   * only after on-chain confirmation (submit-then-poll, per FR-018). The factory is
+   * read immediately after `execute` resolves; a broadcast-only (unconfirmed) strategy
+   * can surface `IdentityOperationFailed` even though the transaction later succeeds.
+   */
   async deployOnchainId(
     input: { holder: string },
     executionConfig: ExecutionConfig,
@@ -166,7 +174,19 @@ export class EvmIRSService {
     runtimeApiKey?: string
   ): Promise<OperationResult> {
     const { onchainId, claim } = input;
-    const issuerAddress = claim.issuer ?? this.trustedIssuer ?? '';
+    const issuerAddress = claim.issuer ?? this.trustedIssuer;
+    // Fail clearly at the capability boundary rather than assembling calldata with an
+    // empty issuer address (which would produce an invalid arg / opaque downstream revert).
+    if (!issuerAddress) {
+      return Promise.reject(
+        new IdentityOperationFailed(
+          'attachClaim requires an issuer address: provide claim.issuer or configure a trustedIssuer.',
+          'attachClaim',
+          undefined,
+          onchainId
+        )
+      );
+    }
     const action = assembleAttachClaimAction(onchainId, claim, issuerAddress);
     return this.execute('attachClaim', action, executionConfig, onStatusChange, runtimeApiKey);
   }

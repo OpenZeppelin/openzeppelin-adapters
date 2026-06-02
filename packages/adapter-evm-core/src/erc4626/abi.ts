@@ -10,13 +10,13 @@
  *
  * | Interface  | Source repo                                   | Pinned version | Reference |
  * |------------|-----------------------------------------------|----------------|-----------|
- * | `IERC4626` | github.com/OpenZeppelin/openzeppelin-contracts | npm `@openzeppelin/contracts@5.x` (`contracts/interfaces/IERC4626.sol`) | EIP-4626 (Final) |
+ * | `IERC4626` | github.com/OpenZeppelin/openzeppelin-contracts | npm `@openzeppelin/contracts@5.6.1` (`contracts/interfaces/IERC4626.sol`) | EIP-4626 (Final) |
  *
  * EIP-4626 is a **finalized** standard, so these function/selector signatures are immutable
- * by definition; the table pins the vendoring source for traceability. Signatures verified
- * verbatim against OpenZeppelin Contracts `master` (`contracts/interfaces/IERC4626.sol`) and
- * the EIP-4626 specification on 2026-06-02. Re-syncing must be a deliberate, Changeset-tracked
- * change with this table updated.
+ * by definition; the table pins the exact vendoring source for traceability. Signatures
+ * verified verbatim against OpenZeppelin Contracts `v5.6.1` (`contracts/interfaces/IERC4626.sol`)
+ * and the EIP-4626 specification on 2026-06-02. Re-syncing must be a deliberate,
+ * Changeset-tracked change with this table updated to the new exact version.
  *
  * @module erc4626/abi
  */

@@ -13,10 +13,12 @@
  *   deployOnchainId, registerTrustedIssuer, attachClaim, registerIdentity
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const CORE_ROOT = resolve(import.meta.dirname, '../..');
+const HERE = dirname(fileURLToPath(import.meta.url));
+const CORE_ROOT = resolve(HERE, '../..');
 
 interface CapabilityCoverage {
   reads: readonly string[];
