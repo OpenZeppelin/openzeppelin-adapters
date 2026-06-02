@@ -164,15 +164,15 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T039 [P] [US4] Factory-creation test for `createERC4626`, including an idempotent-`dispose()` assertion (FR-016), in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/__tests__/erc4626.factory.test.ts`
-- [ ] T040 [P] [US4] Mocked-RPC read tests (`convertToAssets`/`convertToShares`/`totalAssets`) + mocked-execution write tests (`deposit`/`withdraw`, `InsufficientBalance`/`InsufficientShares`, and a malformed-amount → `InvalidAmount` negative test) in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/__tests__/erc4626.behavior.test.ts`
+- [X] T039 [P] [US4] Factory-creation test for `createERC4626`, including an idempotent-`dispose()` assertion (FR-016), in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/__tests__/erc4626.factory.test.ts`
+- [X] T040 [P] [US4] Mocked-RPC read tests (`convertToAssets`/`convertToShares`/`totalAssets`) + mocked-execution write tests (`deposit`/`withdraw`, `InsufficientBalance`/`InsufficientShares`, and a malformed-amount → `InvalidAmount` negative test) in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/__tests__/erc4626.behavior.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T041 [P] [US4] Vendor + pin/document the ERC-4626 vault ABI under `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/abi.ts` with provenance header (FR-017, FR-017a)
-- [ ] T042 [US4] Implement viem reader + service + write actions (amount codec from T017) in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/onchain-reader.ts`, `service.ts`, `actions.ts`
-- [ ] T043 [US4] Implement `createERC4626(config, { signAndBroadcast })` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/erc4626.ts` (FR-009, FR-010a, FR-016)
-- [ ] T044 [US4] Export from `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/index.ts` and add to `src/capabilities/index.ts`; confirm the `erc4626` sub-path wired in US5 resolves
+- [X] T041 [P] [US4] Vendor + pin/document the ERC-4626 vault ABI under `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/abi.ts` with provenance header (FR-017, FR-017a). `IERC4626` signatures verified verbatim against OpenZeppelin Contracts `master` (`contracts/interfaces/IERC4626.sol`) + the finalized EIP-4626 on 2026-06-02. The capability's `withdraw({ from, shares })` takes a share quantity → maps to `redeem(shares, receiver, owner)` (not asset-denominated `withdraw`).
+- [X] T042 [US4] Implement viem reader + service + write actions (amount codec from T017) in `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/onchain-reader.ts`, `service.ts`, `actions.ts` (+ `error-mapping.ts`, `types.ts`). REFACTOR (done): the viem revert-chain walker (`extractRevertInfo` + `includesAny`) was extracted from `erc3643/error-mapping.ts` into shared `shared/revert-info.ts` (parametrized by an optional custom-error ABI) and is now reused by both the ERC-3643 and ERC-4626 mappers; erc3643's existing error-mapping tests guard the refactor. `sharesIssued`/`amountReturned` are omitted on the EVM submit-then-poll path (txHash at submit time; contract VC-3 "where the receipt exposes them") — documented in the service.
+- [X] T043 [US4] Implement `createERC4626(config, { signAndBroadcast })` factory in `openzeppelin-adapters/packages/adapter-evm-core/src/capabilities/erc4626.ts` (FR-009, FR-010a, FR-016). `vaultAddress` added to `CreateERC4626Options` (per-deployment address, consistent with `createERC3643`/`createIRS`).
+- [X] T044 [US4] Export from `openzeppelin-adapters/packages/adapter-evm-core/src/erc4626/index.ts` and add to `src/capabilities/index.ts` (+ root `src/index.ts`). Wired the `erc4626` sub-path deferred in US5 (core+adapter `tsdown.config.ts` + `package.json` exports + adapter thin re-export) and added `erc4626` to the US5 isolation + runtime sub-path tests; built sub-path confirmed free of React/Wagmi imports.
 
 **Checkpoint**: Vault capability passes tests; full demo loop (balance via `convertToAssets`) is supported.
 

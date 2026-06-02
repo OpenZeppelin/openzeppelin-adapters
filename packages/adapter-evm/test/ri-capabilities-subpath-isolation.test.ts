@@ -17,8 +17,6 @@
  * they are framework-agnostic and already used by the server-side `access-control`
  * capability, so they are not followed further.
  *
- * NOTE: erc4626 is intentionally absent — its factory ships in US4 (Phase 7); its sub-path
- * isolation assertion is added alongside it.
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -99,11 +97,13 @@ function assertNoForbidden(specifiers: Iterable<string>, context: string): void 
 
 const CAPABILITY_ENTRIES = {
   erc3643: resolve(CORE_ROOT, 'src/capabilities/erc3643.ts'),
+  erc4626: resolve(CORE_ROOT, 'src/capabilities/erc4626.ts'),
   irs: resolve(CORE_ROOT, 'src/capabilities/irs.ts'),
 } as const;
 
 const REEXPORT_ENTRIES = {
   erc3643: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc3643.ts'),
+  erc4626: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc4626.ts'),
   irs: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/irs.ts'),
 } as const;
 

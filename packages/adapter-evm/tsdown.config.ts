@@ -30,6 +30,7 @@ export default defineConfig({
     relayer: 'src/capabilities/relayer.ts',
     'access-control': 'src/capabilities/access-control.ts',
     erc3643: 'src/capabilities/erc3643.ts',
+    erc4626: 'src/capabilities/erc4626.ts',
     irs: 'src/capabilities/irs.ts',
     declarative: 'src/profiles/declarative.ts',
     viewer: 'src/profiles/viewer.ts',

@@ -12,7 +12,6 @@
  * apply across the package boundary). The sub-path export wiring itself is validated by
  * the package build (T038) and the import-graph isolation test.
  *
- * NOTE: erc4626 is intentionally absent — its factory ships in US4 (Phase 7).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,6 +19,7 @@ import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
 import type { ExecutionConfig, TransactionStatusUpdate } from '@openzeppelin/ui-types';
 
 import { createERC3643 } from '../../adapter-evm-core/src/capabilities/erc3643';
+import { createERC4626 } from '../../adapter-evm-core/src/capabilities/erc4626';
 import { createIRS } from '../../adapter-evm-core/src/capabilities/irs';
 
 const mockReadContract = vi.fn();
@@ -96,6 +96,28 @@ describe('RI capability sub-paths (server-side runtime)', () => {
 
       expect(() => token.dispose()).not.toThrow();
       expect(() => token.dispose()).not.toThrow(); // idempotent
+    });
+  });
+
+  describe('erc4626', () => {
+    it('constructs, reads totalAssets over mocked RPC, and writes via injected strategy', async () => {
+      const signAndBroadcast = createStrategySignAndBroadcast();
+      const vault = createERC4626(TEST_NETWORK_CONFIG, { signAndBroadcast, vaultAddress: TOKEN });
+
+      expect(typeof vault.convertToAssets).toBe('function');
+      expect(typeof vault.dispose).toBe('function');
+
+      mockReadContract.mockResolvedValueOnce(5000n);
+      await expect(vault.totalAssets()).resolves.toBe('5000');
+
+      const result = await vault.deposit({ from: HOLDER, amount: '1000' }, EXEC_CONFIG);
+      expect(signAndBroadcast).toHaveBeenCalledTimes(1);
+      const [txData] = signAndBroadcast.mock.calls[0];
+      expect(txData).toMatchObject({ functionName: 'deposit', address: TOKEN });
+      expect(result).toEqual({ id: TX_HASH });
+
+      expect(() => vault.dispose()).not.toThrow();
+      expect(() => vault.dispose()).not.toThrow(); // idempotent
     });
   });
 

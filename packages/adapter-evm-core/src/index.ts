@@ -295,6 +295,8 @@ export {
   createContractLoading,
   createERC3643,
   type CreateERC3643Options,
+  createERC4626,
+  type CreateERC4626Options,
   createExecution,
   createExplorer,
   createIRS,
@@ -336,6 +338,19 @@ export {
   type EvmErc3643ServiceOptions,
   type Erc3643ErrorContext,
 } from './erc3643';
+
+// ============================================================================
+// ERC-4626 / Tokenized Vault Module - vault capability internals
+// ============================================================================
+export {
+  createEvmErc4626Service,
+  EvmErc4626Service,
+  mapErc4626Error,
+  type EvmErc4626Executor,
+  type EvmErc4626ServiceOptions,
+  type Erc4626ErrorContext,
+  type Erc4626Operation,
+} from './erc4626';
 
 // ============================================================================
 // Profile Module - runtime composition helpers

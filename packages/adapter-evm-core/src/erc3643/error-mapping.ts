@@ -23,7 +23,7 @@
  * @module erc3643/error-mapping
  */
 
-import { BaseError, ContractFunctionRevertedError, decodeErrorResult, type Abi } from 'viem';
+import type { Abi } from 'viem';
 
 import {
   ComplianceModuleRejected,
@@ -32,6 +32,8 @@ import {
   RecipientNotVerified,
   RICapabilityOperationFailed,
 } from '@openzeppelin/ui-types';
+
+import { extractRevertInfo, includesAny } from '../shared/revert-info';
 
 /** Context threaded into the mapped error for actionable messages. */
 export interface Erc3643ErrorContext {
@@ -52,68 +54,6 @@ export interface Erc3643ErrorContext {
  */
 export const CUSTOM_ERROR_ABI: Abi = [];
 
-/** Builtin Solidity error names viem decodes; not treated as custom-error names. */
-const BUILTIN_ERROR_NAMES = new Set(['Error', 'Panic']);
-
-interface RevertInfo {
-  /** Decoded custom-error name (excludes the builtin `Error`/`Panic`), when available. */
-  errorName?: string;
-  /** 4-byte selector when a custom error could not be decoded to a name. */
-  selector?: string;
-  /** Combined, lowercased text (messages + reason + decoded name) for keyword matching. */
-  searchText: string;
-}
-
-/**
- * Pull every available signal out of a raw execution error: top-level messages, and — when
- * it is a viem error — the structured revert `reason`, decoded custom-error `errorName`, and
- * raw selector reached by walking the error chain.
- */
-function extractRevertInfo(error: Error): RevertInfo {
-  const texts: string[] = [];
-  if (error.message) texts.push(error.message);
-  const short = (error as { shortMessage?: string }).shortMessage;
-  if (short) texts.push(short);
-
-  let errorName: string | undefined;
-  let selector: string | undefined;
-
-  if (error instanceof BaseError) {
-    const revert = error.walk((e) => e instanceof ContractFunctionRevertedError);
-    if (revert instanceof ContractFunctionRevertedError) {
-      if (revert.reason) texts.push(revert.reason);
-
-      const decodedName = revert.data?.errorName;
-      if (decodedName && !BUILTIN_ERROR_NAMES.has(decodedName)) {
-        errorName = decodedName;
-      }
-
-      // viem couldn't decode the custom error (its ABI lacked the fragment): try ours, then
-      // fall back to the bare 4-byte selector for diagnostics.
-      if (!errorName && revert.raw && revert.raw !== '0x') {
-        errorName = decodeCustomError(revert.raw);
-        if (!errorName) selector = revert.signature ?? revert.raw.slice(0, 10);
-      }
-    }
-  }
-
-  if (errorName) texts.push(errorName);
-  return { errorName, selector, searchText: texts.join(' ').toLowerCase() };
-}
-
-/** Best-effort decode of raw revert bytes against the vendored custom-error ABI. */
-function decodeCustomError(raw: `0x${string}`): string | undefined {
-  if (CUSTOM_ERROR_ABI.length === 0) return undefined;
-  try {
-    return decodeErrorResult({ abi: CUSTOM_ERROR_ABI, data: raw }).errorName;
-  } catch {
-    return undefined;
-  }
-}
-
-const includesAny = (text: string, needles: string[]): boolean =>
-  needles.some((needle) => text.includes(needle));
-
 /**
  * Map a raw ERC-3643 write failure to a typed error.
  *
@@ -128,7 +68,7 @@ export function mapErc3643Error(
   contractAddress?: string,
   ctx: Erc3643ErrorContext = {}
 ): Error {
-  const info = extractRevertInfo(error);
+  const info = extractRevertInfo(error, CUSTOM_ERROR_ABI);
   const text = info.searchText;
   const { holder, requested } = ctx;
 

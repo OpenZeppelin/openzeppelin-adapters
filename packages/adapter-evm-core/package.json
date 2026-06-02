@@ -242,6 +242,16 @@
         "default": "./dist/erc3643.cjs"
       }
     },
+    "./erc4626": {
+      "import": {
+        "types": "./dist/erc4626.d.mts",
+        "default": "./dist/erc4626.mjs"
+      },
+      "require": {
+        "types": "./dist/erc4626.d.cts",
+        "default": "./dist/erc4626.cjs"
+      }
+    },
     "./irs": {
       "import": {
         "types": "./dist/irs.d.mts",
