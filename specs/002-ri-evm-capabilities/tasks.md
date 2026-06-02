@@ -222,12 +222,12 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 **Purpose**: Release readiness across both repos
 
-- [ ] T052 [P] Add a Changeset (MINOR) in `openzeppelin-ui` for the new `@openzeppelin/ui-types` interfaces/types/errors
-- [ ] T053 [P] Add Changesets (MINOR) in `openzeppelin-adapters` for `@openzeppelin/adapter-evm-core` + `@openzeppelin/adapter-evm`, listing pinned ABI source versions (FR-017a)
-- [ ] T054 [P] Update `openzeppelin-adapters/packages/adapter-evm-core` README / ABI directory docs with the ABI refresh procedure + pinned versions (FR-017a)
-- [ ] T055 [P] Update `docs/ADAPTER_ARCHITECTURE.md` (or capability docs) to list the three new capabilities and their sub-paths
-- [ ] T056 Run `openzeppelin-adapters` `pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm format:check` and the quickstart.md validation checklist end-to-end
-- [ ] T057 Confirm the cross-repo release sequence (ui-types published first, then adapters) and version pins are in sync (FR-022, SC-007)
+- [X] T052 [P] Add a Changeset (MINOR) in `openzeppelin-ui` for the new `@openzeppelin/ui-types` interfaces/types/errors
+- [X] T053 [P] Add Changesets (MINOR) in `openzeppelin-adapters` for `@openzeppelin/adapter-evm-core` + `@openzeppelin/adapter-evm`, listing pinned ABI source versions (FR-017a)
+- [X] T054 [P] Update `openzeppelin-adapters/packages/adapter-evm-core` README / ABI directory docs with the ABI refresh procedure + pinned versions (FR-017a)
+- [X] T055 [P] Update `docs/ADAPTER_ARCHITECTURE.md` (or capability docs) to list the three new capabilities and their sub-paths
+- [X] T056 Run `openzeppelin-adapters` `pnpm build && pnpm test && pnpm lint && pnpm typecheck && pnpm format:check` and the quickstart.md validation checklist end-to-end
+- [X] T057 Confirm the cross-repo release sequence (ui-types published first, then adapters) and version pins are in sync (FR-022, SC-007)
 
 ---
 

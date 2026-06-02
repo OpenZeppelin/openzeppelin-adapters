@@ -205,6 +205,27 @@ Run tests with:
 pnpm --filter @openzeppelin/adapter-evm-core test
 ```
 
+## RI capability modules (ERC-3643 / ERC-4626 / IRS)
+
+Server-side Tier 3 capabilities for the Tokenized Deposits reference implementation. Each module vendors pinned ABI fragments (no Solidity npm dependency) and exposes a factory via `@openzeppelin/adapter-evm/{erc3643,erc4626,irs}`.
+
+| Module | Path | Vendored ABI | Pinned upstream |
+|--------|------|--------------|-----------------|
+| ERC-3643 (T-REX) | `src/erc3643/` | `src/erc3643/abi.ts` | `@tokenysolutions/t-rex@4.1.6` ([ERC-3643/ERC-3643](https://github.com/ERC-3643/ERC-3643)) |
+| ERC-4626 | `src/erc4626/` | `src/erc4626/abi.ts` | `@openzeppelin/contracts@5.x` `IERC4626.sol` (EIP-4626 Final) |
+| IRS / ONCHAINID | `src/irs/` | `src/irs/abis.ts` | `@tokenysolutions/t-rex@4.1.6` + `@onchain-id/solidity@2.2.1` |
+
+### ABI refresh procedure (FR-017a)
+
+Re-syncing vendored fragments is a **deliberate, Changeset-tracked** change — never silent drift.
+
+1. **Verify upstream**: Compare each function signature verbatim against the pinned repo's `main` branch (or the pinned npm release tag). Update the provenance table in the module's `abi.ts` / `abis.ts` header with the verification date.
+2. **Update fragments**: Edit the vendored ABI in `src/<module>/abi.ts` (or `abis.ts`). Run the module's tests: `pnpm --filter @openzeppelin/adapter-evm-core exec vitest run src/<module>`.
+3. **Record the change**: Add a Changeset noting the upstream version bump and which capability is affected.
+4. **Release**: Follow the cross-repo sequence in `specs/002-ri-evm-capabilities/quickstart.md` (ui-types first, then adapters).
+
+Provenance headers in each ABI file are the source of truth for the exact pinned versions and verification dates.
+
 ## License
 
 AGPL-3.0

@@ -92,11 +92,34 @@ try {
 
 ## Validation checklist (maps to spec Success Criteria)
 
-- [ ] **SC-001/SC-002**: Each capability imports from its sub-path and constructs with `(config, { signAndBroadcast })` — no wallet, no compile-time UI dep. (Steps 3–5)
-- [ ] **SC-003 / FR-015**: `@openzeppelin/adapter-evm/{erc3643,erc4626,irs}` resolve in plain Node with zero React/Wagmi in the import graph.
-- [ ] **SC-004 / FR-003a**: Every amount in/out is a base-unit decimal `string`. (Steps 4–5)
-- [ ] **SC-005 / R4**: Known write failures throw typed errors with stable `code`. (Step 7)
-- [ ] **SC-006 / FR-018**: Writes complete against a submit-then-poll `signAndBroadcast` with no capability change. (Step 2)
-- [ ] **IRS pre-check**: `irs.isVerified` returns `true`/`false`; behavioral tests live in the adapter repo.
-- [ ] **No issuer key in adapter**: `attachClaim` only ever receives a pre-signed claim. (Step 6)
-- [ ] `pnpm lint:adapters`, `pnpm test`, `pnpm typecheck`, `pnpm build` pass in `openzeppelin-adapters`; `@openzeppelin/ui-types` builds with the new exports.
+- [X] **SC-001/SC-002**: Each capability imports from its sub-path and constructs with `(config, { signAndBroadcast })` — no wallet, no compile-time UI dep. (Steps 3–5; verified by `ri-capabilities-subpath-runtime.test.ts`)
+- [X] **SC-003 / FR-015**: `@openzeppelin/adapter-evm/{erc3643,erc4626,irs}` resolve in plain Node with zero React/Wagmi in the import graph. (`ri-capabilities-subpath-isolation.test.ts`, `ri-capabilities-tier-conformance.test.ts`)
+- [X] **SC-004 / FR-003a**: Every amount in/out is a base-unit decimal `string`. (Steps 4–5; `ri-sc004-coverage.test.ts` + behavioral tests)
+- [X] **SC-005 / R4**: Known write failures throw typed errors with stable `code`. (Step 7; error-mapping + write tests)
+- [X] **SC-006 / FR-018**: Writes complete against a submit-then-poll `signAndBroadcast` with no capability change. (Step 2; `erc3643.execution-strategy.test.ts`)
+- [X] **IRS pre-check**: `irs.isVerified` returns `true`/`false`; behavioral tests live in the adapter repo. (`irs.reads.test.ts`)
+- [X] **No issuer key in adapter**: `attachClaim` only ever receives a pre-signed claim. (Step 6; `irs.writes.test.ts`)
+- [X] `pnpm lint:adapters`, `pnpm test`, `pnpm typecheck`, `pnpm build` pass in `openzeppelin-adapters`; `@openzeppelin/ui-types` builds with the new exports.
+
+## Release sequence (FR-022, SC-007)
+
+Cross-repo ordering is a **hard gate** — adapters MUST NOT publish before the ui-types
+interfaces they implement are on npm.
+
+| Step | Repository | Action |
+|------|------------|--------|
+| 1 | `openzeppelin-ui` | Merge `002-ri-evm-capabilities`; run Changesets → publish **`@openzeppelin/ui-types` MINOR** (changeset: `.changeset/ri-evm-capability-types.md`) |
+| 2 | `openzeppelin-adapters` | Bump `@openzeppelin/ui-types` in `adapter-evm` / `adapter-evm-core` to the **published** ui-types version (`dependencies` + `peerDependencies`) |
+| 3 | `openzeppelin-adapters` | Merge; run Changesets → publish **`@openzeppelin/adapter-evm` MINOR** (changeset: `.changeset/ri-evm-capabilities.md`; bundles `adapter-evm-core` internally) |
+| 4 | Consumer (RI plugin) | `pnpm add @openzeppelin/ui-types@<published> @openzeppelin/adapter-evm@<published>` |
+
+**Current version pins (pre-release branch)**
+
+| Package | Branch pin | Notes |
+|---------|------------|-------|
+| `@openzeppelin/ui-types` | `^2.0.0` in adapter-evm | Satisfies semver once ui-types MINOR lands on npm; bump to explicit floor after step 1 |
+| `@openzeppelin/adapter-evm` | `2.0.2` (in-repo) | MINOR bump via Changesets on merge |
+| `@openzeppelin/adapter-evm-core` | `1.0.0`, `"private": true` | Bundled into adapter-evm; not published separately |
+
+Local development before step 1: build `@openzeppelin/ui-types` from the sibling
+`openzeppelin-ui` checkout and overlay into `node_modules` (see `specs/002-ri-evm-capabilities/tasks.md` Phase 3 checkpoint).
