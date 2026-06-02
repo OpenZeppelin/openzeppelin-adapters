@@ -21,8 +21,21 @@ export type { CapabilityExecutor } from '../shared/executor';
 
 /**
  * The injected transaction-submission callback shared by every write-capable capability
- * factory (`createAccessControl`, `createIRS`, `createERC3643`, …). The adapter runtime
- * supplies this; capabilities never touch wallet/signing infrastructure directly.
+ * factory (`createAccessControl`, `createIRS`, `createERC3643`, `createERC4626`, …). The
+ * adapter runtime supplies this; capabilities never touch wallet/signing infrastructure
+ * directly.
+ *
+ * ## Execution-contract conformance (FR-018 — CONFIRMED, research.md R6)
+ *
+ * This is the same injected-callback shape as `ExecutionCapability.signAndBroadcast`
+ * (`@openzeppelin/ui-types`), whose optional `waitForTransactionConfirmation(txHash)` already
+ * expresses the async submit-then-poll model the RI plugin needs. No new execution primitive
+ * was added: the callback may submit and then poll internally before resolving the confirmed
+ * hash, and the existing `EoaExecutionStrategy` / `RelayerExecutionStrategy` compose behind it
+ * unchanged (the RI plugin's future strategy submits in-process and polls, then resolves here).
+ * Capabilities stay strategy-agnostic and carry no Relayer-plugin-runtime coupling (FR-011).
+ * Verified by `erc3643/__tests__/erc3643.execution-strategy.test.ts` (submit-then-poll) and
+ * `erc3643.strategies.test.ts` (strategy-agnostic composition).
  */
 export type SignAndBroadcast = (
   transactionData: unknown,
