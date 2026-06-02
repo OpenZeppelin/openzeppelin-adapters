@@ -210,9 +210,9 @@ description: "Task list for RI POC Adapter Capabilities (ERC-3643 / ERC-4626 / I
 
 ### Implementation for User Story 7
 
-- [ ] T049 [US7] Ensure `pnpm lint:adapters` (Tier-1 isolation + capability export structure) passes for the three new capabilities; fix any conformance gaps (FR-020)
-- [ ] T050 [US7] Add/confirm tier-isolation conformance assertions for `erc3643`/`erc4626`/`irs` sub-paths (no disallowed cross-tier or browser-only imports) consistent with existing capability checks (FR-020)
-- [ ] T051 [US7] Run the full `openzeppelin-adapters` test suite and confirm SC-004 coverage (every read/write across the three capabilities has ≥1 passing mocked test)
+- [X] T049 [US7] Ensure `pnpm lint:adapters` (Tier-1 isolation + capability export structure) passes for the three new capabilities; fix any conformance gaps (FR-020). Added `erc3643`/`erc4626`/`irs` to `ALL_CAPABILITIES` in `scripts/adapter-validation/capability-conformance.cjs` so sub-path export structure is validated (16 capabilities); `pnpm lint:adapters` green on both packages.
+- [X] T050 [US7] Add/confirm tier-isolation conformance assertions for `erc3643`/`erc4626`/`irs` sub-paths (no disallowed cross-tier or browser-only imports) consistent with existing capability checks (FR-020). Added `tests/helpers/riCapabilityGraph.ts` (shared graph walk) and `packages/adapter-evm/test/ri-capabilities-tier-conformance.test.ts` (FR-020 gate: sub-path exports, thin re-exports, no UI imports, no plugin-runtime coupling); complements existing `ri-capabilities-subpath-isolation.test.ts` and `no-plugin-runtime-dep.test.ts`.
+- [X] T051 [US7] Run the full `openzeppelin-adapters` test suite and confirm SC-004 coverage (every read/write across the three capabilities has ≥1 passing mocked test). Added `packages/adapter-evm-core/src/__tests__/ri-sc004-coverage.test.ts` (25 static assertions mapping every SC-004 method to behavioral test sources); full suite green (core 677, adapter-evm 126 + 1 skipped, root `pnpm test` pass).
 
 **Checkpoint**: Conformance + coverage gates green.
 

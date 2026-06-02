@@ -15,6 +15,9 @@ const ALL_CAPABILITIES = [
   'ui-kit',
   'relayer',
   'access-control',
+  'erc3643',
+  'erc4626',
+  'irs',
 ];
 
 const TIER_ONE_CAPABILITIES = ['addressing', 'explorer', 'network-catalog', 'ui-labels'];

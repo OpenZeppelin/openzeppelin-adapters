@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * RI capability sub-path isolation (US5, FR-015, SC-003).
+ * RI capability sub-path isolation (US5/US7, FR-015, FR-020, SC-003).
  *
  * Asserts that the `@openzeppelin/adapter-evm/{erc3643,irs}` sub-paths carry no React,
  * Wagmi, RainbowKit, or other browser-only UI modules in their transitive import graph,
