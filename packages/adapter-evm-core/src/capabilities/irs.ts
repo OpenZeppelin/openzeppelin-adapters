@@ -19,6 +19,8 @@ export interface CreateIRSOptions {
   trustedIssuer?: string;
 }
 
+export type { EvmIRSAddresses } from '../irs';
+
 /**
  * Create the EVM IRS / ONCHAINID capability.
  *

@@ -238,6 +238,22 @@
       "import": "./dist/access-control.mjs",
       "require": "./dist/access-control.cjs"
     },
+    "./erc3643": {
+      "types": {
+        "import": "./dist/erc3643.d.mts",
+        "require": "./dist/erc3643.d.cts"
+      },
+      "import": "./dist/erc3643.mjs",
+      "require": "./dist/erc3643.cjs"
+    },
+    "./irs": {
+      "types": {
+        "import": "./dist/irs.d.mts",
+        "require": "./dist/irs.d.cts"
+      },
+      "import": "./dist/irs.mjs",
+      "require": "./dist/irs.cjs"
+    },
     "./declarative": {
       "types": {
         "import": "./dist/declarative.d.mts",

@@ -29,6 +29,8 @@ export default defineConfig({
     'ui-kit': 'src/capabilities/ui-kit.ts',
     relayer: 'src/capabilities/relayer.ts',
     'access-control': 'src/capabilities/access-control.ts',
+    erc3643: 'src/capabilities/erc3643.ts',
+    irs: 'src/capabilities/irs.ts',
     declarative: 'src/profiles/declarative.ts',
     viewer: 'src/profiles/viewer.ts',
     transactor: 'src/profiles/transactor.ts',
