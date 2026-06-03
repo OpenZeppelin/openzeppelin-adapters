@@ -45,6 +45,8 @@ const SPECIFIER_REGEX =
 
 export function extractSpecifiers(source: string): string[] {
   const specifiers: string[] = [];
+  // SPECIFIER_REGEX is a shared /g regex; reset state so reuse across calls can't skip matches.
+  SPECIFIER_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = SPECIFIER_REGEX.exec(source)) !== null) {
     const spec = match[1] ?? match[2] ?? match[3];
@@ -53,10 +55,19 @@ export function extractSpecifiers(source: string): string[] {
   return specifiers;
 }
 
+const isTsModule = (candidate: string): boolean =>
+  candidate.endsWith('.ts') || candidate.endsWith('.tsx');
+
 function resolveRelative(fromFile: string, spec: string): string | null {
   const base = resolve(dirname(fromFile), spec);
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, resolve(base, 'index.ts')];
-  return candidates.find((candidate) => existsSync(candidate) && candidate.endsWith('.ts')) ?? null;
+  const candidates = [
+    `${base}.ts`,
+    `${base}.tsx`,
+    resolve(base, 'index.ts'),
+    resolve(base, 'index.tsx'),
+    base,
+  ];
+  return candidates.find((candidate) => existsSync(candidate) && isTsModule(candidate)) ?? null;
 }
 
 /** Walk relative imports from `entryFiles`; return visited source files and bare specifiers. */

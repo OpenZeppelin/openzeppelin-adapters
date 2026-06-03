@@ -67,11 +67,12 @@ await vault.deposit({ from: holder, amount: '500' }, execCfg);
 // 1) deploy identity contract
 const { onchainId } = await irs.deployOnchainId({ holder }, execCfg);
 // 2) idempotent trusted-issuer registration
-await irs.registerTrustedIssuer({ issuer, topics: ['KYC'] }, execCfg);
+// `topic` is a uint256 claim-topic ID as a base-10 decimal string (e.g. '1' for KYC).
+await irs.registerTrustedIssuer({ issuer, topics: ['1'] }, execCfg);
 // 3) build the digest, sign OUTSIDE the adapter with the issuer key, then attach
-const payload = irs.buildClaimPayload({ onchainId, topic: 'KYC', scheme: 1, data });
+const payload = irs.buildClaimPayload({ onchainId, topic: '1', scheme: 1, data });
 const signature = await pluginIssuerSigner.sign(payload.digest);   // consumer-owned key
-await irs.attachClaim({ onchainId, claim: { topic: 'KYC', scheme: 1, data, signature } }, execCfg);
+await irs.attachClaim({ onchainId, claim: { topic: '1', scheme: 1, data, signature } }, execCfg);
 // 4) register holder ↔ identity
 await irs.registerIdentity({ holder, onchainId, country: 840 }, execCfg);
 ```

@@ -15,99 +15,41 @@
  *
  * Build-free and deterministic — no prior `pnpm build` required.
  */
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const ADAPTER_EVM_ROOT = resolve(HERE, '..');
-const CORE_ROOT = resolve(ADAPTER_EVM_ROOT, '../adapter-evm-core');
-
-/** Plugin-runtime surface that the injected-callback contract exists to keep out of the adapter. */
-const FORBIDDEN_IDENTIFIERS: RegExp[] = [/\bPluginContext\b/, /\bapi\.sendTransaction\b/];
-
-/** Bare specifiers that would indicate a relayer-plugin-runtime dependency (SDK is allowed). */
-const FORBIDDEN_SPECIFIER_PATTERNS: RegExp[] = [
-  /relayer.*plugin/i,
-  /plugin.*runtime/i,
-  /ri-tokenized-deposits/i,
-];
-
-const SPECIFIER_REGEX =
-  /(?:import|export)\s[^'"]*?from\s*['"]([^'"]+)['"]|(?:^|;|\n)\s*import\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g;
-
-function extractSpecifiers(source: string): string[] {
-  const specifiers: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = SPECIFIER_REGEX.exec(source)) !== null) {
-    const spec = match[1] ?? match[2] ?? match[3];
-    if (spec) specifiers.push(spec);
-  }
-  return specifiers;
-}
-
-function resolveRelative(fromFile: string, spec: string): string | null {
-  const base = resolve(dirname(fromFile), spec);
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, resolve(base, 'index.ts')];
-  return candidates.find((candidate) => existsSync(candidate) && candidate.endsWith('.ts')) ?? null;
-}
-
-/** Walk the import graph from `entryFiles`, following relative imports; return visited files + bare specs. */
-function walkGraph(entryFiles: string[]): { files: string[]; bareSpecifiers: Set<string> } {
-  const bareSpecifiers = new Set<string>();
-  const visited = new Set<string>();
-  const queue = [...entryFiles];
-
-  while (queue.length > 0) {
-    const file = queue.pop() as string;
-    if (visited.has(file) || !existsSync(file)) continue;
-    visited.add(file);
-
-    for (const spec of extractSpecifiers(readFileSync(file, 'utf8'))) {
-      if (spec.startsWith('.')) {
-        const resolved = resolveRelative(file, spec);
-        if (resolved) queue.push(resolved);
-      } else {
-        bareSpecifiers.add(spec);
-      }
-    }
-  }
-
-  return { files: [...visited], bareSpecifiers };
-}
+import {
+  ADAPTER_EVM_ROOT,
+  findMatchingSources,
+  findMatchingSpecifiers,
+  FORBIDDEN_PLUGIN_RUNTIME_SOURCE,
+  FORBIDDEN_PLUGIN_RUNTIME_SPECIFIERS,
+  RI_CAPABILITY_NAMES,
+  riAdapterReexportEntry,
+  riCoreCapabilityEntry,
+  walkImportGraph,
+} from '../../../tests/helpers/riCapabilityGraph';
 
 const ENTRIES = [
-  resolve(CORE_ROOT, 'src/capabilities/erc3643.ts'),
-  resolve(CORE_ROOT, 'src/capabilities/erc4626.ts'),
-  resolve(CORE_ROOT, 'src/capabilities/irs.ts'),
-  resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc3643.ts'),
-  resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc4626.ts'),
-  resolve(ADAPTER_EVM_ROOT, 'src/capabilities/irs.ts'),
+  ...RI_CAPABILITY_NAMES.map(riCoreCapabilityEntry),
+  ...RI_CAPABILITY_NAMES.map(riAdapterReexportEntry),
 ];
 
 describe('RI write path has no Relayer-plugin-runtime dependency (FR-011, SC-005)', () => {
-  const { files, bareSpecifiers } = walkGraph(ENTRIES);
+  const { files, bareSpecifiers } = walkImportGraph(ENTRIES);
 
   it('visits the capability source graph', () => {
     expect(files.length).toBeGreaterThan(0);
   });
 
   it('references no plugin-runtime surface (PluginContext / api.sendTransaction)', () => {
-    const offenders: string[] = [];
-    for (const file of files) {
-      const source = readFileSync(file, 'utf8');
-      for (const pattern of FORBIDDEN_IDENTIFIERS) {
-        if (pattern.test(source)) offenders.push(`${file} :: ${pattern}`);
-      }
-    }
+    const offenders = findMatchingSources(files, FORBIDDEN_PLUGIN_RUNTIME_SOURCE);
     expect(offenders, `plugin-runtime surface leaked into: ${offenders.join(', ')}`).toEqual([]);
   });
 
   it('imports no relayer-plugin-runtime package', () => {
-    const offenders = [...bareSpecifiers].filter((spec) =>
-      FORBIDDEN_SPECIFIER_PATTERNS.some((pattern) => pattern.test(spec))
-    );
+    const offenders = findMatchingSpecifiers(bareSpecifiers, FORBIDDEN_PLUGIN_RUNTIME_SPECIFIERS);
     expect(offenders, `forbidden plugin-runtime imports: ${offenders.join(', ')}`).toEqual([]);
   });
 
@@ -122,9 +64,7 @@ describe('RI write path has no Relayer-plugin-runtime dependency (FR-011, SC-005
       ...Object.keys(pkg.peerDependencies ?? {}),
       ...Object.keys(pkg.devDependencies ?? {}),
     ];
-    const offenders = allDeps.filter((name) =>
-      FORBIDDEN_SPECIFIER_PATTERNS.some((pattern) => pattern.test(name))
-    );
+    const offenders = findMatchingSpecifiers(allDeps, FORBIDDEN_PLUGIN_RUNTIME_SPECIFIERS);
     expect(offenders, `forbidden plugin-runtime deps: ${offenders.join(', ')}`).toEqual([]);
   });
 });

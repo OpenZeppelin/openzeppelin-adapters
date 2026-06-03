@@ -19,104 +19,35 @@
  *
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const ADAPTER_EVM_ROOT = resolve(HERE, '..');
-const CORE_ROOT = resolve(ADAPTER_EVM_ROOT, '../adapter-evm-core');
-
-/** Browser-only / UI specifiers that must never appear in a server-side capability graph. */
-const FORBIDDEN_PATTERNS: RegExp[] = [
-  /^react$/,
-  /^react\//,
-  /^react-dom(\/|$)/,
-  /^wagmi(\/|$)/,
-  /^@wagmi\//,
-  /^@rainbow-me\//,
-  /^@tanstack\/react-query(\/|$)/,
-  /^@openzeppelin\/ui-react(\/|$)/,
-  /^@openzeppelin\/ui-components(\/|$)/,
-  /^lucide-react(\/|$)/,
-  /^@web3icons\//,
-];
-
-const SPECIFIER_REGEX =
-  /(?:import|export)\s[^'"]*?from\s*['"]([^'"]+)['"]|(?:^|;|\n)\s*import\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g;
-
-function extractSpecifiers(source: string): string[] {
-  const specifiers: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = SPECIFIER_REGEX.exec(source)) !== null) {
-    const spec = match[1] ?? match[2] ?? match[3];
-    if (spec) specifiers.push(spec);
-  }
-  return specifiers;
-}
-
-function resolveRelative(fromFile: string, spec: string): string | null {
-  const base = resolve(dirname(fromFile), spec);
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, resolve(base, 'index.ts')];
-  return candidates.find((candidate) => existsSync(candidate) && candidate.endsWith('.ts')) ?? null;
-}
-
-/**
- * Walk the import graph from `entryFiles`, following only relative imports. Returns every
- * bare (non-relative) specifier encountered anywhere in the transitive graph.
- */
-function collectBareSpecifiers(entryFiles: string[]): Set<string> {
-  const bare = new Set<string>();
-  const visited = new Set<string>();
-  const queue = [...entryFiles];
-
-  while (queue.length > 0) {
-    const file = queue.pop() as string;
-    if (visited.has(file) || !existsSync(file)) continue;
-    visited.add(file);
-
-    for (const spec of extractSpecifiers(readFileSync(file, 'utf8'))) {
-      if (spec.startsWith('.')) {
-        const resolved = resolveRelative(file, spec);
-        if (resolved) queue.push(resolved);
-      } else {
-        bare.add(spec);
-      }
-    }
-  }
-
-  return bare;
-}
+import {
+  extractSpecifiers,
+  findMatchingSpecifiers,
+  FORBIDDEN_UI_PATTERNS,
+  RI_CAPABILITY_NAMES,
+  riAdapterReexportEntry,
+  riCoreCapabilityEntry,
+  walkImportGraph,
+} from '../../../tests/helpers/riCapabilityGraph';
 
 function assertNoForbidden(specifiers: Iterable<string>, context: string): void {
-  const offenders = [...specifiers].filter((spec) =>
-    FORBIDDEN_PATTERNS.some((pattern) => pattern.test(spec))
-  );
+  const offenders = findMatchingSpecifiers(specifiers, FORBIDDEN_UI_PATTERNS);
   expect(offenders, `${context} pulls forbidden UI modules: ${offenders.join(', ')}`).toEqual([]);
 }
 
-const CAPABILITY_ENTRIES = {
-  erc3643: resolve(CORE_ROOT, 'src/capabilities/erc3643.ts'),
-  erc4626: resolve(CORE_ROOT, 'src/capabilities/erc4626.ts'),
-  irs: resolve(CORE_ROOT, 'src/capabilities/irs.ts'),
-} as const;
-
-const REEXPORT_ENTRIES = {
-  erc3643: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc3643.ts'),
-  erc4626: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/erc4626.ts'),
-  irs: resolve(ADAPTER_EVM_ROOT, 'src/capabilities/irs.ts'),
-} as const;
-
 describe('RI capability sub-path isolation (no React/Wagmi)', () => {
-  for (const [name, entry] of Object.entries(CAPABILITY_ENTRIES)) {
+  for (const name of RI_CAPABILITY_NAMES) {
     it(`${name} capability source graph contains no browser-only UI modules`, () => {
+      const entry = riCoreCapabilityEntry(name);
       expect(existsSync(entry)).toBe(true);
-      assertNoForbidden(collectBareSpecifiers([entry]), `${name} capability graph`);
+      assertNoForbidden(walkImportGraph([entry]).bareSpecifiers, `${name} capability graph`);
     });
   }
 
-  for (const [name, entry] of Object.entries(REEXPORT_ENTRIES)) {
+  for (const name of RI_CAPABILITY_NAMES) {
     it(`${name} adapter-evm re-export only bridges through @openzeppelin/adapter-evm-core`, () => {
+      const entry = riAdapterReexportEntry(name);
       expect(existsSync(entry)).toBe(true);
       const specifiers = extractSpecifiers(readFileSync(entry, 'utf8'));
       assertNoForbidden(specifiers, `${name} re-export`);

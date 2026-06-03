@@ -21,7 +21,7 @@ vi.mock('viem', async () => {
 
 const RPC = 'https://rpc.example.com';
 const REGISTRY = '0x1111111111111111111111111111111111111111';
-const FACTORY = '0x2222222222222222222222222222222222222222';
+const TRUSTED_ISSUERS_REGISTRY = '0x2222222222222222222222222222222222222222';
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const ZERO = '0x0000000000000000000000000000000000000000';
@@ -84,10 +84,10 @@ describe('IRS reads', () => {
   describe('isTrustedIssuer', () => {
     it('returns true/false from the registry, false on revert', async () => {
       mockReadContract.mockResolvedValueOnce(true);
-      await expect(isTrustedIssuer(RPC, FACTORY, HOLDER)).resolves.toBe(true);
+      await expect(isTrustedIssuer(RPC, TRUSTED_ISSUERS_REGISTRY, HOLDER)).resolves.toBe(true);
 
       mockReadContract.mockRejectedValueOnce(new Error('revert'));
-      await expect(isTrustedIssuer(RPC, FACTORY, HOLDER)).resolves.toBe(false);
+      await expect(isTrustedIssuer(RPC, TRUSTED_ISSUERS_REGISTRY, HOLDER)).resolves.toBe(false);
     });
   });
 });

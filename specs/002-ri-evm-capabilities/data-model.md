@@ -19,7 +19,7 @@ These are the chain-agnostic types defined in `@openzeppelin/ui-types` and consu
 ### `OnboardingClaim` (pre-signed)
 | Field | Type | Notes |
 |-------|------|-------|
-| `topic` | `string` | Claim topic identifier (e.g. KYC, jurisdiction). |
+| `topic` | `string` | uint256 claim-topic ID as a base-10 decimal string (e.g. `'1'` for KYC); converted via `BigInt(topic)` when assembling calldata, so non-numeric values throw. |
 | `scheme` | `number` | Signature scheme (e.g. ERC-734/EIP-191). |
 | `data` | `string` | Hex-encoded claim data. |
 | `signature` | `string` | Signature produced by the trusted issuer (consumer-owned key). |
