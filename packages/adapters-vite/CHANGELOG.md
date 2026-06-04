@@ -1,5 +1,13 @@
 # @openzeppelin/adapters-vite
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`2863f20`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/2863f20933c1c361815f987a9456f5a0bc04724a), [`9d6de1a`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/9d6de1aa9eb962c40d6d9af263afe711a527c429)]:
+  - @openzeppelin/adapter-polkadot@2.1.0
+  - @openzeppelin/adapter-evm@2.1.0
+
 ## 2.0.0
 
 ### Patch Changes
