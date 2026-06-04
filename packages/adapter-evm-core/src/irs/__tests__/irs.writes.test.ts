@@ -12,6 +12,7 @@ import type { ExecutionConfig, IRSCapability, OnboardingClaim } from '@openzeppe
 import { IdentityAlreadyRegistered, IdentityOperationFailed } from '@openzeppelin/ui-types';
 
 import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
+import { TRUSTED_ISSUER_NOOP_ID } from '../service';
 
 const mockReadContract = vi.fn();
 
@@ -102,7 +103,9 @@ describe('IRS writes', () => {
       );
 
       expect(signAndBroadcast).not.toHaveBeenCalled();
-      expect(result.id).toContain(ISSUER);
+      // No tx sent: a fixed sentinel that is not a tx hash (no 0x prefix / embedded address).
+      expect(result.id).toBe(TRUSTED_ISSUER_NOOP_ID);
+      expect(result.id).not.toMatch(/^0x/);
     });
   });
 

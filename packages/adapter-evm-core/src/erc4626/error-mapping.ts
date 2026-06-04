@@ -50,10 +50,17 @@ export interface Erc4626ErrorContext {
  */
 export const CUSTOM_ERROR_ABI: Abi = [];
 
-/** Keyword needles (string reverts + OZ v5 custom-error names) shared by both operations. */
+/**
+ * Keyword needles (string reverts + OZ v5 custom-error names) shared by both operations.
+ *
+ * Deliberately balance/share-specific: a bare `"insufficient"` would misclassify unrelated
+ * failures (e.g. `ERC20InsufficientAllowance`, slippage/liquidity reverts) as a funds
+ * shortfall. Anything not matched here falls through to `RICapabilityOperationFailed`.
+ */
 const INSUFFICIENT_FUNDS_NEEDLES = [
   'insufficient balance',
-  'insufficient',
+  'insufficient shares',
+  'insufficient assets',
   'exceeds balance',
   'exceeds available',
   'transfer amount exceeds',

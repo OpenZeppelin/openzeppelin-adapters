@@ -49,6 +49,13 @@ import type { EvmIRSAddresses, EvmIRSExecutor, EvmIRSServiceOptions } from './ty
 const LOG_SYSTEM = 'EvmIrsService';
 
 /**
+ * Sentinel `OperationResult.id` returned by the idempotent `registerTrustedIssuer` no-op path
+ * (issuer already trusted, no transaction sent). Intentionally not a `0x` tx hash so consumers
+ * never treat it as one.
+ */
+export const TRUSTED_ISSUER_NOOP_ID = 'noop:trusted-issuer-already-registered';
+
+/**
  * EVM implementation of the IRS capability surface (sans the `RuntimeCapability` mixin).
  */
 export class EvmIRSService {
@@ -142,7 +149,9 @@ export class EvmIRSService {
   ): Promise<OperationResult> {
     const { issuer, topics } = input;
 
-    // Idempotent: skip submission when the issuer is already trusted.
+    // Idempotent: skip submission when the issuer is already trusted. No transaction is sent,
+    // so `id` is a fixed sentinel that deliberately cannot be mistaken for a tx hash (no `0x`
+    // prefix, no embedded address) to avoid breaking consumer formatting/validation.
     const alreadyTrusted = await isTrustedIssuer(
       this.rpcUrl(),
       this.addresses.trustedIssuersRegistry,
@@ -150,7 +159,7 @@ export class EvmIRSService {
     );
     if (alreadyTrusted) {
       logger.debug(LOG_SYSTEM, `Trusted issuer ${issuer} already registered; skipping submission.`);
-      return { id: `already-registered:${issuer}` };
+      return { id: TRUSTED_ISSUER_NOOP_ID };
     }
 
     const action = assembleAddTrustedIssuerAction(
