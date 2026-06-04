@@ -1,5 +1,11 @@
 # @openzeppelin/adapter-polkadot
 
+## 2.1.0
+
+### Patch Changes
+
+- [#36](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/36) [`2863f20`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/2863f20933c1c361815f987a9456f5a0bc04724a) Thanks [@pasevin](https://github.com/pasevin)! - Point Polkadot Hub mainnet access control indexer default to the Pasevin-hosted GraphQL endpoint.
+
 ## 2.0.2
 
 ### Patch Changes
