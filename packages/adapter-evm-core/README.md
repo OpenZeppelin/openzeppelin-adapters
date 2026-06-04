@@ -212,7 +212,7 @@ Server-side Tier 3 capabilities for the Tokenized Deposits reference implementat
 | Module | Path | Vendored ABI | Pinned upstream |
 |--------|------|--------------|-----------------|
 | ERC-3643 (T-REX) | `src/erc3643/` | `src/erc3643/abi.ts` | `@tokenysolutions/t-rex@4.1.6` ([ERC-3643/ERC-3643](https://github.com/ERC-3643/ERC-3643)) |
-| ERC-4626 | `src/erc4626/` | `src/erc4626/abi.ts` | `@openzeppelin/contracts@5.x` `IERC4626.sol` (EIP-4626 Final) |
+| ERC-4626 | `src/erc4626/` | `src/erc4626/abi.ts` | `@openzeppelin/contracts@5.6.1` `IERC4626.sol` (EIP-4626 Final) |
 | IRS / ONCHAINID | `src/irs/` | `src/irs/abis.ts` | `@tokenysolutions/t-rex@4.1.6` + `@onchain-id/solidity@2.2.1` |
 
 ### ABI refresh procedure (FR-017a)

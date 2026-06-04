@@ -16,8 +16,25 @@ import type {
 
 import type { CapabilityExecutor } from '../shared/executor';
 import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
+import { isValidEvmAddress } from '../utils/validation';
 
 export type { CapabilityExecutor } from '../shared/executor';
+
+/**
+ * Fail fast at the capability boundary on a malformed deployment address.
+ *
+ * RI factories accept deployment-specific contract addresses that are later cast to
+ * `0x${string}` for viem reads/writes. Validating here turns misconfiguration into a clear
+ * adapter-side error instead of an opaque downstream viem failure.
+ *
+ * @param label - Human-readable field name for the error message (e.g. `tokenAddress`).
+ * @param address - The address to validate.
+ */
+export function assertValidAddress(label: string, address: string): void {
+  if (!isValidEvmAddress(address)) {
+    throw new Error(`Invalid ${label}: '${address}' is not a valid EVM address.`);
+  }
+}
 
 /**
  * The injected transaction-submission callback shared by every write-capable capability

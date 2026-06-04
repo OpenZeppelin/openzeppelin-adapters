@@ -1,7 +1,12 @@
 import type { ERC3643Capability, NetworkConfig } from '@openzeppelin/ui-types';
 
 import { createEvmErc3643Service } from '../erc3643';
-import { adaptSignAndBroadcast, asTypedEvmNetworkConfig, guardRuntimeCapability } from './helpers';
+import {
+  adaptSignAndBroadcast,
+  assertValidAddress,
+  asTypedEvmNetworkConfig,
+  guardRuntimeCapability,
+} from './helpers';
 import type { SignAndBroadcast } from './helpers';
 
 /**
@@ -29,6 +34,7 @@ export function createERC3643(
   options: CreateERC3643Options
 ): ERC3643Capability {
   const networkConfig = asTypedEvmNetworkConfig(config);
+  assertValidAddress('tokenAddress', options.tokenAddress);
   const service = createEvmErc3643Service(
     networkConfig,
     adaptSignAndBroadcast(options.signAndBroadcast),

@@ -57,6 +57,22 @@ describe('createIRS', () => {
     ).toThrow(/EVM network configuration/i);
   });
 
+  it('throws for an invalid contract address in options', () => {
+    const opts = makeOptions();
+    expect(() =>
+      createIRS(mockNetworkConfig, {
+        ...opts,
+        addresses: { ...opts.addresses, identityFactory: 'not-an-address' },
+      })
+    ).toThrow(/Invalid addresses\.identityFactory/i);
+  });
+
+  it('throws for an invalid trustedIssuer when provided', () => {
+    expect(() =>
+      createIRS(mockNetworkConfig, makeOptions({ trustedIssuer: 'not-an-address' }))
+    ).toThrow(/Invalid trustedIssuer/i);
+  });
+
   it('disposes idempotently and guards access afterwards', () => {
     const capability = createIRS(mockNetworkConfig, makeOptions());
 

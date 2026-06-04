@@ -50,6 +50,12 @@ describe('createERC4626', () => {
     ).toThrow(/EVM network configuration/i);
   });
 
+  it('throws for an invalid vaultAddress', () => {
+    expect(() =>
+      createERC4626(mockNetworkConfig, makeOptions({ vaultAddress: 'not-an-address' }))
+    ).toThrow(/Invalid vaultAddress/i);
+  });
+
   it('disposes idempotently and guards access afterwards', () => {
     const capability = createERC4626(mockNetworkConfig, makeOptions());
 

@@ -2,7 +2,12 @@ import type { IRSCapability, NetworkConfig } from '@openzeppelin/ui-types';
 
 import { createEvmIRSService } from '../irs';
 import type { EvmIRSAddresses } from '../irs';
-import { adaptSignAndBroadcast, asTypedEvmNetworkConfig, guardRuntimeCapability } from './helpers';
+import {
+  adaptSignAndBroadcast,
+  assertValidAddress,
+  asTypedEvmNetworkConfig,
+  guardRuntimeCapability,
+} from './helpers';
 import type { SignAndBroadcast } from './helpers';
 
 /**
@@ -30,6 +35,12 @@ export type { EvmIRSAddresses } from '../irs';
  */
 export function createIRS(config: NetworkConfig, options: CreateIRSOptions): IRSCapability {
   const networkConfig = asTypedEvmNetworkConfig(config);
+  assertValidAddress('addresses.identityRegistry', options.addresses.identityRegistry);
+  assertValidAddress('addresses.identityFactory', options.addresses.identityFactory);
+  assertValidAddress('addresses.trustedIssuersRegistry', options.addresses.trustedIssuersRegistry);
+  if (options.trustedIssuer !== undefined) {
+    assertValidAddress('trustedIssuer', options.trustedIssuer);
+  }
   const service = createEvmIRSService(
     networkConfig,
     adaptSignAndBroadcast(options.signAndBroadcast),

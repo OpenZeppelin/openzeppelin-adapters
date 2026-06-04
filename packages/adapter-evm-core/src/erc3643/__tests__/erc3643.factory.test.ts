@@ -55,6 +55,12 @@ describe('createERC3643', () => {
     ).toThrow(/EVM network configuration/i);
   });
 
+  it('throws for an invalid tokenAddress', () => {
+    expect(() =>
+      createERC3643(mockNetworkConfig, makeOptions({ tokenAddress: 'not-an-address' }))
+    ).toThrow(/Invalid tokenAddress/i);
+  });
+
   it('disposes idempotently and guards access afterwards', () => {
     const capability = createERC3643(mockNetworkConfig, makeOptions());
 
