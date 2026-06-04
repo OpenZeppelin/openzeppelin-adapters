@@ -5,13 +5,81 @@ import {
   type RuntimeCleanupStage,
 } from '@openzeppelin/adapter-runtime-utils';
 import type {
+  ExecutionConfig,
   ExecutionMethodDetail,
   FormFieldType,
   NetworkConfig,
   RuntimeCapability,
+  TransactionStatusUpdate,
+  TxStatus,
 } from '@openzeppelin/ui-types';
 
+import type { CapabilityExecutor } from '../shared/executor';
 import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
+import { isValidEvmAddress } from '../utils/validation';
+
+export type { CapabilityExecutor } from '../shared/executor';
+
+/**
+ * Fail fast at the capability boundary on a malformed deployment address.
+ *
+ * RI factories accept deployment-specific contract addresses that are later cast to
+ * `0x${string}` for viem reads/writes. Validating here turns misconfiguration into a clear
+ * adapter-side error instead of an opaque downstream viem failure.
+ *
+ * @param label - Human-readable field name for the error message (e.g. `tokenAddress`).
+ * @param address - The address to validate.
+ */
+export function assertValidAddress(label: string, address: string): void {
+  if (!isValidEvmAddress(address)) {
+    throw new Error(`Invalid ${label}: '${address}' is not a valid EVM address.`);
+  }
+}
+
+/**
+ * The injected transaction-submission callback shared by every write-capable capability
+ * factory (`createAccessControl`, `createIRS`, `createERC3643`, `createERC4626`, …). The
+ * adapter runtime supplies this; capabilities never touch wallet/signing infrastructure
+ * directly.
+ *
+ * ## Execution-contract conformance (FR-018 — CONFIRMED, research.md R6)
+ *
+ * This is the same injected-callback shape as `ExecutionCapability.signAndBroadcast`
+ * (`@openzeppelin/ui-types`), whose optional `waitForTransactionConfirmation(txHash)` already
+ * expresses the async submit-then-poll model the RI plugin needs. No new execution primitive
+ * was added: the callback may submit and then poll internally before resolving the confirmed
+ * hash, and the existing `EoaExecutionStrategy` / `RelayerExecutionStrategy` compose behind it
+ * unchanged (the RI plugin's future strategy submits in-process and polls, then resolves here).
+ * Capabilities stay strategy-agnostic and carry no Relayer-plugin-runtime coupling (FR-011).
+ * Verified by `erc3643/__tests__/erc3643.execution-strategy.test.ts` (submit-then-poll) and
+ * `erc3643.strategies.test.ts` (strategy-agnostic composition).
+ */
+export type SignAndBroadcast = (
+  transactionData: unknown,
+  executionConfig: ExecutionConfig,
+  onStatusChange: (status: TxStatus, details: TransactionStatusUpdate) => void,
+  runtimeApiKey?: string
+) => Promise<{ txHash: string; result?: unknown }>;
+
+/**
+ * Adapt an injected {@link SignAndBroadcast} into the {@link CapabilityExecutor} that
+ * services delegate to, normalizing the result to `{ id: txHash }`.
+ *
+ * Extracted so write-capable factories share one submission adapter instead of each
+ * re-implementing the same closure.
+ */
+export function adaptSignAndBroadcast(signAndBroadcast: SignAndBroadcast): CapabilityExecutor {
+  return async (txData, executionConfig, onStatusChange, runtimeApiKey) => {
+    const result = await signAndBroadcast(
+      txData,
+      executionConfig,
+      onStatusChange ?? (() => {}),
+      runtimeApiKey
+    );
+
+    return { id: result.txHash };
+  };
+}
 
 export function asTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkConfig {
   if (config.ecosystem !== 'evm') {

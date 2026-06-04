@@ -60,7 +60,7 @@
     "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.1",
-    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-types": "^3.1.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
     "@tanstack/react-query": "^5.84.1",
@@ -83,7 +83,7 @@
   "peerDependencies": {
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.1",
-    "@openzeppelin/ui-types": "^2.0.0",
+    "@openzeppelin/ui-types": "^3.1.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
     "@tanstack/react-query": "^5.74.7",
@@ -237,6 +237,30 @@
       },
       "import": "./dist/access-control.mjs",
       "require": "./dist/access-control.cjs"
+    },
+    "./erc3643": {
+      "types": {
+        "import": "./dist/erc3643.d.mts",
+        "require": "./dist/erc3643.d.cts"
+      },
+      "import": "./dist/erc3643.mjs",
+      "require": "./dist/erc3643.cjs"
+    },
+    "./erc4626": {
+      "types": {
+        "import": "./dist/erc4626.d.mts",
+        "require": "./dist/erc4626.d.cts"
+      },
+      "import": "./dist/erc4626.mjs",
+      "require": "./dist/erc4626.cjs"
+    },
+    "./irs": {
+      "types": {
+        "import": "./dist/irs.d.mts",
+        "require": "./dist/irs.d.cts"
+      },
+      "import": "./dist/irs.mjs",
+      "require": "./dist/irs.cjs"
     },
     "./declarative": {
       "types": {

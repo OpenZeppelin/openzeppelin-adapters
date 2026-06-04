@@ -32,9 +32,12 @@ Repository boundaries:
 
 ## Capability Architecture
 
-Adapter functionality is decomposed into 13 capability interfaces organized in
-3 tiers. Each capability is a focused, composable interface representing one
-area of adapter functionality.
+Adapter functionality is decomposed into capability interfaces organized in
+3 tiers. The standard profile matrix covers 13 capabilities; `@openzeppelin/adapter-evm`
+additionally ships three **RI server-side** Tier 3 capabilities (`erc3643`, `erc4626`,
+`irs`) for direct sub-path consumption outside profiles (Tokenized Deposits POC).
+Each capability is a focused, composable interface representing one area of adapter
+functionality.
 
 ### Tier Classification
 
@@ -77,6 +80,21 @@ single source of truth:
 | UiKit | `UiKitCapability` | 3 | `getAvailableUiKits`, `configureUiKit?` |
 | Relayer | `RelayerCapability` | 3 | `getRelayers`, `getNetworkServiceForms` |
 | AccessControl | `AccessControlCapability` | 3 | `registerContract`, `grantRole`, and 17 more |
+| ERC-3643 | `ERC3643Capability` | 3 | `balanceOf`, `simulateTransfer`, `mint`, `burn`, `transfer`, `freeze`, `unfreeze` — **adapter-evm only**, server-side sub-path |
+| ERC-4626 | `ERC4626Capability` | 3 | `convertToAssets`, `convertToShares`, `totalAssets`, `deposit`, `withdraw` — **adapter-evm only**, server-side sub-path |
+| IRS | `IRSCapability` | 3 | `getOnchainId`, `isVerified`, `deployOnchainId`, `registerIdentity`, `attachClaim`, … — **adapter-evm only**, server-side sub-path |
+
+The three RI capabilities extend `RuntimeCapability`, take `(config, { signAndBroadcast })`
+at construction (plus deployment-specific options such as `tokenAddress` / `addresses`),
+and are **not** registered in profile runtimes or `CapabilityFactoryMap` yet (see
+[openzeppelin-adapters#42](https://github.com/OpenZeppelin/openzeppelin-adapters/issues/42)).
+Import them directly:
+
+```ts
+import { createERC3643 } from '@openzeppelin/adapter-evm/erc3643';
+import { createERC4626 } from '@openzeppelin/adapter-evm/erc4626';
+import { createIRS } from '@openzeppelin/adapter-evm/irs';
+```
 
 ## Profiles
 
@@ -329,6 +347,9 @@ physical tier isolation:
     "./ui-kit": { "import": "./dist/capabilities/ui-kit.mjs" },
     "./relayer": { "import": "./dist/capabilities/relayer.mjs" },
     "./access-control": { "import": "./dist/capabilities/access-control.mjs" },
+    "./erc3643": { "import": "./dist/erc3643.mjs" },
+    "./erc4626": { "import": "./dist/erc4626.mjs" },
+    "./irs": { "import": "./dist/irs.mjs" },
     "./profiles/declarative": { "import": "./dist/profiles/declarative.mjs" },
     "./profiles/viewer": { "import": "./dist/profiles/viewer.mjs" },
     "./profiles/transactor": { "import": "./dist/profiles/transactor.mjs" },
@@ -389,6 +410,8 @@ It centralizes reusable EVM capability implementations including:
 - wallet infrastructure (Wallet)
 - network service resolution (Relayer)
 - access control service (AccessControl)
+- RI tokenized-deposits capabilities (ERC-3643, ERC-4626, IRS) under `src/erc3643/`,
+  `src/erc4626/`, and `src/irs/` with vendored ABIs
 
 Public EVM-oriented adapters should prefer composition through
 `adapter-evm-core` over copy-pasting EVM runtime logic into multiple packages.

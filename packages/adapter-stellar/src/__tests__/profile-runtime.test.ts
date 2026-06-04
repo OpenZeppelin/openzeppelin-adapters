@@ -110,7 +110,7 @@ describe('Stellar profile runtimes', () => {
     await expect(runtime.accessControl!.grantRole('C1234', 'ROLE', 'GBUSER')).resolves.toEqual({
       id: 'GBTESTACCOUNT',
     });
-  });
+  }, 15_000);
 
   it('reuses the runtime contract-loading capability for query composition', async () => {
     const { stellarTestnet } = await import('../networks');

@@ -293,8 +293,14 @@ export {
   type CreateAccessControlOptions,
   createAddressing,
   createContractLoading,
+  createERC3643,
+  type CreateERC3643Options,
+  createERC4626,
+  type CreateERC4626Options,
   createExecution,
   createExplorer,
+  createIRS,
+  type CreateIRSOptions,
   createNetworkCatalog,
   createQuery,
   createRelayer,
@@ -304,6 +310,47 @@ export {
   createUiLabels,
   createWallet,
 } from './capabilities';
+
+// ============================================================================
+// IRS / ONCHAINID Module - identity registry capability internals
+// ============================================================================
+export {
+  buildClaimPayload,
+  createEvmIRSService,
+  EvmIRSService,
+  getJurisdiction as getIrsJurisdiction,
+  getOnchainId,
+  isTrustedIssuer,
+  isVerified as isIrsVerified,
+  type EvmIRSAddresses,
+  type EvmIRSExecutor,
+  type EvmIRSServiceOptions,
+} from './irs';
+
+// ============================================================================
+// ERC-3643 / T-REX Module - permissioned-token capability internals
+// ============================================================================
+export {
+  createEvmErc3643Service,
+  EvmErc3643Service,
+  mapErc3643Error,
+  type EvmErc3643Executor,
+  type EvmErc3643ServiceOptions,
+  type Erc3643ErrorContext,
+} from './erc3643';
+
+// ============================================================================
+// ERC-4626 / Tokenized Vault Module - vault capability internals
+// ============================================================================
+export {
+  createEvmErc4626Service,
+  EvmErc4626Service,
+  mapErc4626Error,
+  type EvmErc4626Executor,
+  type EvmErc4626ServiceOptions,
+  type Erc4626ErrorContext,
+  type Erc4626Operation,
+} from './erc4626';
 
 // ============================================================================
 // Profile Module - runtime composition helpers
