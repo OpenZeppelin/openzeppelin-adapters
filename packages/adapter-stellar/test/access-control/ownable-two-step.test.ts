@@ -18,11 +18,13 @@ import { validateExpirationLedger } from '../../src/access-control/validation';
 // Mock the Stellar SDK
 vi.mock('@stellar/stellar-sdk', () => ({
   rpc: {
-    Server: vi.fn().mockImplementation(() => ({
-      getLatestLedger: vi.fn().mockResolvedValue({
-        sequence: 12345678,
-      }),
-    })),
+    Server: vi.fn().mockImplementation(function () {
+      return {
+        getLatestLedger: vi.fn().mockResolvedValue({
+          sequence: 12345678,
+        }),
+      };
+    }),
   },
 }));
 
@@ -86,9 +88,11 @@ describe('Two-Step Ownable Support', () => {
       vi.resetModules();
       vi.doMock('@stellar/stellar-sdk', () => ({
         rpc: {
-          Server: vi.fn().mockImplementation(() => ({
-            getLatestLedger: vi.fn().mockRejectedValue(new Error('Network error')),
-          })),
+          Server: vi.fn().mockImplementation(function () {
+            return {
+              getLatestLedger: vi.fn().mockRejectedValue(new Error('Network error')),
+            };
+          }),
         },
       }));
 
@@ -719,9 +723,11 @@ describe('Two-Step Ownable Support', () => {
         vi.resetModules();
         vi.doMock('@stellar/stellar-sdk', () => ({
           rpc: {
-            Server: vi.fn().mockImplementation(() => ({
-              getLatestLedger: vi.fn().mockRejectedValue(new Error('Request timeout')),
-            })),
+            Server: vi.fn().mockImplementation(function () {
+              return {
+                getLatestLedger: vi.fn().mockRejectedValue(new Error('Request timeout')),
+              };
+            }),
           },
         }));
 
@@ -736,9 +742,11 @@ describe('Two-Step Ownable Support', () => {
         vi.resetModules();
         vi.doMock('@stellar/stellar-sdk', () => ({
           rpc: {
-            Server: vi.fn().mockImplementation(() => ({
-              getLatestLedger: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
-            })),
+            Server: vi.fn().mockImplementation(function () {
+              return {
+                getLatestLedger: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+              };
+            }),
           },
         }));
 
@@ -811,11 +819,13 @@ describe('Two-Step Ownable Support', () => {
       vi.resetModules();
       vi.doMock('@stellar/stellar-sdk', () => ({
         rpc: {
-          Server: vi.fn().mockImplementation(() => ({
-            getLatestLedger: vi.fn().mockResolvedValue({
-              sequence: 12345678,
-            }),
-          })),
+          Server: vi.fn().mockImplementation(function () {
+            return {
+              getLatestLedger: vi.fn().mockResolvedValue({
+                sequence: 12345678,
+              }),
+            };
+          }),
         },
       }));
 

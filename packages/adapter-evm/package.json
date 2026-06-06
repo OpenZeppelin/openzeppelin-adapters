@@ -77,7 +77,7 @@
     "react-hook-form": "^7.62.0",
     "typescript": "^5.9.2",
     "viem": "^2.33.3",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.0",
     "wagmi": "^2.16.1"
   },
   "peerDependencies": {
