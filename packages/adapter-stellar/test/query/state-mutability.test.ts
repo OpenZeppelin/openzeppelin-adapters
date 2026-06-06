@@ -10,23 +10,27 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
   return {
     ...actual,
     BASE_FEE: '100',
-    Contract: vi.fn(() => ({
-      call: () => ({}),
-    })),
+    Contract: vi.fn(function () {
+      return { call: () => ({}) };
+    }),
     Address: {
       fromString: vi.fn(() => true),
     },
-    Account: vi.fn(() => ({})),
-    TransactionBuilder: vi.fn(() => ({
-      addOperation: vi.fn().mockReturnThis(),
-      setTimeout: vi.fn().mockReturnThis(),
-      build: vi.fn(() => ({ toXDR: () => 'mock-xdr' })),
-    })),
+    Account: vi.fn(function () {
+      return {};
+    }),
+    TransactionBuilder: vi.fn(function () {
+      return {
+        addOperation: vi.fn().mockReturnThis(),
+        setTimeout: vi.fn().mockReturnThis(),
+        build: vi.fn(() => ({ toXDR: () => 'mock-xdr' })),
+      };
+    }),
     nativeToScVal: vi.fn((value: unknown) => value),
     rpc: {
-      Server: vi.fn(() => ({
-        simulateTransaction: simulateTransactionMock,
-      })),
+      Server: vi.fn(function () {
+        return { simulateTransaction: simulateTransactionMock };
+      }),
       Api: {
         isSimulationError: () => false,
       },

@@ -5,9 +5,13 @@ import type { StellarNetworkConfig } from '@openzeppelin/ui-types';
 // T004: Unit test for contract type detection (SAC vs Wasm)
 
 const getLedgerEntriesMock = vi.fn();
-const serverCtorMock = vi.fn(() => ({ getLedgerEntries: getLedgerEntriesMock }));
+const serverCtorMock = vi.fn(function () {
+  return { getLedgerEntries: getLedgerEntriesMock };
+});
 const contractFootprintMock = vi.fn(() => 'mock-footprint');
-const contractCtorMock = vi.fn(() => ({ getFootprint: contractFootprintMock }));
+const contractCtorMock = vi.fn(function () {
+  return { getFootprint: contractFootprintMock };
+});
 
 const createLedgerEntry = (executableName: string) => ({
   contractData: () => ({

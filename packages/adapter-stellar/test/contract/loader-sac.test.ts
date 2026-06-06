@@ -21,9 +21,9 @@ vi.mock('@stellar/stellar-sdk', () => ({
     isValidContract: vi.fn(() => true),
   },
   contract: {
-    Spec: vi.fn(() => ({
-      funcs: () => [],
-    })),
+    Spec: vi.fn(function () {
+      return { funcs: () => [] };
+    }),
   },
 }));
 
