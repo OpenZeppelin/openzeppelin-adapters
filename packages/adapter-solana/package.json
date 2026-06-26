@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapter-solana",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "description": "Solana Adapter for UI Builder",
   "keywords": [
     "openzeppelin",
