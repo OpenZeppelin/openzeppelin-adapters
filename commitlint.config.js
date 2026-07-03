@@ -45,13 +45,10 @@ export default {
         'deps',
         'docs',
         'release',
+        'spec',
       ],
     ],
     'scope-empty': [2, 'never'],
   },
-  ignores: [
-    (message) =>
-      message.includes('[skip ci]') ||
-      /^chore\(release\):.+/.test(message),
-  ],
+  ignores: [(message) => message.includes('[skip ci]') || /^chore\(release\):.+/.test(message)],
 };
