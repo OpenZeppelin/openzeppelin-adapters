@@ -254,8 +254,8 @@ Note: SF-5 has no dependency on SF-3 or SF-4, so once SF-2 is stable it can proc
 
 |       | Research | Design | Invariants | Code | Tests | Docs |
 |-------|----------|--------|------------|------|-------|------|
-| SF-1  | n/a      | ⏸️     | ⏸️         | ⏸️   | ⏸️    | n/a  |
-| SF-2  | ⏸️       | ⏸️     | ⏸️         | ⏸️   | ⏸️    | ⏸️   |
+| SF-1  | n/a      | ✅     | ✅         | ⏸️   | ⏸️    | n/a  |
+| SF-2  | ✅       | ⏸️     | ⏸️         | ⏸️   | ⏸️    | ⏸️   |
 | SF-3  | ⏸️       | ⏸️     | ⏸️         | ⏸️   | ⏸️    | ⏸️   |
 | SF-4  | ⏸️       | ⏸️     | ⏸️         | ⏸️   | ⏸️    | ⏸️   |
 | SF-5  | ⏸️       | ⏸️     | ⏸️         | ⏸️   | ⏸️    | ⏸️   |
@@ -264,9 +264,11 @@ Note: SF-5 has no dependency on SF-3 or SF-4, so once SF-2 is stable it can proc
 
 **Filling rule:** Replace ⏸️ with `n/a` for any stage a sub-feature deliberately skips per its `stakes` setting (Low = Research / Invariants / Docs are `n/a`; Medium = Research / Docs are `n/a`; High = all stages run). The per-slice stages flip cells from ⏸️ → ⏳ on entry and ⏳ → ✅ on completion. (SF-1 is Medium → Research & Docs are `n/a`; SF-2 / SF-3 / SF-4 / SF-5 are High → all stages run.)
 
-**Last update:** *2026-07-03 — Initial Specify run; no per-slice stages started yet.*
+**Last update:** *2026-07-03 — SF-1 Invariants ✅. 18 invariants defined (INV-1..INV-18) across Req/Res, Error Semantics, Idempotency, Side-Effect/Obs, Sensitive Data, Perf/Reuse; Auth n/a. All three Design open questions resolved: RQ-1 timeout-vs-gateway precedence → INV-10 (+ elapsedMs does NOT belong on EXTERNAL_GATEWAY_ERROR — closed union forbids it); RQ-2 elapsedMs fallback → INV-12 (-1 sentinel + caller obligation); RQ-3 programmer-error carve-out → INV-9 (closed allowlist = {RuntimeDisposedError} only). Next eligible: SF-1 Code Draft; SF-2 Research in parallel.*
 
-**Currently:** *Spec drafted, pending dev approval gate (via Orchestrator). First eligible stage: SF-1 Design (Medium stakes → Research skipped). SF-2 Research is eligible in parallel once SF-1's error-union mapping shape is settled.*
+**Last update:** *2026-07-03 — SF-2 Research ✅. viem go/no-go = GO for forward resolution (`getEnsAddress` via Universal Resolver — ENSIP-10 wildcard + CCIP-Read built in, zero new dep). Enumerated gaps: G1 default `strict:false` collapses gateway/resolver/no-record failures into `null` → SF-2 must run `strict:true` + classify via SF-1 mapper (load-bearing, fund-safety); G2 real UNSUPPORTED_NETWORK signal is `ChainDoesNotSupportContract` (corrects SF-1 table rows 4–5 — drift note raised); G3 no `isValidName` in viem (build via normalize+isValidEvmAddress); G4 no `external`/offchain signal on return; G5 caller-owned timeout/elapsedMs; G6 caller must normalize. Corrected forward-path class→code table supplied in Dev Notes. Next eligible: SF-2 Design; SF-1 Code Draft.*
+
+**Currently:** *SF-1 Invariants ✅ and SF-2 Research ✅ complete. Next eligible: SF-2 Design (High → Design runs, consumes SF-2 research + SF-1 mapper contract), and SF-1 Code Draft (standard) or SF-1 Tests (if TDD) may run in parallel.*
 
 ## Success Criteria _(mandatory)_
 
