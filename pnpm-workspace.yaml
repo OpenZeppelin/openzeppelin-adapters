@@ -7,6 +7,7 @@ overrides:
   '@paulmillr/qr': 'npm:qr@^0.5.0'
   '@walletconnect/modal': '2.7.0'
   '@types/react': ^19.1.8
+  react-hook-form: 7.80.0
   '@wagmi/core': ^2.20.3
   glob: ^11.1.0
   zod: ^3.25.76
