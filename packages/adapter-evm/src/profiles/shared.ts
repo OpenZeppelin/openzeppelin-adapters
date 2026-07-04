@@ -1,5 +1,11 @@
+import { mainnet } from 'viem/chains';
+
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
-import { createRuntime as createCoreRuntime } from '@openzeppelin/adapter-evm-core';
+import {
+  createRuntime as createCoreRuntime,
+  createEvmPublicClient,
+  resolveRpcUrl,
+} from '@openzeppelin/adapter-evm-core';
 import {
   createLazyRuntimeCapabilityFactories,
   registerRuntimeCapabilityCleanup,
@@ -20,6 +26,7 @@ import {
   createContractLoading,
   createExecution,
   createExplorer,
+  createNameResolution,
   createNetworkCatalog,
   createQuery,
   createRelayer,
@@ -36,6 +43,41 @@ function toTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkConfig {
   }
 
   return config as TypedEvmNetworkConfig;
+}
+
+/**
+ * Build the viem `PublicClient` injected into the name-resolution capability (SF-2, D-A). Constructed
+ * here — the composition layer, where `config.viemChain` is in scope — and injected at the capability
+ * boundary. `config.viemChain` for ENS-supporting networks carries `contracts.ensUniversalResolver`;
+ * where it does not, `createEvmPublicClient` falls back to a minimal chain with no contracts, so the
+ * capability's sync support-check reports `UNSUPPORTED_NETWORK` rather than crashing (D-B). Relies on
+ * viem's default CCIP-Read; SF-5 introduces a dedicated ENS client builder if it needs custom gateways.
+ */
+function ensClient(config: TypedEvmNetworkConfig) {
+  return createEvmPublicClient(resolveRpcUrl(config), config.viemChain);
+}
+
+/**
+ * RPC endpoint for the dedicated **mainnet** ENS L1 client (SF-5, Design Open Q4). Precedence: when
+ * the bound network *is* Ethereum mainnet, reuse its configured endpoint (so a user's keyed mainnet
+ * RPC is honored); otherwise fall back to viem's built-in default mainnet public transport — a
+ * documented rate-limit caveat, acceptable because this endpoint is used ONLY for the L2-bound
+ * cross-chain path and carries no secret of its own (INV-24). The returned URL is never threaded into
+ * provenance or errors (INV-24).
+ */
+function resolveMainnetRpcUrl(config: TypedEvmNetworkConfig): string {
+  return config.chainId === mainnet.id ? resolveRpcUrl(config) : mainnet.rpcUrls.default.http[0];
+}
+
+/**
+ * Build the dedicated **mainnet** L1 client injected into name resolution (SF-5, D-V1) — the ENS v2
+ * Universal-Resolver entry point. `mainnet` always carries `contracts.ensUniversalResolver` (the
+ * DAO-owned UR proxy), so the L1 cross-chain path resolves an L2-bound name chain-scoped via L1
+ * (`coinType = toCoinType(boundChainId)`). Borrowed by the capability, never disposed (INV-21). The
+ * bound per-network `ensClient` above is unchanged.
+ */
+function ensL1Client(config: TypedEvmNetworkConfig) {
+  return createEvmPublicClient(resolveMainnetRpcUrl(config), mainnet);
 }
 
 function bridgeSignAndBroadcast(
@@ -70,6 +112,13 @@ export const capabilityFactories: CapabilityFactoryMap = {
   wallet: (config: NetworkConfig) => createWallet(toTypedEvmNetworkConfig(config)),
   uiKit: (config: NetworkConfig) => createUiKit(toTypedEvmNetworkConfig(config)),
   relayer: (config: NetworkConfig) => createRelayer(toTypedEvmNetworkConfig(config)),
+  nameResolution: (config: NetworkConfig) => {
+    const typed = toTypedEvmNetworkConfig(config);
+    return createNameResolution(typed, {
+      publicClient: ensClient(typed),
+      ensL1Client: ensL1Client(typed), // SF-5 — enables the L1 cross-chain path (D-V1)
+    });
+  },
   accessControl: (config: NetworkConfig) => {
     const typedConfig = toTypedEvmNetworkConfig(config);
     const execution = createExecution(typedConfig);
@@ -100,6 +149,11 @@ function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): Capabi
     wallet: () => createWallet(config),
     uiKit: () => createUiKit(config),
     relayer: () => createRelayer(config),
+    nameResolution: () =>
+      createNameResolution(config, {
+        publicClient: ensClient(config),
+        ensL1Client: ensL1Client(config), // SF-5 — enables the L1 cross-chain path (D-V1)
+      }),
     accessControl: (_runtimeConfig, getCapability) =>
       createAccessControl(config, {
         signAndBroadcast: bridgeSignAndBroadcast(
