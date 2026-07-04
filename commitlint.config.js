@@ -35,6 +35,7 @@ export default {
       [
         'adapter-evm',
         'adapter-evm-core',
+        'adapter-runtime-utils',
         'adapter-midnight',
         'adapter-polkadot',
         'adapter-solana',
