@@ -11,13 +11,20 @@
     "typecheck": "tsc --noEmit"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./conformance": "./src/conformance/index.ts"
   },
   "files": [
     "src"
   ],
   "peerDependencies": {
-    "@openzeppelin/ui-types": "^3.1.0"
+    "@openzeppelin/ui-types": "^3.1.0",
+    "vitest": "^4.1.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@openzeppelin/ui-types": "^3.1.0",
