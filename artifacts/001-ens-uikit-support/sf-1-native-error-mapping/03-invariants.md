@@ -362,12 +362,12 @@ The Design carried three questions to Invariants. All three are resolved here; e
 
 **Category:** Performance, Scalability & Re-usability
 
-**Statement:** SF-1 depends on the `NameResolutionError` union at the **type level only** (`import type` from `@openzeppelin/ui-types`, erased at compile time — zero runtime coupling to the UIKit package). It injects and imports **no** host dependencies (logger, clock, KV, transport, metrics), holds no singleton, and hardcodes no app/RI/network reference. Any consumer — the SF-2/SF-3/SF-5 resolution paths, the SF-4 conformance harness, or a future non-EVM adapter — imports the mapper and constructors by package name and uses them with no configuration. Work per call is O(1) construction plus O(bounded) classification (INV-15), synchronous, on the cold error path; the module imposes no throughput ceiling of its own.
+**Statement:** SF-1 depends on the `NameResolutionError` **union at the type level only** (`import type` from `@openzeppelin/ui-types`, erased at compile time — zero runtime coupling to the not-yet-stable UIKit type shape). The **one** permitted runtime import from `@openzeppelin/ui-types` is the `RuntimeDisposedError` **class**, which INV-9 requires as a value for its `instanceof`-primary re-throw check; this adds **no new package coupling** (`@openzeppelin/ui-types` is already a runtime dependency of `adapter-evm-core` via `erc4626/error-mapping.ts` and of `adapter-runtime-utils` via `runtime-capability.ts`, and `RuntimeDisposedError` is a stable, already-shipped lifecycle class). Beyond that, SF-1 injects and imports **no** host dependencies (logger, clock, KV, transport, metrics), holds no singleton, and hardcodes no app/RI/network reference. Any consumer — the SF-2/SF-3/SF-5 resolution paths, the SF-4 conformance harness, or a future non-EVM adapter — imports the mapper and constructors by package name and uses them with no configuration. Work per call is O(1) construction plus O(bounded) classification (INV-15), synchronous, on the cold error path; the module imposes no throughput ceiling of its own.
 
 **Applies to:** all five functions and the module surface.
 
 **Enforcement mechanism:**
-- Type system: the only `@openzeppelin/ui-types` import is `import type`; verified by build (no runtime require emitted).
+- Type system: the only `@openzeppelin/ui-types` imports are the `import type` of the `NameResolutionError` union and the runtime `RuntimeDisposedError` class INV-9 requires; no other runtime import (no logger/clock/transport require emitted).
 - Runtime guard: no constructor parameters for deps; no module-level mutable state or singleton.
 - Test: import the mapper in a bare test with no host wiring and exercise it; assert the compiled output has no runtime dependency on `@openzeppelin/ui-types`; grep for injected-dependency parameters and assert none.
 
@@ -417,6 +417,7 @@ SF-1 adds a new `src/name-resolution/` directory and one re-export line in `src/
 - **Redaction helper (from INV-16):** the `redactSecrets(string): string` helper is small and self-contained; it should live in `src/name-resolution/error-mapping.ts` (or a sibling `redact.ts` in the same dir) and be applied at the single point each free-text field is constructed. Keep the pattern set conservative (URL userinfo + provider-key-in-path/query) to avoid over-scrubbing legitimate diagnostic text.
 - **Re-throw allowlist is a named constant (from RQ-3 / INV-9):** implement as `const PROGRAMMER_ERROR_CLASSES = [RuntimeDisposedError] as const` (or a name-set) so growth is an explicit, reviewable edit. Adding a member narrows the never-throw guarantee UIKit INV-8 and SF-4 depend on — treat additions as API-visible.
 - **`instanceof` brittleness:** as the Design notes, duplicate-copy/bundled `viem` (or `adapter-runtime-utils`) can defeat `instanceof`; the `.name`-needle fallback backstops both classification (rows 1–5) and the row-0 re-throw check. Tests should simulate a "foreign realm" error (matching `.name`, failing `instanceof`) for both paths.
+- **Sync from Code Draft (2026-07-03, dev-approved):** INV-18 clarified — its "type-level only" guarantee scopes to the `NameResolutionError` *union*; the `RuntimeDisposedError` *class* is a permitted runtime import because INV-9's `instanceof`-primary re-throw check needs it as a value, and it adds no new package coupling (`@openzeppelin/ui-types` is already a runtime dep of `adapter-evm-core` and `adapter-runtime-utils`). Resolves the INV-18 ↔ INV-9 wording conflict surfaced during SF-1 Code Draft.
 
 ## Open Questions
 
