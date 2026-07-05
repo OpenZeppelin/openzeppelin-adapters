@@ -12,7 +12,15 @@
  * @module name-resolution
  */
 
-export * from './error-mapping';
+export {
+  ELAPSED_UNMEASURED,
+  addressNotFound,
+  mapNameResolutionError,
+  nameNotFound,
+  unsupportedName,
+  unsupportedNetwork,
+  type NameResolutionErrorContext,
+} from './error-mapping';
 export {
   buildEnsProvenance,
   deriveCoinType,

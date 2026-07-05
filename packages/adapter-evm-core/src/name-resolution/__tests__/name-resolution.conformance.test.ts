@@ -29,16 +29,14 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  checkConformance,
-  describeConformance,
-} from '@openzeppelin/adapter-runtime-utils/conformance';
+import { checkConformance } from '@openzeppelin/adapter-runtime-utils/conformance';
 import type {
   ConformanceConfig,
   ForwardVector,
   InvariantId,
   ReverseVector,
 } from '@openzeppelin/adapter-runtime-utils/conformance';
+import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance/vitest';
 import type { NameResolutionCapability } from '@openzeppelin/ui-types';
 
 import { createNameResolution } from '../../capabilities/name-resolution';
