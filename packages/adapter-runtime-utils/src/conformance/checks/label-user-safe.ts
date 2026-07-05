@@ -1,6 +1,6 @@
 import type { ResolutionProvenance } from '@openzeppelin/ui-types';
 
-import type { CheckOutcome } from '../internal';
+import { safeJsonHint, type CheckOutcome } from '../internal';
 import { isUserSafeLabel } from '../label-policy';
 import type { LabelPolicy } from '../types';
 
@@ -23,10 +23,10 @@ export function checkLabel(provenance: ResolutionProvenance, policy: LabelPolicy
   const label = provenance.label;
   const verdict = isUserSafeLabel(label, policy);
   if (verdict.safe) {
-    return { status: 'PASS', message: `label ${JSON.stringify(label)} is user-safe` };
+    return { status: 'PASS', message: `label ${safeJsonHint(label)} is user-safe` };
   }
   return {
     status: 'FAIL',
-    message: `label ${JSON.stringify(label)} is not user-safe — ${verdict.reason ?? 'rejected'}`,
+    message: `label ${safeJsonHint(label)} is not user-safe — ${verdict.reason ?? 'rejected'}`,
   };
 }

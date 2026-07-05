@@ -24,6 +24,16 @@ export function isPlainObject(v: unknown): v is Record<string, unknown> {
 }
 
 /**
+ * Depth cap for the normalize / compare walk — a totality guard against an adversarially deep or
+ * self-referential adapter return, mirroring `error-mapping.ts`'s `MAX_CAUSE_CHAIN_DEPTH`. The
+ * compliant ui-types resolution core is only a few levels deep, so a compliant result never
+ * approaches this bound; exceeding it (or a cycle that survives normalization) surfaces as a
+ * determinism FAIL — `structuralEqual` returns `false` — never as unbounded recursion or a
+ * thrown `RangeError`.
+ */
+const MAX_STRUCTURAL_DEPTH = 64;
+
+/**
  * Recursively drop every own-enumerable key whose value is `undefined`, at every depth,
  * returning a NEW structure (the input is never mutated).
  *
@@ -31,19 +41,36 @@ export function isPlainObject(v: unknown): v is Record<string, unknown> {
  * SAME shape and therefore compare EQUAL — consistent with SF-3 INV-4 (`avatarUrl` is
  * key-absent-when-undefined) and the closed union's optional fields (`scopedToNetworkId?`).
  */
-function dropUndefinedDeep(value: unknown): unknown {
+function dropUndefinedDeep(value: unknown, depth = 0, ancestors = new WeakSet<object>()): unknown {
+  // Totality backstop: a structure deeper than the cap is left verbatim rather than recursed
+  // into. A downstream `structuralEqual` walk hits its own cap on the same shape and yields a
+  // determinism FAIL, so a pathological return is graded, never allowed to recurse without bound.
+  if (depth >= MAX_STRUCTURAL_DEPTH) {
+    return value;
+  }
   if (Array.isArray(value)) {
-    return value.map(dropUndefinedDeep);
+    if (ancestors.has(value)) {
+      return value; // cycle: an array that contains itself — leave verbatim, do not recurse
+    }
+    ancestors.add(value); // path-based (added on enter, removed on exit) so shared DAG nodes,
+    const mapped = value.map((element) => dropUndefinedDeep(element, depth + 1, ancestors));
+    ancestors.delete(value); // which are legitimate, are NOT mistaken for cycles
+    return mapped;
   }
   if (isPlainObject(value)) {
+    if (ancestors.has(value)) {
+      return value; // cycle: this object is one of its own ancestors — leave verbatim
+    }
+    ancestors.add(value);
     const out: Record<string, unknown> = {};
     for (const key of Object.keys(value)) {
       const child = value[key];
       if (child === undefined) {
         continue; // INV-14(a): explicit-undefined ≡ absent-key
       }
-      out[key] = dropUndefinedDeep(child);
+      out[key] = dropUndefinedDeep(child, depth + 1, ancestors);
     }
+    ancestors.delete(value);
     return out;
   }
   return value;
@@ -90,16 +117,23 @@ export function normalizeResolutionResult(
  * - Any non-plain object → identity fallback (`Object.is` already returned `false` for
  *   distinct references), a conservative FAIL rather than a silent false pass.
  */
-export function structuralEqual(a: unknown, b: unknown): boolean {
+export function structuralEqual(a: unknown, b: unknown, depth = 0): boolean {
   if (Object.is(a, b)) {
     return true;
+  }
+
+  // Totality backstop (mirrors `dropUndefinedDeep`): a structure deeper than the cap — including
+  // a cycle that survived normalization — compares unequal, a conservative determinism FAIL
+  // rather than unbounded recursion or a thrown `RangeError`.
+  if (depth >= MAX_STRUCTURAL_DEPTH) {
+    return false;
   }
 
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) {
       return false;
     }
-    return a.every((element, index) => structuralEqual(element, b[index]));
+    return a.every((element, index) => structuralEqual(element, b[index], depth + 1));
   }
 
   if (isPlainObject(a) && isPlainObject(b)) {
@@ -109,7 +143,8 @@ export function structuralEqual(a: unknown, b: unknown): boolean {
       return false;
     }
     return keysA.every(
-      (key) => Object.prototype.hasOwnProperty.call(b, key) && structuralEqual(a[key], b[key])
+      (key) =>
+        Object.prototype.hasOwnProperty.call(b, key) && structuralEqual(a[key], b[key], depth + 1)
     );
   }
 

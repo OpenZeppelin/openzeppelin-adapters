@@ -1,4 +1,4 @@
-import type { CheckOutcome } from '../internal';
+import { safeJsonHint, type CheckOutcome } from '../internal';
 import type { AnyResolutionResult, NameResolutionErrorCode } from '../types';
 
 /**
@@ -82,7 +82,7 @@ export function classifyExpectedFailure(
   if (typeof observed !== 'string' || !NAME_RESOLUTION_ERROR_CODES.has(observed)) {
     return {
       status: 'FAIL',
-      message: `returned code ${JSON.stringify(observed)} is outside the closed 7-code union — fabricated code outside the typed contract`,
+      message: `returned code ${safeJsonHint(observed)} is outside the closed 7-code union — fabricated code outside the typed contract`,
     };
   }
 

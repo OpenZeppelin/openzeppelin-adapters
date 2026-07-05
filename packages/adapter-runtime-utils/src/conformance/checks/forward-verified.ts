@@ -1,6 +1,6 @@
 import type { ResolvedName } from '@openzeppelin/ui-types';
 
-import type { CheckOutcome } from '../internal';
+import { safeJsonHint, type CheckOutcome } from '../internal';
 
 /**
  * UIKit INV-6 — `forwardVerified` is a concrete boolean.
@@ -18,6 +18,6 @@ export function checkForwardVerified(value: ResolvedName): CheckOutcome {
   }
   return {
     status: 'FAIL',
-    message: `forwardVerified must be a concrete boolean, got ${typeof observed} (${JSON.stringify(observed)})`,
+    message: `forwardVerified must be a concrete boolean, got ${typeof observed} (${safeJsonHint(observed)})`,
   };
 }

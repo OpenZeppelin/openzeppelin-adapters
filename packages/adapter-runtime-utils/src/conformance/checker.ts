@@ -12,10 +12,12 @@ import {
 
 import {
   classifyResolutionResult,
+  describeError,
   invoke,
   isNonNullObject,
   makeKeyDeduper,
   safeConstruct,
+  safeGrade,
   sanitizeSlug,
   type InvokeOutcome,
 } from './internal';
@@ -193,8 +195,21 @@ async function runVector(
   if (isSuccessVector) {
     if (r1.ok) {
       // Realized success — the value checks apply, but only once the value payload is itself a
-      // dereferenceable object. A missing / non-object value is a FAIL, never a crash.
-      const value: unknown = r1.value;
+      // dereferenceable object. Reading `.value` is contained (INV-9): a hostile getter is graded
+      // as a value-inspection FAIL, never an uncontained throw — mirroring the missing-value shape
+      // below so the report's row count / order stay stable.
+      let value: unknown;
+      try {
+        value = r1.value;
+      } catch (err) {
+        const reason = `reading the ok:true result value threw — ${describeError(err)}`;
+        if (direction === 'reverse') {
+          out.push({ invariant: 'INV-6', key: keys.inv6, status: 'FAIL', message: reason });
+        }
+        out.push({ invariant: 'INV-16', key: keys.inv16, status: 'FAIL', message: reason });
+        out.push(skip('INV-12', keys.inv12, 'no inspectable value — value read threw'));
+        return out;
+      }
       if (!isNonNullObject(value)) {
         const reason = 'ok:true result has no value object to inspect';
         if (direction === 'reverse') {
@@ -205,7 +220,9 @@ async function runVector(
         return out;
       }
       if (direction === 'reverse') {
-        const leaf = checkForwardVerified(value as unknown as ResolvedName); // UIKit INV-6
+        // Each leaf is grade-contained (INV-9): a throwing nested getter, a bigint, or a deep /
+        // circular payload becomes THIS invariant's FAIL, not a throw out of the grading phase.
+        const leaf = safeGrade(() => checkForwardVerified(value as unknown as ResolvedName)); // UIKit INV-6
         out.push({
           invariant: 'INV-6',
           key: keys.inv6,
@@ -213,7 +230,9 @@ async function runVector(
           message: leaf.message,
         });
       }
-      const labelLeaf = checkLabel((value as unknown as ResolvedName).provenance, policy); // UIKit INV-16
+      const labelLeaf = safeGrade(() =>
+        checkLabel((value as unknown as ResolvedName).provenance, policy)
+      ); // UIKit INV-16
       out.push({ invariant: 'INV-16', key: keys.inv16, ...labelLeaf });
       out.push(determinismResult(keys.inv12, r1, outcome2, includeAvatar));
     } else {
@@ -223,7 +242,7 @@ async function runVector(
         invariant: 'EXPECT',
         key: keys.expect,
         status: 'FAIL',
-        message: `expected {ok:true}, but the call returned {ok:false} with code ${errorCodeHint(r1.error)} (no throw) — an unexpected typed failure`,
+        message: `expected {ok:true}, but the call returned {ok:false} with code ${safeErrorCodeHint(r1)} (no throw) — an unexpected typed failure`,
       });
       // Dependent value checks are not evaluable — SKIPPED, never silently passed.
       if (direction === 'reverse') {
@@ -233,8 +252,12 @@ async function runVector(
       out.push(skip('INV-12', keys.inv12, 'no value to inspect — see expectation FAIL'));
     }
   } else {
-    // Expected-failure vector: INV-8 decision table on the returned result (guarded internally).
-    const leaf = classifyExpectedFailure(vector.expect.code, r1);
+    // Expected-failure vector: INV-8 decision table on the returned result. Grade-contained
+    // (INV-9) so a hostile `.error` / `.code` getter on the returned payload becomes an INV-8
+    // FAIL, never a throw out of the grading phase. `code` is read here, where the discriminant
+    // narrowing holds, then captured — the narrowing does not survive into the closure.
+    const declaredCode = vector.expect.code;
+    const leaf = safeGrade(() => classifyExpectedFailure(declaredCode, r1));
     out.push({ invariant: 'INV-8', key: keys.inv8, ...leaf });
     // Determinism still applies to expected-failure vectors (INV-13).
     out.push(determinismResult(keys.inv12, r1, outcome2, includeAvatar));
@@ -271,7 +294,10 @@ function determinismResult(
       message: `second determinism call returned a malformed result — ${secondShape.reason}`,
     };
   }
-  const leaf = checkDeterminism(first, secondShape.result, includeAvatar);
+  // Grade-contained (INV-9): normalization spreads the returned `value`/`error` and the
+  // structural walk recurses it — a hostile getter, a bigint, or a deep / circular payload
+  // becomes an INV-12 FAIL, never a throw out of the grading phase.
+  const leaf = safeGrade(() => checkDeterminism(first, secondShape.result, includeAvatar));
   return { invariant: 'INV-12', key, status: leaf.status, message: leaf.message };
 }
 
@@ -325,6 +351,19 @@ function failedForMalformedResult(
   }
   out.push(skip('INV-12', keys.inv12, skipReason));
   return out;
+}
+
+/**
+ * Read a returned result's `error.code` hint for a FAIL message with TOTAL containment (INV-9):
+ * both the `.error` read off the result and the `.code` read inside {@link errorCodeHint} may hit
+ * a hostile getter, so the whole access is guarded and degrades to a marker rather than throwing.
+ */
+function safeErrorCodeHint(result: AnyResolutionResult): string {
+  try {
+    return errorCodeHint((result as { error?: unknown }).error);
+  } catch (err) {
+    return `<error payload read threw: ${describeError(err)}>`;
+  }
 }
 
 /** A defensive `error.code` hint for a FAIL message — never throws on a malformed error payload. */

@@ -12,7 +12,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./conformance": "./src/conformance/index.ts"
+    "./conformance": "./src/conformance/index.ts",
+    "./conformance/vitest": "./src/conformance/vitest-binding.ts"
   },
   "files": [
     "src"

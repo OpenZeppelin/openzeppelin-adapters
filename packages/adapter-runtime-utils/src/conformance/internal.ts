@@ -44,19 +44,70 @@ export function isRuntimeDisposedError(e: unknown): boolean {
 }
 
 /**
- * INV-12: a diagnostic string for a caught error — `<constructorName>: <String(err)>` — with
- * the raw error object deliberately NOT retained, so no live native `Error` (unstable stack,
- * embedded paths) or adapter-internal handle ever escapes into the report.
+ * `String(value)` that can NEVER throw. A hostile `toString` / `Symbol.toPrimitive` / `valueOf`
+ * on an adapter-controlled value would otherwise propagate out of a diagnostic and defeat
+ * containment, so a throwing coercion degrades to a marker (SC-004 totality).
+ */
+export function safeToString(value: unknown): string {
+  try {
+    return String(value);
+  } catch {
+    return '<unstringifiable value>';
+  }
+}
+
+/**
+ * A diagnostic stringifier for FAIL messages that NEVER throws. `JSON.stringify` throws on a
+ * `bigint` and on a circular structure, and a hostile `toJSON` / getter can throw mid-serialize;
+ * every such case degrades to a safe hint so a diagnostic can never turn a grading FAIL into an
+ * uncontained throw. A `bigint` is rendered as `<value>n` via a replacer.
+ */
+export function safeJsonHint(value: unknown): string {
+  try {
+    const json = JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? `${v}n` : v));
+    return json ?? safeToString(value);
+  } catch {
+    return safeToString(value);
+  }
+}
+
+/**
+ * INV-12: a diagnostic string for a caught error — `<constructorName>: <safeToString(err)>` —
+ * with the raw error object deliberately NOT retained, so no live native `Error` (unstable
+ * stack, embedded paths) or adapter-internal handle ever escapes into the report. Reading the
+ * constructor name and stringifying are both guarded, so `describeError` is itself total.
  */
 export function describeError(err: unknown): string {
   let name: string;
-  if (typeof err === 'object' && err !== null) {
-    const ctor = (err as { constructor?: { name?: unknown } }).constructor;
-    name = typeof ctor?.name === 'string' ? ctor.name : 'Object';
-  } else {
-    name = typeof err;
+  try {
+    if (typeof err === 'object' && err !== null) {
+      const ctor = (err as { constructor?: { name?: unknown } }).constructor;
+      name = typeof ctor?.name === 'string' ? ctor.name : 'Object';
+    } else {
+      name = typeof err;
+    }
+  } catch {
+    name = 'Object'; // a hostile `constructor` getter must not defeat containment
   }
-  return `${name}: ${String(err)}`;
+  return `${name}: ${safeToString(err)}`;
+}
+
+/**
+ * INV-9 grading containment. The value-grading phase runs AFTER the {@link invoke} call-
+ * containment boundary, inspecting the adapter's RETURNED payload; without this wrapper a
+ * hostile getter, a `bigint` tripping a naive stringify, or a pathologically deep / circular
+ * structure would escape that phase as an uncontained throw and break SC-004 totality. Any
+ * throw becomes a FAIL, attributed by the caller to the specific invariant whose grader threw.
+ */
+export function safeGrade(grade: () => CheckOutcome): CheckOutcome {
+  try {
+    return grade();
+  } catch (err) {
+    return {
+      status: 'FAIL',
+      message: `grading threw while inspecting the returned value — ${describeError(err)}`,
+    };
+  }
 }
 
 /**

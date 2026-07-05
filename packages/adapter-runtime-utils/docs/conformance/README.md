@@ -33,13 +33,14 @@ harness varies per ecosystem enters through it.
 
 ## Quick Start
 
-The harness ships inside `@openzeppelin/adapter-runtime-utils` under the `./conformance` subpath.
-It's already a dependency of every adapter package, so there is nothing new to install — `vitest`
-is an **optional peer** (you already have it as a test runner).
+The harness ships inside `@openzeppelin/adapter-runtime-utils`. The pure core lives on the
+`./conformance` subpath (imports no test runner); the vitest binding lives on the separate
+`./conformance/vitest` subpath, so a consumer without `vitest` can import the core safely.
+`vitest` is an **optional peer**, needed only for the binding subpath.
 
 ```ts
 // adapter-evm-core/src/name-resolution/conformance.test.ts
-import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance';
+import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance/vitest';
 import { createNameResolution } from '../create-name-resolution';
 import { mockEnsClient } from './__fixtures__/mock-ens-client'; // YOUR pinned substrate
 

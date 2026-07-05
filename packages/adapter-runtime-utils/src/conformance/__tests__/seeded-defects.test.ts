@@ -551,3 +551,188 @@ describe('malformed adapter returns are graded, never thrown (SC-004 / INV-9)', 
     ).resolves.toMatchObject({ passed: false });
   });
 });
+
+/**
+ * SC-004 totality — the value-GRADING phase (which runs after the {@link checkConformance} call-
+ * containment boundary and inspects the adapter's returned payload) must survive the three
+ * poison-pill vectors a naive grader crashes on: a `bigint` field (trips `JSON.stringify`), a
+ * circular reference (unbounded recursion), and a throwing getter (escapes on read / spread).
+ * Each must be RECORDED as FAIL data — never propagate as an uncontained throw, never spin.
+ */
+describe('value-grading is total under poison-pill payloads (SC-004 / INV-9)', () => {
+  it('(bigint) a non-boolean `forwardVerified` bigint → resolves, INV-6 FAIL (no stringify crash)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveAddress: (input) => ({
+            ok: true,
+            value: {
+              address: input,
+              name: 'vitalik.eth',
+              forwardVerified: 5n as unknown as boolean, // bigint would crash JSON.stringify
+              provenance: { label: 'ENS', external: false },
+            },
+          }),
+        }),
+      reverseVectors: [{ input: '0xabc', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv6 = report.results.find((r) => r.invariant === 'INV-6' && r.status === 'FAIL');
+    expect(inv6?.message).toContain('bigint');
+    expect(inv6?.message).toContain('5n'); // bigint-safe hint, not a thrown TypeError
+  });
+
+  it('(bigint) an out-of-union bigint `error.code` → resolves, INV-8 FAIL (no stringify crash)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: () => ({ ok: false, error: { code: 999n } }) as never,
+        }),
+      forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv8 = report.results.find((r) => r.invariant === 'INV-8' && r.status === 'FAIL');
+    expect(inv8?.message).toContain('999n');
+  });
+
+  it('(bigint) a bigint `provenance.label` → resolves, INV-16 FAIL (no stringify crash)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: (input) => ({
+            ok: true,
+            value: {
+              name: input,
+              address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+              provenance: { label: 7n as unknown as string, external: false },
+            },
+          }),
+        }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv16 = report.results.find((r) => r.invariant === 'INV-16' && r.status === 'FAIL');
+    expect(inv16?.message).toContain('not user-safe');
+    expect(inv16?.message).toContain('7n');
+  });
+
+  it('(circular) a self-referential result value → resolves, INV-12 FAIL (bounded, no infinite recursion)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: (input) => {
+            // Fresh circular object per call so the two determinism runs are distinct references
+            // that the bounded structural walk must still terminate on.
+            const value: Record<string, unknown> = {
+              name: input,
+              address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
+              provenance: { label: 'ENS', external: false },
+            };
+            value.self = value;
+            return { ok: true, value } as never;
+          },
+        }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv12 = report.results.find((r) => r.invariant === 'INV-12' && r.status === 'FAIL');
+    expect(inv12).toBeDefined();
+  });
+
+  it('(throwing getter) a hostile `.value` getter → resolves, INV-6 + INV-16 FAIL (read contained)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveAddress: () =>
+            ({
+              ok: true,
+              get value(): never {
+                throw new Error('boom-value-getter');
+              },
+            }) as never,
+        }),
+      reverseVectors: [{ input: '0xabc', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'INV-6')?.status).toBe('FAIL');
+    expect(findByInvariant(report, 'INV-16')?.status).toBe('FAIL');
+    expect(findByInvariant(report, 'INV-16')?.message).toContain('result value threw');
+    expect(findByInvariant(report, 'INV-12')?.status).toBe('SKIPPED');
+  });
+
+  it('(throwing getter) a hostile nested `forwardVerified` getter → resolves, INV-6 + INV-12 FAIL, INV-16 PASS', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveAddress: (input) => ({
+            ok: true,
+            value: {
+              address: input,
+              name: 'vitalik.eth',
+              provenance: { label: 'ENS', external: false },
+              get forwardVerified(): never {
+                throw new Error('boom-fv-getter');
+              },
+            } as never,
+          }),
+        }),
+      reverseVectors: [{ input: '0xabc', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv6 = report.results.find((r) => r.invariant === 'INV-6' && r.status === 'FAIL');
+    expect(inv6?.message).toContain('grading threw');
+    expect(findByInvariant(report, 'INV-16')?.status).toBe('PASS');
+    expect(findByInvariant(report, 'INV-12')?.status).toBe('FAIL');
+  });
+
+  it('(throwing getter) a hostile `.error` getter on an expected-failure vector → resolves, INV-8 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: () =>
+            ({
+              ok: false,
+              get error(): never {
+                throw new Error('boom-error-getter');
+              },
+            }) as never,
+        }),
+      forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv8 = report.results.find((r) => r.invariant === 'INV-8' && r.status === 'FAIL');
+    expect(inv8?.message).toContain('grading threw');
+  });
+
+  it('the whole poison-pill family RESOLVES (never rejects, never spins)', async () => {
+    const pills: Array<() => NameResolutionCapability> = [
+      () => makeStub({ resolveName: () => ({ ok: false, error: { code: 42n } }) as never }),
+      () =>
+        makeStub({
+          resolveName: (input) => {
+            const value: Record<string, unknown> = { name: input, address: '0x0' };
+            value.loop = value;
+            return { ok: true, value } as never;
+          },
+        }),
+      () =>
+        makeStub({
+          resolveName: () =>
+            ({
+              ok: true,
+              get value(): never {
+                throw new Error('nope');
+              },
+            }) as never,
+        }),
+    ];
+    for (const makeCapability of pills) {
+      await expect(
+        checkConformance({
+          makeCapability,
+          forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+        })
+      ).resolves.toMatchObject({ passed: false });
+    }
+  });
+});

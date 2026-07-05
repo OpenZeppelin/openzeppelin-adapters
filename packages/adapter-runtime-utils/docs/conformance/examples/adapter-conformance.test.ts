@@ -15,7 +15,7 @@
  * To adapt: delete the "reference substrate" block and point `makeCapability` at your real
  * factory over your pinned mock.
  */
-import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance';
+import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance/vitest';
 import type {
   NameResolutionCapability,
   NetworkConfig,

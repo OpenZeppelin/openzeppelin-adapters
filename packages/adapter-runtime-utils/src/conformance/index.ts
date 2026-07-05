@@ -6,15 +6,16 @@
  * families only an adapter can satisfy — INV-6 (concrete-boolean `forwardVerified`), INV-8
  * (expected failures never throw), INV-12 (deterministic under stable state), INV-16
  * (user-safe `provenance.label`) — plus an optional lifecycle family, returning per-invariant
- * verdicts as data. {@link describeConformance} is a thin vitest projection of that data.
+ * verdicts as data. The thin vitest projection of that data (`describeConformance`) lives on a
+ * SEPARATE subpath — `@openzeppelin/adapter-runtime-utils/conformance/vitest` — so this pure
+ * core never imports the runner and a consumer without `vitest` can import it safely.
  *
- * Zero concrete-adapter dependencies: this module imports only `@openzeppelin/ui-types` (and
- * `vitest` as an optional peer, used solely by the binding). The compliant EVM run lives in
- * `adapter-evm-core`'s own tests, avoiding a dependency cycle.
+ * Zero concrete-adapter and zero runner dependencies: this module imports only
+ * `@openzeppelin/ui-types`. The compliant EVM run lives in `adapter-evm-core`'s own tests,
+ * avoiding a dependency cycle.
  */
 
 export { checkConformance } from './checker';
-export { describeConformance } from './vitest-binding';
 export { DEFAULT_LABEL_POLICY, isUserSafeLabel } from './label-policy';
 export { normalizeResolutionResult, structuralEqual } from './deep-equal';
 export { NAME_RESOLUTION_ERROR_CODES } from './checks/never-throws';
