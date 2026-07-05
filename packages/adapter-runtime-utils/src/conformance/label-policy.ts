@@ -63,6 +63,11 @@ export function isUserSafeLabel(
   label: string,
   policy: LabelPolicy = DEFAULT_LABEL_POLICY
 ): { readonly safe: boolean; readonly reason?: string } {
+  // A non-string label (adapter shape violation) is rejected up front, before any `.length` /
+  // `.trim()` access that would otherwise throw on a number/array/undefined.
+  if (typeof label !== 'string') {
+    return { safe: false, reason: `non-string-label (${label === null ? 'null' : typeof label})` };
+  }
   if (label.length > policy.maxLength) {
     return { safe: false, reason: `over-length (>${policy.maxLength})` };
   }

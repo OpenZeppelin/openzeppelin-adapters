@@ -68,7 +68,17 @@ export function classifyExpectedFailure(
     };
   }
 
-  const observed: unknown = result.error.code;
+  const error: unknown = result.error;
+  if (typeof error !== 'object' || error === null) {
+    return {
+      status: 'FAIL',
+      message: `returned {ok:false} without a typed error object (got ${
+        error === null ? 'null' : typeof error
+      }) — cannot classify against the closed 7-code union`,
+    };
+  }
+
+  const observed: unknown = (error as { code?: unknown }).code;
   if (typeof observed !== 'string' || !NAME_RESOLUTION_ERROR_CODES.has(observed)) {
     return {
       status: 'FAIL',

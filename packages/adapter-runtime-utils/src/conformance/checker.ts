@@ -11,7 +11,9 @@ import {
 } from './checks/never-throws';
 
 import {
+  classifyResolutionResult,
   invoke,
+  isNonNullObject,
   makeKeyDeduper,
   safeConstruct,
   sanitizeSlug,
@@ -178,14 +180,32 @@ async function runVector(
       : failedForThrow(direction, vector, keys, `call threw/rejected — ${outcome1.description}`);
   }
 
-  const r1 = outcome1.result;
+  // --- Shape containment (INV-9): grade the RETURNED value through a runtime guard, never the
+  // adapter's compile-time type. A return that is not a discriminable `{ ok: true | false }`
+  // envelope is FAIL data, not a thrown TypeError from an unguarded dereference downstream.
+  const shape = classifyResolutionResult(outcome1.result);
+  if (shape.kind === 'malformed') {
+    return failedForMalformedResult(direction, vector, keys, shape.reason);
+  }
+  const r1 = shape.result;
   const out: RawResult[] = [];
 
   if (isSuccessVector) {
     if (r1.ok) {
-      // Realized success — the value checks apply.
+      // Realized success — the value checks apply, but only once the value payload is itself a
+      // dereferenceable object. A missing / non-object value is a FAIL, never a crash.
+      const value: unknown = r1.value;
+      if (!isNonNullObject(value)) {
+        const reason = 'ok:true result has no value object to inspect';
+        if (direction === 'reverse') {
+          out.push({ invariant: 'INV-6', key: keys.inv6, status: 'FAIL', message: reason });
+        }
+        out.push({ invariant: 'INV-16', key: keys.inv16, status: 'FAIL', message: reason });
+        out.push(skip('INV-12', keys.inv12, 'no value object to compare'));
+        return out;
+      }
       if (direction === 'reverse') {
-        const leaf = checkForwardVerified(r1.value as ResolvedName); // UIKit INV-6
+        const leaf = checkForwardVerified(value as unknown as ResolvedName); // UIKit INV-6
         out.push({
           invariant: 'INV-6',
           key: keys.inv6,
@@ -193,16 +213,17 @@ async function runVector(
           message: leaf.message,
         });
       }
-      const labelLeaf = checkLabel(r1.value.provenance, policy); // UIKit INV-16
+      const labelLeaf = checkLabel((value as unknown as ResolvedName).provenance, policy); // UIKit INV-16
       out.push({ invariant: 'INV-16', key: keys.inv16, ...labelLeaf });
       out.push(determinismResult(keys.inv12, r1, outcome2, includeAvatar));
     } else {
-      // INV-6 (vector-expectation fidelity): declared ok:true but returned {ok:false}.
+      // INV-6 (vector-expectation fidelity): declared ok:true but returned {ok:false}. The code
+      // hint is read defensively so a malformed error payload cannot turn this FAIL into a throw.
       out.push({
         invariant: 'EXPECT',
         key: keys.expect,
         status: 'FAIL',
-        message: `expected {ok:true}, but the call returned {ok:false} with code ${r1.error.code} (no throw) — an unexpected typed failure`,
+        message: `expected {ok:true}, but the call returned {ok:false} with code ${errorCodeHint(r1.error)} (no throw) — an unexpected typed failure`,
       });
       // Dependent value checks are not evaluable — SKIPPED, never silently passed.
       if (direction === 'reverse') {
@@ -212,7 +233,7 @@ async function runVector(
       out.push(skip('INV-12', keys.inv12, 'no value to inspect — see expectation FAIL'));
     }
   } else {
-    // Expected-failure vector: INV-8 decision table on the returned result.
+    // Expected-failure vector: INV-8 decision table on the returned result (guarded internally).
     const leaf = classifyExpectedFailure(vector.expect.code, r1);
     out.push({ invariant: 'INV-8', key: keys.inv8, ...leaf });
     // Determinism still applies to expected-failure vectors (INV-13).
@@ -239,7 +260,18 @@ function determinismResult(
           message: `second determinism call threw/rejected — ${outcome2.description}`,
         };
   }
-  const leaf = checkDeterminism(first, outcome2.result, includeAvatar);
+  // Shape-contain the second call too (INV-9): a malformed second result is an INV-12 FAIL, not
+  // a TypeError from `normalizeResolutionResult` dereferencing `result.ok` on a non-object.
+  const secondShape = classifyResolutionResult(outcome2.result);
+  if (secondShape.kind === 'malformed') {
+    return {
+      invariant: 'INV-12',
+      key,
+      status: 'FAIL',
+      message: `second determinism call returned a malformed result — ${secondShape.reason}`,
+    };
+  }
+  const leaf = checkDeterminism(first, secondShape.result, includeAvatar);
   return { invariant: 'INV-12', key, status: leaf.status, message: leaf.message };
 }
 
@@ -262,6 +294,46 @@ function failedForThrow(
   }
   out.push(skip('INV-12', keys.inv12, reason));
   return out;
+}
+
+/**
+ * A structurally-malformed first result — the adapter neither threw nor returned a
+ * discriminable `{ ok: true | false }` envelope. Recorded as an INV-8 FAIL (the never-throw
+ * contract implies a well-formed typed result), with dependent value/determinism checks
+ * SKIPPED — mirroring {@link failedForThrow} so the report shape stays uniform.
+ */
+function failedForMalformedResult(
+  direction: Direction,
+  vector: AnyVector,
+  keys: VectorKeys,
+  reason: string
+): RawResult[] {
+  const out: RawResult[] = [
+    {
+      invariant: 'INV-8',
+      key: keys.inv8,
+      status: 'FAIL',
+      message: `expected a well-formed {ok:true|false} ResolutionResult, but the call returned a malformed result — ${reason}`,
+    },
+  ];
+  const skipReason = 'not evaluable — result was malformed; see INV-8';
+  if (vector.expect.ok) {
+    if (direction === 'reverse') {
+      out.push(skip('INV-6', keys.inv6, skipReason));
+    }
+    out.push(skip('INV-16', keys.inv16, skipReason));
+  }
+  out.push(skip('INV-12', keys.inv12, skipReason));
+  return out;
+}
+
+/** A defensive `error.code` hint for a FAIL message — never throws on a malformed error payload. */
+function errorCodeHint(error: unknown): string {
+  if (!isNonNullObject(error)) {
+    return `<no error payload: ${error === null ? 'null' : typeof error}>`;
+  }
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' ? code : `<non-string code: ${typeof code}>`;
 }
 
 /** A caught `RuntimeDisposedError` on the first call — everything for this vector SKIPPED. */

@@ -390,3 +390,164 @@ describe('optional lifecycle family (INV-26)', () => {
     expect(findByInvariant(report, 'INV-26')).toBeUndefined();
   });
 });
+
+/**
+ * SC-004 robustness (INV-9): a malformed adapter RETURN (not a throw) is a non-compliance the
+ * harness must DETECT and record as FAIL data — never crash on. Every member of the
+ * malformed-return family must make `checkConformance` RESOLVE with `passed:false`, not reject
+ * with a TypeError from an unguarded dereference outside the containment wrapper.
+ */
+describe('malformed adapter returns are graded, never thrown (SC-004 / INV-9)', () => {
+  it('a non-object result (forgotten return) → resolves, INV-8 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveName: () => undefined as never }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv8 = report.results.find((r) => r.invariant === 'INV-8' && r.status === 'FAIL');
+    expect(inv8?.key).toBe('inv8_forward_vitalik_eth_neverThrows');
+    expect(inv8?.message).toContain('malformed');
+  });
+
+  it('a primitive (number) result → resolves, INV-8 FAIL (no throw)', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveName: () => 42 as never }),
+      forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'INV-8')?.status).toBe('FAIL');
+  });
+
+  it('a result whose `ok` is not a boolean → resolves, INV-8 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveName: () => ({ ok: 'yes' }) as never }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'INV-8')?.status).toBe('FAIL');
+  });
+
+  it('a success result with a missing `value.provenance` → resolves, INV-16 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: (input) => {
+            const r = compliantForward(input);
+            return r.ok ? { ok: true, value: { ...r.value, provenance: undefined as never } } : r;
+          },
+        }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv16 = report.results.find((r) => r.invariant === 'INV-16' && r.status === 'FAIL');
+    expect(inv16?.key).toContain('labelUserSafe');
+    expect(inv16?.message).toContain('provenance');
+  });
+
+  it('a success result with a missing `value` object → resolves, INV-16 + INV-6 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveAddress: () => ({ ok: true }) as never }),
+      reverseVectors: [{ input: '0xabc', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'INV-16')?.status).toBe('FAIL');
+    expect(findByInvariant(report, 'INV-6')?.status).toBe('FAIL');
+    expect(findByInvariant(report, 'INV-12')?.status).toBe('SKIPPED');
+  });
+
+  it('a non-string `provenance.label` → resolves, INV-16 FAIL (no `.trim` crash)', async () => {
+    const report = await checkConformance({
+      makeCapability: () =>
+        makeStub({
+          resolveName: (input) => {
+            const r = compliantForward(input);
+            return r.ok
+              ? {
+                  ok: true,
+                  value: { ...r.value, provenance: { label: 123 as never, external: false } },
+                }
+              : r;
+          },
+        }),
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv16 = report.results.find((r) => r.invariant === 'INV-16' && r.status === 'FAIL');
+    expect(inv16?.message).toContain('not user-safe');
+    expect(inv16?.message).toContain('non-string-label');
+  });
+
+  it('an {ok:false} with no `error` on an EXPECTED-FAILURE vector → resolves, INV-8 FAIL', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveName: () => ({ ok: false }) as never }),
+      forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv8 = report.results.find((r) => r.invariant === 'INV-8' && r.status === 'FAIL');
+    expect(inv8?.message).toContain('without a typed error object');
+  });
+
+  it('an {ok:false} with no `error` on a SUCCESS vector → resolves, EXPECT FAIL (no code deref)', async () => {
+    const report = await checkConformance({
+      makeCapability: () => makeStub({ resolveAddress: () => ({ ok: false }) as never }),
+      reverseVectors: [{ input: '0xabc', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'EXPECT')?.status).toBe('FAIL');
+    expect(findByInvariant(report, 'EXPECT')?.message).toContain('no error payload');
+  });
+
+  it('a `makeCapability` that returns null → resolves, INV-8 FAIL (no null deref)', async () => {
+    const report = await checkConformance({
+      makeCapability: () => null as unknown as NameResolutionCapability,
+      forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+    });
+    expect(report.passed).toBe(false);
+    const inv8 = report.results.find((r) => r.invariant === 'INV-8' && r.status === 'FAIL');
+    expect(inv8?.message).toContain('non-capability');
+  });
+
+  it('a well-formed first call but a malformed SECOND (determinism) call → INV-12 FAIL, INV-16 PASS', async () => {
+    const report = await checkConformance({
+      makeCapability: () => {
+        let n = 0;
+        return makeStub({
+          resolveName: (input) => {
+            n += 1;
+            return n >= 2 ? (undefined as never) : compliantForward(input);
+          },
+        });
+      },
+      forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+    });
+    expect(report.passed).toBe(false);
+    expect(findByInvariant(report, 'INV-16')?.status).toBe('PASS');
+    const inv12 = report.results.find((r) => r.invariant === 'INV-12' && r.status === 'FAIL');
+    expect(inv12?.message).toContain('malformed');
+  });
+
+  it('the whole family RESOLVES (never rejects) — checkConformance is total', async () => {
+    const malformed: Array<() => NameResolutionCapability> = [
+      () => makeStub({ resolveName: () => undefined as never }),
+      () => makeStub({ resolveName: () => null as never }),
+      () => makeStub({ resolveName: () => 'oops' as never }),
+      () => makeStub({ resolveName: () => ({ ok: false }) as never }),
+      () => makeStub({ resolveName: () => ({ ok: true }) as never }),
+    ];
+    for (const makeCapability of malformed) {
+      await expect(
+        checkConformance({
+          makeCapability,
+          forwardVectors: [{ input: 'vitalik.eth', expect: { ok: true } }],
+        })
+      ).resolves.toMatchObject({ passed: false });
+    }
+    // …and a null-returning factory too.
+    await expect(
+      checkConformance({
+        makeCapability: () => null as unknown as NameResolutionCapability,
+        forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
+      })
+    ).resolves.toMatchObject({ passed: false });
+  });
+});

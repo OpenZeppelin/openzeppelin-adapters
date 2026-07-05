@@ -19,9 +19,13 @@ export interface CheckOutcome {
  * Runner-free — imports only `@openzeppelin/ui-types`.
  */
 
-/** Outcome of a single contained capability invocation. */
+/**
+ * Outcome of a single contained capability invocation. A non-throwing call yields `result`
+ * as `unknown` — the adapter's compile-time signature is DELIBERATELY not trusted at runtime,
+ * so every grader must narrow through {@link classifyResolutionResult} before dereferencing.
+ */
 export type InvokeOutcome =
-  | { readonly threw: false; readonly result: AnyResolutionResult }
+  | { readonly threw: false; readonly result: unknown }
   | { readonly threw: true; readonly disposed: boolean; readonly description: string };
 
 /**
@@ -63,11 +67,47 @@ export function describeError(err: unknown): string {
  */
 export async function invoke(fn: () => unknown): Promise<InvokeOutcome> {
   try {
-    const result = (await fn()) as AnyResolutionResult;
+    // Held as `unknown`, NOT cast to `AnyResolutionResult`: a malformed return must be graded
+    // as FAIL data by the caller (via `classifyResolutionResult`), never trusted from its type.
+    const result = await fn();
     return { threw: false, result };
   } catch (err) {
     return { threw: true, disposed: isRuntimeDisposedError(err), description: describeError(err) };
   }
+}
+
+/** True iff `v` is a non-null, non-array object — safe to dereference own properties on. */
+export function isNonNullObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/**
+ * The runtime shape of a RETURNED (non-thrown) capability result, discriminated at the
+ * containment boundary. `ok` / `err` carry the envelope-validated result (a non-null object
+ * with a boolean `ok`); `malformed` carries a human-readable reason for a return that cannot
+ * even be discriminated as `{ ok: true | false }`. Inner payload shape (`value`, `error`,
+ * `provenance`, `label`, `code`) is guarded by the individual graders, so that a specific
+ * defect maps to a specific invariant's FAIL rather than a blanket verdict.
+ */
+export type ResultShape =
+  | { readonly kind: 'ok' | 'err'; readonly result: AnyResolutionResult }
+  | { readonly kind: 'malformed'; readonly reason: string };
+
+/**
+ * INV-9 shape guard for a returned result. The adapter contract is `{ ok: boolean, … }`; a
+ * return that is not a non-null object, or whose `ok` is not a boolean, cannot be graded and
+ * is reported as `malformed` for the caller to record as FAIL data — never dereferenced blind.
+ */
+export function classifyResolutionResult(value: unknown): ResultShape {
+  if (!isNonNullObject(value)) {
+    const got = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+    return { kind: 'malformed', reason: `result is not an object (got ${got})` };
+  }
+  const ok = (value as { ok?: unknown }).ok;
+  if (typeof ok !== 'boolean') {
+    return { kind: 'malformed', reason: `result.ok is not a boolean (got ${typeof ok})` };
+  }
+  return { kind: ok ? 'ok' : 'err', result: value as AnyResolutionResult };
 }
 
 /** Outcome of constructing a fresh capability instance (INV-9 containment for `makeCapability`). */
@@ -77,14 +117,27 @@ export type ConstructOutcome<T> =
 
 /**
  * INV-9: contain `makeCapability()`. Construction is synchronous on the interface, but a
- * fixture bug could still throw — that becomes classifiable data, never a harness crash.
+ * fixture bug could still throw OR return a non-capability value (`null`, a primitive, …).
+ * Both become classifiable data (a `threw: true` outcome the caller records as FAIL), never a
+ * harness crash on a later `instance.resolveName` dereference.
  */
 export function safeConstruct<T>(make: () => T): ConstructOutcome<T> {
+  let instance: T;
   try {
-    return { threw: false, instance: make() };
+    instance = make();
   } catch (err) {
     return { threw: true, disposed: isRuntimeDisposedError(err), description: describeError(err) };
   }
+  if (!isNonNullObject(instance)) {
+    return {
+      threw: true,
+      disposed: false,
+      description: `makeCapability returned a non-capability value (${
+        instance === null ? 'null' : typeof instance
+      }) rather than throwing`,
+    };
+  }
+  return { threw: false, instance };
 }
 
 /**

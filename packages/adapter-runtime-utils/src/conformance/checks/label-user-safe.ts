@@ -12,6 +12,14 @@ import type { LabelPolicy } from '../types';
  * Thin delegation to {@link isUserSafeLabel} keeps the policy engine the single source of truth.
  */
 export function checkLabel(provenance: ResolutionProvenance, policy: LabelPolicy): CheckOutcome {
+  if (typeof provenance !== 'object' || provenance === null) {
+    return {
+      status: 'FAIL',
+      message: `provenance is missing or not an object (got ${
+        provenance === null ? 'null' : typeof provenance
+      }) — no user-safe label to inspect`,
+    };
+  }
   const label = provenance.label;
   const verdict = isUserSafeLabel(label, policy);
   if (verdict.safe) {
