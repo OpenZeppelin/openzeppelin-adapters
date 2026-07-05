@@ -133,18 +133,38 @@ const CHAIN_UNSUPPORTED_ERROR_NAMES: ReadonlySet<string> = new Set(['ChainDoesNo
 /**
  * Credential-substring redaction patterns (INV-16), URL-scoped per the Invariants-stage default.
  * Applied to every free-text field derived from a raw native message (`ADAPTER_ERROR.message`,
- * `EXTERNAL_GATEWAY_ERROR.detail`) — viem/RPC errors routinely embed a provider URL carrying an
- * Alchemy/Infura-style key. The full, unredacted original is retained ONLY on `ADAPTER_ERROR.cause`
- * (opaque, INV-17), never on a renderable string.
+ * `EXTERNAL_GATEWAY_ERROR.detail`) — viem/RPC errors routinely embed a provider URL carrying a key.
+ * The full, unredacted original is retained ONLY on `ADAPTER_ERROR.cause` (opaque, INV-17), never
+ * on a renderable string.
+ *
+ * The set below closes SF-1 Open Question 1 (URL-scoped redaction widened, SEC-REVIEW H1): beyond
+ * the Alchemy/Infura `/vN/<key>` and userinfo/query shapes, provider keys also ship as a **bare
+ * high-entropy trailing path segment** (Ankr `rpc.ankr.com/eth/<key>`, QuickNode `<host>/<key>`)
+ * and under provider-specific query params (`?dkey=` for dRPC, etc.). Both leak un-redacted onto
+ * `EXTERNAL_GATEWAY_ERROR.detail` / `ADAPTER_ERROR.message` under the old patterns, so they are
+ * covered here. Redaction is deliberately biased toward over-scrubbing a rendered string (the
+ * full value is always recoverable on `cause`); the high-entropy floor (≥32 base62url chars, incl.
+ * `-`/`_` — Finding 5) and the host anchor keep it from touching legitimate short or hyphenated
+ * path segments.
  */
 const REDACTION_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
   // scheme://user:pass@host  →  scheme://<redacted>@host  (URL userinfo)
   [/([a-z][a-z0-9+.-]*:\/\/)[^/\s:@]+:[^/\s@]+@/gi, '$1<redacted>@'],
-  // /v2/<key> , /v3/<key> …  →  /v2/<redacted>  (provider API key as a path segment; 16+ chars
-  // so legitimate short path segments are not scrubbed)
+  // /v2/<key> , /v3/<key> …  →  /v2/<redacted>  (provider API key as a versioned path segment; 16+
+  // chars so legitimate short path segments are not scrubbed — Alchemy /v2, Infura /v3)
   [/(\/v\d+\/)[A-Za-z0-9_-]{16,}/g, '$1<redacted>'],
-  // ?apiKey=… &key=… ?access_token=… &token=…  →  =<redacted>  (key-bearing query params)
-  [/([?&](?:api[-_]?key|key|access[-_]?token|token)=)[^&\s]+/gi, '$1<redacted>'],
+  // …/eth/<KEY> , …/<KEY>/  →  …/<redacted>  (provider API key as a bare high-entropy trailing path
+  // segment after a host — Ankr `rpc.ankr.com/eth/<key>`, QuickNode `<host>/<key>`). The class
+  // includes `-`/`_` so a base64url or hyphenated key is caught (Finding 5); the floor is raised to
+  // ≥32 chars — with `-`/`_` now in the class an ordinary hyphenated slug would otherwise match, and
+  // a 32-char floor keeps the no-legit-segment bias while still covering real provider keys (which
+  // are ≥32). The host anchor further scopes it to URL path segments.
+  [/(\/\/[^/\s]+\/(?:[^/\s]+\/)*)[A-Za-z0-9_-]{32,}/g, '$1<redacted>'],
+  // ?apiKey=… &key=… ?access_token=… ?dkey=… &secret=… …  →  =<redacted>  (key-bearing query params)
+  [
+    /([?&](?:api[-_]?key|apikey|key|dkey|access[-_]?token|token|auth|secret|client[-_]?secret|password|passwd|pass|pk)=)[^&\s]+/gi,
+    '$1<redacted>',
+  ],
 ];
 
 // ---------------------------------------------------------------------------

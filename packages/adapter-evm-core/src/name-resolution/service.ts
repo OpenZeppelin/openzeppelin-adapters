@@ -93,7 +93,13 @@ function deriveObservingClient(client: PublicClient, onOffchain: () => void): Pu
   if (typeof client.request === 'function' && client.chain) {
     return createPublicClient({
       chain: client.chain,
-      transport: custom(client),
+      // `retryCount: 0` makes the borrowed client the SOLE retry owner (D-A / SF-5 INV-23): viem's
+      // `custom(provider)` adds its own retry layer (default `retryCount: 3`) around the borrowed
+      // `client.request`, which already retries — double-retrying every retryable RPC/gateway error
+      // (up to 3×N hops), inflating the `performance.now` elapsedMs behind RESOLUTION_TIMEOUT and
+      // overriding the inherited runtime retry/timeout policy. `retryDelay: 0` drops this layer's
+      // backoff too, so no delay is imposed on top of the borrowed transport's own policy.
+      transport: custom(client, { retryCount: 0, retryDelay: 0 }),
       ccipRead,
     }) as unknown as PublicClient;
   }
@@ -370,6 +376,15 @@ export class EvmNameResolutionService {
           // Gateway / offchain / timeout / transport / unclassifiable (incl. non-Error throws) → SF-1's
           // total, codomain-closed mapper. `viaGateway: false` on the base v1 path; the genuinely-gateway
           // reverts classify unconditionally, SF-5 owns the explicit CCIP-Read `viaGateway: true` context.
+          //
+          // KNOWN LIMITATION (Finding 4, deliberate): the reverse path does NOT observe offchain
+          // traversal — offchain observation is forward-only by design (SF-5 D-V5; `resolveVia` alone
+          // wraps `ccipRead`), so `viaGateway` is unconditionally `false` here. Consequence: an ENSIP-19
+          // L2-primary reverse resolution that fails with a gateway *timeout* mis-buckets as
+          // RESOLUTION_TIMEOUT instead of EXTERNAL_GATEWAY_ERROR. OffchainLookup-*shaped* reverse
+          // failures are unaffected — they classify correctly via SF-1 mapper Row 3 regardless of
+          // `viaGateway`; only the timeout-shaped gateway failure loses the gateway precedence (INV-10).
+          // Accepted SF-5 scope; see SF-5 06-docs.md § Known Limitations.
           return {
             ok: false,
             error: mapNameResolutionError(error, {

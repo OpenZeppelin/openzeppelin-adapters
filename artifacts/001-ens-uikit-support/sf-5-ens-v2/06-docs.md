@@ -151,6 +151,20 @@ false; `label` is two-valued and chosen from the observed `external`; the revers
 - **UIKit-side v2 UX** (SF-6 hooks/consumers) — a different repo/initiative; these docs stop at the
   adapter's exported surface.
 
+## Known Limitations
+
+- **Reverse-path gateway timeout mis-buckets (Finding 4, deliberate).** Offchain traversal is
+  observed on the **forward path only** by design (D-V5: only `resolveVia` wraps `ccipRead` to flip
+  `sawOffchain`). `resolveAddress` therefore passes `viaGateway: false` unconditionally to the SF-1
+  mapper. Consequence: an ENSIP-19 **L2-primary reverse** resolution that fails with a gateway
+  **timeout** is classified `RESOLUTION_TIMEOUT` rather than `EXTERNAL_GATEWAY_ERROR` — the
+  gateway-precedence rule (SF-1 INV-10) can't fire without an observed gateway hop.
+  `OffchainLookup`-*shaped* reverse failures are **unaffected**: they map to `EXTERNAL_GATEWAY_ERROR`
+  via SF-1 mapper Row 3 regardless of `viaGateway`; only the timeout-shaped gateway failure loses the
+  distinction. This is accepted SF-5 scope (forward-only observation), not a defect — reverse offchain
+  observation would require threading a per-call observing client through `resolveAddress`, deferred
+  as out of scope. The code comment at the `resolveAddress` catch site records the same.
+
 ## Dev Notes
 
 - **Docs boundary honored.** No source, tests, invariants, design, or specify *content* was

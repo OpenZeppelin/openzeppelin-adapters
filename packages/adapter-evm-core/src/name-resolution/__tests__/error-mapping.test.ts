@@ -61,6 +61,23 @@ const SEVEN_CODE_SET: ReadonlySet<string> = new Set(SEVEN_CODES);
 const ALCHEMY_KEY = 'SECRETKEY0123456789abcdefABCDEF1'; // 32 chars — exceeds the /vN/ 16-char redaction floor
 const keyedUrl = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`;
 
+// SEC-REVIEW H1 / Open Question 1: provider keys that ship OUTSIDE the /vN/ + userinfo + apiKey
+// shapes — a bare high-entropy trailing path segment (Ankr, QuickNode) or a provider-specific
+// query param (dRPC `dkey`). Each is 32 base62 chars, above the 24-char trailing-segment floor.
+const ANKR_KEY = 'ankr1234567890ABCDEFabcdef7890XY';
+const QUICKNODE_KEY = 'qnKEY0123456789abcdefABCDEF01234';
+const DKEY = 'drpcDKEY0123456789abcdefABCDEF12';
+const ankrUrl = `https://rpc.ankr.com/eth/${ANKR_KEY}`;
+const quicknodeUrl = `https://cool-frosty-sky.quiknode.pro/${QUICKNODE_KEY}`;
+const dkeyUrl = `https://lb.drpc.org/ogrpc?network=ethereum&dkey=${DKEY}`;
+
+// Finding 5: a base64url / hyphen-and-underscore-bearing key shipped as a bare trailing path segment.
+// 42 chars — above the 32-char trailing-segment floor — with both `-` and `_`.
+const B64URL_KEY = 'ab-CD_'.repeat(7);
+const b64urlKeyUrl = `https://rpc.provider.example/${B64URL_KEY}`;
+// A legitimate, human-readable hyphenated path segment BELOW the floor — must stay un-redacted.
+const LEGIT_SLUG = 'user-account-settings-page'; // 26 chars < 32-char floor
+
 function makeHttpError(url = keyedUrl): HttpRequestError {
   return new HttpRequestError({ url, status: 500, details: 'gateway down' });
 }
@@ -645,6 +662,73 @@ describe('INV-16 · credential redaction in consumer-renderable free-text fields
   it('defensively redacts UNSUPPORTED_NAME.reason', () => {
     const r = unsupportedName('x.eth', `rejected by https://gw.example.com/v2/${ALCHEMY_KEY}`);
     expect(r.reason).not.toContain(ALCHEMY_KEY);
+  });
+
+  // SEC-REVIEW H1 / Open Question 1 — key shapes beyond /vN/ + userinfo + apiKey.
+  it('strips an Ankr-style bare trailing path-segment key from EXTERNAL_GATEWAY_ERROR.detail', () => {
+    const r = mapNameResolutionError(makeHttpError(ankrUrl), { viaGateway: true });
+    expect(r.code).toBe('EXTERNAL_GATEWAY_ERROR');
+    if (r.code === 'EXTERNAL_GATEWAY_ERROR') {
+      expect(r.detail).not.toContain(ANKR_KEY);
+      expect(r.detail).toContain('<redacted>');
+    }
+  });
+
+  it('strips a QuickNode-style bare trailing path-segment key from ADAPTER_ERROR.message', () => {
+    const err = makeHttpError(quicknodeUrl); // no gateway ctx → ADAPTER_ERROR
+    const r = mapNameResolutionError(err);
+    expect(r.code).toBe('ADAPTER_ERROR');
+    if (r.code === 'ADAPTER_ERROR') {
+      expect(r.message).not.toContain(QUICKNODE_KEY);
+      expect(r.message).toContain('<redacted>');
+    }
+  });
+
+  it('strips a ?dkey= provider query-param key from ADAPTER_ERROR.message', () => {
+    const err = makeHttpError(dkeyUrl);
+    const r = mapNameResolutionError(err);
+    expect(r.code).toBe('ADAPTER_ERROR');
+    if (r.code === 'ADAPTER_ERROR') {
+      expect(r.message).not.toContain(DKEY);
+      expect(r.message).toContain('<redacted>');
+    }
+  });
+
+  // Finding 5 — char-class parity for the bare-trailing-key pattern.
+  it('strips a base64url (hyphen/underscore) bare trailing-segment key from ADAPTER_ERROR.message', () => {
+    const r = mapNameResolutionError(makeHttpError(b64urlKeyUrl));
+    expect(r.code).toBe('ADAPTER_ERROR');
+    if (r.code === 'ADAPTER_ERROR') {
+      expect(r.message).not.toContain(B64URL_KEY);
+      expect(r.message).toContain('<redacted>');
+      // cause remains the sole unredacted channel (INV-17).
+      expect(String((r.cause as Error).message)).toContain(B64URL_KEY);
+    }
+  });
+
+  it('does NOT redact a legitimate hyphenated path segment shorter than the trailing-key floor', () => {
+    const r = mapNameResolutionError(makeHttpError(`https://docs.example.com/${LEGIT_SLUG}`));
+    expect(r.code).toBe('ADAPTER_ERROR');
+    if (r.code === 'ADAPTER_ERROR') {
+      expect(r.message).toContain(LEGIT_SLUG);
+      expect(r.message).not.toContain('<redacted>');
+    }
+  });
+
+  it('keeps the un-redacted key recoverable on `cause` for the widened URL shapes (INV-17)', () => {
+    for (const [url, key] of [
+      [ankrUrl, ANKR_KEY],
+      [quicknodeUrl, QUICKNODE_KEY],
+      [dkeyUrl, DKEY],
+    ] as const) {
+      const r = mapNameResolutionError(makeHttpError(url));
+      expect(r.code).toBe('ADAPTER_ERROR');
+      if (r.code === 'ADAPTER_ERROR') {
+        expect(r.message).not.toContain(key);
+        // The sole unredacted channel: the opaque cause retains the original by reference.
+        expect(String((r.cause as Error).message)).toContain(key);
+      }
+    }
   });
 });
 

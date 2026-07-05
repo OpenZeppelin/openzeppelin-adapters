@@ -26,6 +26,8 @@
  * an unsupported network returns `UNSUPPORTED_NETWORK` (SF-2 parity, zero-regression). INV-22's tests
  * assert THIS delivered behavior, not the invariants doc's shape-first wording (a known reword).
  */
+import { createPublicClient, custom, HttpRequestError } from 'viem';
+import { mainnet } from 'viem/chains';
 import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { RuntimeDisposedError } from '@openzeppelin/ui-types';
@@ -566,6 +568,63 @@ describe('resolveName — bounded work + caller-measured elapsedMs (INV-23)', ()
     expect(error.elapsedMs).not.toBe(ELAPSED_UNMEASURED);
     expect(Number.isFinite(error.elapsedMs)).toBe(true);
     expect(error.elapsedMs).toBeGreaterThanOrEqual(0);
+  });
+
+  // CODE-REV2: the per-call observing client (`custom(borrowed)`) must NOT add its own retry layer on
+  // top of the borrowed transport's — viem's `custom(provider)` defaults to `retryCount: 3`, so an
+  // un-tuned wrapper would retry every retryable RPC/gateway error 3× on top of the borrowed client's
+  // own retries (up to 3×N hops), inflating the `performance.now` elapsedMs behind RESOLUTION_TIMEOUT
+  // and overriding the runtime retry/timeout policy D-A / INV-23 promise to inherit. The wrapper passes
+  // `retryCount: 0`, leaving the borrowed transport the SOLE retry owner. Exercised over a REAL viem
+  // client (a counting `custom` transport) so the `custom(client)` construction branch is actually hit.
+  it('the observing client adds no second retry layer — the borrowed transport stays the sole retry owner', async () => {
+    const retryable = () =>
+      new HttpRequestError({ url: 'https://rpc.example.com', status: 500, details: 'retry me' });
+
+    // Baseline: raw transport requests the borrowed client issues for ONE getEnsAddress, under its own
+    // retry budget only (retryCount: 0 → exactly one attempt per logical request), with no wrapper.
+    let baselineCalls = 0;
+    const baselineClient = createPublicClient({
+      chain: mainnet,
+      transport: custom(
+        {
+          request: async () => {
+            baselineCalls++;
+            throw retryable();
+          },
+        },
+        { retryCount: 0, retryDelay: 0 }
+      ),
+    });
+    await baselineClient
+      .getEnsAddress({ name: 'vitalik.eth', coinType: ETH_COIN_TYPE_BIGINT, strict: true })
+      .catch(() => undefined);
+
+    // Through the service: getEnsAddress runs on the per-call observing client built over
+    // `custom(borrowed)`. Same borrowed retry budget (retryCount: 0), so a correctly-tuned wrapper
+    // issues exactly as many raw requests as the baseline.
+    let observedCalls = 0;
+    const borrowed = createPublicClient({
+      chain: mainnet,
+      transport: custom(
+        {
+          request: async () => {
+            observedCalls++;
+            throw retryable();
+          },
+        },
+        { retryCount: 0, retryDelay: 0 }
+      ),
+    });
+    const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, borrowed);
+    const result = await service.resolveName('vitalik.eth');
+
+    // A retryable transport failure is a mapped error, never a throw (INV-11).
+    expect(result.ok).toBe(false);
+    expect(baselineCalls).toBeGreaterThan(0);
+    // The observing layer multiplies nothing. A `custom(client)` left at viem's default retryCount
+    // (the bug) would retry each logical request 3 extra times → observedCalls === baselineCalls * 4.
+    expect(observedCalls).toBe(baselineCalls);
   });
 });
 
