@@ -36,6 +36,7 @@ import {
   createUiLabels,
   createWallet,
 } from '../capabilities';
+import { ethereumMainnet } from '../networks';
 
 function toTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkConfig {
   if (config.ecosystem !== 'evm') {
@@ -58,15 +59,22 @@ function ensClient(config: TypedEvmNetworkConfig) {
 }
 
 /**
- * RPC endpoint for the dedicated **mainnet** ENS L1 client (SF-5, Design Open Q4). Precedence: when
- * the bound network *is* Ethereum mainnet, reuse its configured endpoint (so a user's keyed mainnet
- * RPC is honored); otherwise fall back to viem's built-in default mainnet public transport — a
- * documented rate-limit caveat, acceptable because this endpoint is used ONLY for the L2-bound
- * cross-chain path and carries no secret of its own (INV-24). The returned URL is never threaded into
- * provenance or errors (INV-24).
+ * RPC endpoint for the dedicated **mainnet** ENS L1 client (SF-5, Design Open Q4).
+ *
+ * Precedence mirrors {@link resolveRpcUrl} — user config → app-config override → default — but keyed
+ * on the ETHEREUM MAINNET network, never the bound L2: reusing the bound config would resolve the
+ * L2's OWN RPC endpoint, the wrong chain for the L1 cross-chain path. When the bound network already
+ * *is* Ethereum mainnet, its exact configured endpoint is honored directly; otherwise resolution runs
+ * against the canonical {@link ethereumMainnet} record, whose `rpcUrl` is viem's public default and
+ * thus the last-resort fallback — so an operator can point the L1 client at a keyed mainnet RPC via
+ * the same override mechanism instead of being pinned to the rate-limited public transport. No secret
+ * is hardcoded (Principle II), and the resolved URL is never threaded into provenance or errors (INV-24).
  */
-function resolveMainnetRpcUrl(config: TypedEvmNetworkConfig): string {
-  return config.chainId === mainnet.id ? resolveRpcUrl(config) : mainnet.rpcUrls.default.http[0];
+// Exported for unit-testing the mainnet-keyed override precedence. NOT part of the package's public
+// surface: `profiles/index.ts` re-exports only `createRuntime` / `capabilityFactories`, so this
+// helper stays module-internal and is reachable only via the deep `../profiles/shared` path.
+export function resolveMainnetRpcUrl(config: TypedEvmNetworkConfig): string {
+  return config.chainId === mainnet.id ? resolveRpcUrl(config) : resolveRpcUrl(ethereumMainnet);
 }
 
 /**
