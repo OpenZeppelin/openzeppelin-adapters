@@ -7,3 +7,5 @@ Add a parameterized adapter conformance harness under the new `./conformance` su
 Hardening: the harness now grades inside `invoke()` containment with runtime shape guards, so a malformed adapter return yields a FAIL verdict instead of throwing (SC-004).
 
 Hardening: value-grading/normalization run under `safeGrade` so any throw (bigint field, circular ref, throwing getter) becomes a descriptive FAIL (SC-004 totality; deep-equal is bigint-safe with a cycle/depth guard), and the `vitest` binding moved to the `./conformance/vitest` subpath so the pure `checkConformance` core imports no runner.
+
+Fix: the composed runtime now exposes `nameResolution` when the adapter provides the factory (gated on factory presence), so ENS-capable adapters surface it on every profile.

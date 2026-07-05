@@ -192,3 +192,53 @@ describe('profile-runtime utilities', () => {
     expect(uiKitDispose).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * Cross-repo regression (live ENS end-to-end): `nameResolution` is an OPTIONAL capability gated on
+ * FACTORY PRESENCE, not on PROFILE_REQUIREMENTS. When an adapter provides the factory it must be
+ * exposed on the assembled runtime (the UIKit react engine reads `activeRuntime.nameResolution`);
+ * when it does not, `runtime.nameResolution` is undefined and assembly must NOT throw.
+ */
+describe('optional nameResolution capability (factory-presence gated)', () => {
+  function makeNameResolution() {
+    const built = asCapability<'nameResolution'>({
+      isValidName: () => true,
+      networkConfig: mockNetworkConfig,
+      resolveName: vi
+        .fn()
+        .mockResolvedValue({ ok: false, error: { code: 'NAME_NOT_FOUND', name: 'x' } }),
+      resolveAddress: vi
+        .fn()
+        .mockResolvedValue({ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address: 'x' } }),
+      dispose: vi.fn(),
+    });
+    return { built, factory: vi.fn(() => built) };
+  }
+
+  it.each(['composer', 'viewer', 'transactor'] as const)(
+    'exposes the built nameResolution capability on the %s profile when the factory is present',
+    (profile) => {
+      const { built, factory } = makeNameResolution();
+      const { factories } = createFactories({ nameResolution: factory });
+
+      const runtime = createRuntimeFromFactories(profile, mockNetworkConfig, factories);
+
+      expect(runtime.nameResolution).toBeDefined();
+      expect(runtime.nameResolution).toBe(built);
+      // nameResolution is NOT a profile requirement — exposing it never widens the requirement set.
+      expect(PROFILE_REQUIREMENTS[profile]).not.toContain('nameResolution');
+    }
+  );
+
+  it('leaves nameResolution undefined and does not throw when the factory is absent', () => {
+    const { factories } = createFactories(); // base map ships no nameResolution factory
+    expect(factories.nameResolution).toBeUndefined();
+
+    let runtime: ReturnType<typeof createRuntimeFromFactories> | undefined;
+    expect(() => {
+      runtime = createRuntimeFromFactories('composer', mockNetworkConfig, factories);
+    }).not.toThrow();
+
+    expect(runtime?.nameResolution).toBeUndefined();
+  });
+});
