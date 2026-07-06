@@ -1,4 +1,3 @@
-import { mainnet } from 'viem/chains';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { appConfigService, userNetworkServiceConfigService } from '@openzeppelin/ui-utils';
@@ -9,11 +8,14 @@ import { resolveMainnetRpcUrl } from '../profiles/shared';
 /**
  * F2 (Principle II) — the dedicated mainnet ENS L1 client must resolve its RPC endpoint through the
  * SAME user → app-config-override → default precedence the package uses for every other RPC, keyed on
- * the ETHEREUM MAINNET network (never the bound L2), with viem's public default only as last resort.
- * No secret is hardcoded, and a configured L1 override is honored on the L2-bound cross-chain path.
+ * the ETHEREUM MAINNET network (never the bound L2), with the canonical mainnet record's keyless,
+ * CORS-friendly default only as last resort. No secret is hardcoded, and a configured L1 override is
+ * honored on the L2-bound cross-chain path.
  */
 describe('resolveMainnetRpcUrl — mainnet-keyed override precedence (F2)', () => {
-  const VIEM_PUBLIC_DEFAULT = mainnet.rpcUrls.default.http[0];
+  // Last-resort default = the canonical mainnet record's own rpcUrl (a keyless, CORS-friendly public
+  // endpoint), derived from the record so this stays correct if the default RPC is ever changed.
+  const MAINNET_DEFAULT_RPC = ethereumMainnet.rpcUrl;
   const KEYED_MAINNET_RPC = 'https://eth-mainnet.example/v2/SECRET_KEY';
   const APP_OVERRIDE_RPC = 'https://mainnet-override.example/rpc';
 
@@ -43,8 +45,8 @@ describe('resolveMainnetRpcUrl — mainnet-keyed override precedence (F2)', () =
     expect(resolveMainnetRpcUrl(baseMainnet)).toBe(APP_OVERRIDE_RPC);
   });
 
-  it('falls back to viem public default when neither user nor override is configured', () => {
-    expect(resolveMainnetRpcUrl(baseMainnet)).toBe(VIEM_PUBLIC_DEFAULT);
+  it('falls back to the canonical mainnet default when neither user nor override is configured', () => {
+    expect(resolveMainnetRpcUrl(baseMainnet)).toBe(MAINNET_DEFAULT_RPC);
   });
 
   it('keys the override on mainnet, NOT the bound L2 — an L2 override is ignored', () => {
@@ -56,7 +58,7 @@ describe('resolveMainnetRpcUrl — mainnet-keyed override precedence (F2)', () =
         : null
     );
 
-    expect(resolveMainnetRpcUrl(baseMainnet)).toBe(VIEM_PUBLIC_DEFAULT);
+    expect(resolveMainnetRpcUrl(baseMainnet)).toBe(MAINNET_DEFAULT_RPC);
   });
 
   it('when the bound network IS mainnet, honors its own configured endpoint directly', () => {

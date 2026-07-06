@@ -35,7 +35,12 @@ export const ethereumMainnet: TypedEvmNetworkConfig = {
   type: 'mainnet',
   isTestnet: false,
   chainId: 1,
-  rpcUrl: viemMainnet.rpcUrls.default.http[0],
+  // Keyless, CORS-friendly public endpoint (verified: eth_chainId → 0x1, and a browser preflight
+  // returns `access-control-allow-origin: *` with POST allowed). viem's default mainnet transport
+  // is not a dependable browser default, so we pin an explicit one here. This same value is the
+  // last-resort fallback for the ENS v2 L1 path (see `resolveMainnetRpcUrl` in profiles/shared.ts),
+  // so browser mainnet resolution and cross-chain ENS both get a CORS-safe default.
+  rpcUrl: 'https://ethereum-rpc.publicnode.com',
   explorerUrl: 'https://etherscan.io',
   apiUrl: 'https://api.etherscan.io/v2/api',
   primaryExplorerApiIdentifier: 'etherscan-v2',
