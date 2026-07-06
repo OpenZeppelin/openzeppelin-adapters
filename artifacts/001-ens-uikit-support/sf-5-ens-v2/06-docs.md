@@ -165,6 +165,23 @@ false; `label` is two-valued and chosen from the observed `external`; the revers
   observation would require threading a per-call observing client through `resolveAddress`, deferred
   as out of scope. The code comment at the `resolveAddress` catch site records the same.
 
+## Resolution semantics (bound-UR-authoritative ladder — design ruling, not to be re-litigated)
+
+The `resolveName` selection ladder is **bound-UR-authoritative**, by deliberate design:
+
+- **(1a)** A bound chain that carries its **own** Universal Resolver is authoritative for its
+  namespace — its UR wins, full stop.
+- **(1b)** The mainnet-L1 `ensL1Client` path is the **canonical** path **only** for chains that have
+  **no** UR of their own (L2s, resolved via CCIP-Read with a chain-scoped `coinType`). It is **not** a
+  miss-fallback for a name that (1a) looked up and did not find.
+
+**Consequence (intended):** a testnet — or any chain with its own UR — returns **`NAME_NOT_FOUND`**
+for a mainnet-only name; it never silently falls back to mainnet L1. This preserves bound-network
+semantics and **namespace honesty**: answering a mainnet name with a mainnet address while bound to a
+different chain would be a cross-namespace answer the caller never requested — a fund-safety hazard.
+The `resolveName` ladder site in `adapter-evm-core/src/name-resolution/service.ts` carries the same
+ruling as an inline comment so the intent is not re-litigated at the code.
+
 ## Dev Notes
 
 - **Docs boundary honored.** No source, tests, invariants, design, or specify *content* was

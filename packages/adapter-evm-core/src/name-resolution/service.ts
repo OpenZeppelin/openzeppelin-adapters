@@ -173,6 +173,16 @@ export class EvmNameResolutionService {
     // The bound branch keeps mainnet-bound wiring semantics intact (INV-17 branch 1); the L1 branch
     // is reached ONLY when the bound network has no UR, so it never redundantly hops L1 for a
     // mainnet-bound resolve.
+    //
+    // DESIGN RULING — the ladder is BOUND-UR-AUTHORITATIVE (do not re-litigate as a miss-fallback):
+    //   (1a) a bound chain that carries its OWN Universal Resolver wins for its namespace, full stop.
+    //   (1b) the mainnet-L1 `ensL1Client` path is the CANONICAL path ONLY for chains WITHOUT their own
+    //        UR (L2s resolved via CCIP-Read + chain-scoped `coinType`) — it is NOT a fallback for a
+    //        name that (1a) failed to find.
+    // Consequence (intended): a testnet/chain with its own UR returns NAME_NOT_FOUND for a mainnet-only
+    // name — it never silently falls back to mainnet L1. This preserves bound-network semantics and
+    // namespace honesty: resolving a mainnet name against a bound chain and returning a mainnet address
+    // would be a cross-namespace answer the caller never asked for (a fund-safety hazard).
     let client: PublicClient;
     let coinType: bigint;
     if (this.supportsEns()) {
