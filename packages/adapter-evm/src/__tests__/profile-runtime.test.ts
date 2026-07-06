@@ -49,6 +49,16 @@ vi.mock('../capabilities', () => ({
   createExplorer: vi.fn(() => ({
     getExplorerUrl: () => null,
   })),
+  createNameResolution: vi.fn(() => ({
+    isValidName: () => true,
+    resolveName: vi
+      .fn()
+      .mockResolvedValue({ ok: false, error: { code: 'NAME_NOT_FOUND', name: '' } }),
+    resolveAddress: vi
+      .fn()
+      .mockResolvedValue({ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address: '' } }),
+    dispose: vi.fn(),
+  })),
   createNetworkCatalog: vi.fn(() => ({
     getNetworks: () => [],
   })),
