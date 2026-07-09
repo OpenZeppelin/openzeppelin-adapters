@@ -90,6 +90,7 @@ const DISPOSABLE_CAPABILITY_KEYS: Array<keyof CapabilityFactoryMap> = [
   'relayer',
   'accessControl',
   'wallet',
+  'nameResolution',
 ];
 
 function createRuntimeEventBus(): RuntimeEventBus {

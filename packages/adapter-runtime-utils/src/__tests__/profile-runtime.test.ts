@@ -241,4 +241,19 @@ describe('optional nameResolution capability (factory-presence gated)', () => {
 
     expect(runtime?.nameResolution).toBeUndefined();
   });
+
+  it('disposes the nameResolution capability exactly once on runtime.dispose()', () => {
+    const { built, factory } = makeNameResolution();
+    const { factories } = createFactories({ nameResolution: factory });
+
+    const runtime = createRuntimeFromFactories('composer', mockNetworkConfig, factories);
+    expect(runtime.nameResolution).toBe(built);
+
+    runtime.dispose();
+    expect(built.dispose).toHaveBeenCalledTimes(1);
+
+    // Idempotent: a second runtime.dispose must not re-invoke capability dispose.
+    runtime.dispose();
+    expect(built.dispose).toHaveBeenCalledTimes(1);
+  });
 });
