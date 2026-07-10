@@ -62,3 +62,6 @@ Thumbs.db
 
 .config/
 .npm_token
+
+# Local working directory
+/artifacts/
