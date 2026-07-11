@@ -48,8 +48,9 @@ you. See the [Integration Guide](./integration-guide.md).
 - No **`provenance.external` → mechanism (registry / ccip-read) mapping** — the adapter surfaces
   only the raw observed `external`. Interpreting it into a v2 mechanism label is the consumer's
   call (UIKit SF-6), deliberately left open here.
-- No **avatar image fetching, caching, sanitization, or SSRF / mixed-content hardening** — the
-  reverse path returns the avatar *URL* verbatim; fetching and safely rendering it is the
+- No **avatar image fetching, caching, sanitization, URI-scheme normalization, or SSRF / mixed-content
+  hardening** — the reverse path returns the avatar *URI* verbatim on `ResolvedName.avatarUrl`
+  (not in provenance); fetching, gatewaying (`ipfs://` → `https://`), and safely rendering it is the
   consumer's responsibility (see Safety).
 - No **`EnsProvenance` on reverse results** — `resolveAddress` (SF-3) still carries the base
   `ResolutionProvenance`, so `isEnsProvenance` narrows `false` on a reverse result. The v2
@@ -200,10 +201,20 @@ registration, the consumer resolve loop, and common mistakes. Runnable examples 
   still *permits* `forwardVerified: false` (the shared contract reserves it for adapters that
   choose to surface unverified names); **this EVM adapter never emits it.** Render `rev.value.name`
   directly; you do not need to re-verify.
-- **Avatar URL is untrusted, name-owner-controlled content.** `avatarUrl`, when present, is
-  returned verbatim from the ENS `avatar` text record — the adapter does not fetch, validate, or
-  sanitize the asset. Treat it as untrusted: fetch it with SSRF-safe egress rules, guard against
-  mixed content, and sandbox rendering. Fetching/rendering safety is the consumer's job (UIKit).
+- **Avatar URI is untrusted, name-owner-controlled content (reverse path only).** `avatarUrl`, when
+  present on a `resolveAddress` success, is returned verbatim from the ENS `avatar` text record via
+  viem's `getEnsAvatar` / `parseAvatarRecord` — the adapter does not fetch, validate, gateway, or
+  sanitize the asset. ENS avatar records may use several URI schemes (`https://`, `data:`,
+  `ipfs://`, `eip155:…` NFT references, etc.); viem may resolve NFT/IPFS references to a final URI,
+  but the adapter still passes through whatever string viem returns without normalizing scheme. Treat
+  it as untrusted: fetch with SSRF-safe egress, guard against mixed content, and sandbox rendering.
+  **`<img src>` consumers** that only allow `https:` and `data:image/*` must gateway `ipfs://` URIs
+  to an HTTPS URL (e.g. `https://ipfs.io/ipfs/<cid>`) before rendering — an `ipfs://` value will
+  otherwise fail closed and not display. Gatewaying inside the adapter (opt-in, with an explicit
+  gateway host) would be a cleaner contract for UI consumers but is **not** done today.
+- **Forward provenance carries no avatar.** `EnsProvenance` (`system`, `coinType`,
+  `scopedToNetworkId`, `external`) describes how the *address* was resolved, not display metadata.
+  Avatars are reverse-only (`avatarUrl` on `ResolvedName`).
 - **ENS resolution starts on L1.** The forward path uses the bound client when the bound chain
   carries an ENS Universal Resolver (mainnet-bound, `coinType` 60); otherwise, **iff** the runtime
   wired an `ensL1Client`, it resolves the name chain-scoped on L1 (`coinType = toCoinType(boundChainId)`)
@@ -212,7 +223,14 @@ registration, the consumer resolve loop, and common mistakes. Runnable examples 
   The reverse path (`resolveAddress`) remains mainnet-style L1 only.
 - **Chain-scoped addresses must be bound to their network.** When `provenance.scopedToNetworkId` is
   present (a `coinType !== 60` result), the resolved address is meaningful **only** on that network —
-  treat it as scoped, not as a plain mainnet address. When absent, the result is an unscoped mainnet
+  treat it as scoped, not as a plain mainnet address.
+- **Network scope is bound at construction — re-resolve to change it.** `resolveName(name)` has no
+  target-network parameter; the `coinType` and `scopedToNetworkId` on a success reflect the
+  capability's **bound** `NetworkConfig` (the network the runtime was created with). To resolve a name
+  for a different network (e.g. when the user's active chain differs from a prior result's
+  `scopedToNetworkId`), obtain a `NameResolutionCapability` bound to that target network and call
+  `resolveName` again — typically by dispose-and-recreating the runtime with the new config. See the
+  [Integration Guide](./integration-guide.md), Pattern 7. When absent, the result is an unscoped mainnet
   address.
 - **Provenance `label` is a display string, not a discriminant.** `label` is a curated, user-safe
   literal — either `'ENS'` or `'ENS via external gateway'` (chosen from the observed `external`).

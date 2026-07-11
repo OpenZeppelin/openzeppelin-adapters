@@ -236,6 +236,20 @@ interface ResolvedName {
 The `address` is echoed exactly as supplied (no adapter-side re-checksum). `avatarUrl` is spread
 conditionally — the **key is absent** when no avatar was found, never `avatarUrl: undefined`.
 
+> **`avatarUrl` URI schemes (reverse only).** Populated by viem's `getEnsAvatar` → ENS `avatar` text
+> record → `parseAvatarRecord` (which may follow NFT metadata and IPFS hops). The adapter returns the
+> final string **verbatim** — no scheme normalization. Common forms include `https://…`, `data:…`,
+> `ipfs://…`, and `eip155:…` NFT references (viem may resolve these to another URI). The field lives
+> on `ResolvedName`, **not** on `EnsProvenance`. Consumers that render in CSP-restricted `<img>` slots
+> (allowing only `https:` and `data:image/*`) must gateway `ipfs://` to HTTPS before use; otherwise
+> the URI fails closed and will not display. Opt-in adapter-side IPFS gatewaying would be a cleaner UI
+> contract but is **not** implemented — do not assume HTTPS-only values.
+
+> **Network scope is not a `resolveName` parameter.** `coinType` / `scopedToNetworkId` on forward
+> provenance reflect the capability's bound `NetworkConfig`. To resolve for a different network, use a
+> capability instance bound to that network and call `resolveName` again. See
+> [Integration Guide — Pattern 7](./integration-guide.md#pattern-7-re-resolve-a-name-for-the-users-active-network-scopedtonetworkid-mismatch).
+
 > **Reverse keeps base provenance (not `EnsProvenance`).** SF-5's provenance upgrade is
 > **forward-path only**. `resolveAddress` still attaches `baseEnsProvenance()` =
 > `{ label: 'ENS', external: false }`, which has **no** `system` field — so `isEnsProvenance(rev.value.provenance)`
@@ -430,6 +444,13 @@ doc comment sanctions exactly this extension pattern). A **strict superset** of 
 - `scopedToNetworkId` (inherited, optional) — present **iff** `coinType !== 60`, equal to the bound
   network's own repo `networkId`. Its presence means "this address is scoped to that network" — bind
   it there, don't treat it as a plain mainnet address.
+
+> **How scope is selected (no per-call override).** On each `resolveName`, the service picks client +
+> `coinType` from the capability's bound config: bound chain with Universal Resolver → `coinType = 60`,
+> no `scopedToNetworkId`; bound chain without UR + wired `ensL1Client` → L1 client,
+> `coinType = deriveCoinType(boundChainId)`, `scopedToNetworkId = config.id`. `resolveName` accepts
+> only `name: string`. Consumers that need a different scope must bind a different capability (typically
+> dispose-and-recreate the runtime with the target `NetworkConfig`) and call `resolveName` again.
 
 ### `isEnsProvenance` (SF-5)
 

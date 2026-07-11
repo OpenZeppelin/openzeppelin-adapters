@@ -37,7 +37,9 @@ a mismatched (spoofed) name: it forward-verifies inside viem's Universal Resolve
 mismatch to `ADDRESS_NOT_FOUND`. So `forwardVerified` is always `true` on success, and every failure
 code means the same thing for display purposes — fall back to truncated hex. `avatarUrl` is
 best-effort and **untrusted** name-owner content: absence is normal, and you must fetch/render it
-defensively (SSRF-safe egress, no mixed content, sandboxed).
+defensively (SSRF-safe egress, no mixed content, sandboxed). Avatar URIs may be `ipfs://`, `data:`,
+`https://`, or NFT (`eip155:`) forms — the adapter passes them through verbatim; gateway `ipfs://` to
+HTTPS before using in a CSP-restricted `<img>` slot.
 
 ## What to copy into your own code
 

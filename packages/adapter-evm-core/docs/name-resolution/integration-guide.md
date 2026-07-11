@@ -179,10 +179,20 @@ forward-mismatch is indistinguishable from "no record" at your call site: both a
 `ADDRESS_NOT_FOUND`. You never receive a mismatched name to guard against. For display, treat every
 non-`ok` reverse result identically: render truncated hex.
 
-**Avatar, defensively.** `avatarUrl` is a URL from the name owner's ENS `avatar` text record,
-passed through verbatim. Before rendering: fetch it through SSRF-safe egress, block mixed content,
-and sandbox the `<img>` (or proxy it). The adapter does none of this for you — it only surfaces the
-string, best-effort, and omits it on any failure.
+**Avatar, defensively.** `avatarUrl` is a URI from the name owner's ENS `avatar` text record,
+passed through verbatim on `ResolvedName` (reverse path only — not in `EnsProvenance`). ENS avatar
+records may be `https://`, `data:`, `ipfs://`, or `eip155:…` NFT references; viem's
+`getEnsAvatar` / `parseAvatarRecord` may follow NFT/IPFS hops, but the adapter does not normalize
+scheme. Before rendering:
+
+- **`<img src>` / CSP-restricted UIs** that only allow `https:` and `data:image/*` must gateway
+  `ipfs://` URIs to HTTPS (e.g. `https://ipfs.io/ipfs/<cid>`) — an `ipfs://` value will otherwise
+  fail closed and not display.
+- Fetch through SSRF-safe egress, block mixed content, and sandbox the `<img>` (or proxy it).
+
+The adapter does none of this for you — it only surfaces the string, best-effort, and omits it on
+any failure. Gatewaying `ipfs://` → `https://` inside the adapter (with an explicit, opt-in gateway
+host) would be a cleaner contract for UI consumers but is **not** implemented today.
 
 ---
 
@@ -326,6 +336,74 @@ from `NAME_NOT_FOUND`), never a quiet retry that returns a stale on-chain addres
 
 ---
 
+## Pattern 7: Re-resolve a name for the user's active network (`scopedToNetworkId` mismatch)
+
+A forward `resolveName` result carries **network scope in provenance**, not as a call parameter.
+The capability is **Tier-2 / network-bound**: `coinType` and `scopedToNetworkId` reflect the
+`NetworkConfig` the capability was constructed with — there is no `resolveName(name, { networkId })`
+overload.
+
+**When to re-resolve.** If a consumer holds a prior success whose `provenance.scopedToNetworkId`
+differs from the user's currently selected network, the stored address is scoped to the *old* network.
+Do **not** treat it as valid on the new network, and do **not** fail-safe block indefinitely — call
+`resolveName` again on a capability bound to the **target** network.
+
+**How the adapter scopes a call** (fixed at construction; see `service.resolveName`):
+
+| Bound network | Client used | `coinType` | `scopedToNetworkId` on success |
+|---------------|-------------|------------|--------------------------------|
+| Has Universal Resolver (e.g. mainnet) | bound `publicClient` | `60` (ETH / mainnet) | **absent** (unscoped mainnet address) |
+| No UR, `ensL1Client` wired (e.g. Base) | mainnet `ensL1Client` | `deriveCoinType(boundChainId)` (ENSIP-11, e.g. Base → `2147492101`) | **present** = bound `networkConfig.id` |
+| No UR, no `ensL1Client` | — | — | `UNSUPPORTED_NETWORK` (sync, before I/O) |
+
+`deriveCoinType` is viem's `toCoinType(chainId)` — the ENSIP-9/11 forward map. There is no
+coinType→chainId inverse in the adapter; the bound network **is** the scope target.
+
+**Consumer contract (re-resolution loop):**
+
+```ts
+import { isEnsProvenance } from '@openzeppelin/adapter-evm-core';
+import type { NameResolutionCapability } from '@openzeppelin/ui-types';
+
+/** Capability bound to the network the user has selected (dispose-and-recreate runtime as needed). */
+async function resolveForActiveNetwork(
+  cap: NameResolutionCapability,
+  activeNetworkId: string,
+  name: string,
+) {
+  const result = await cap.resolveName(name);
+  if (!result.ok) return result;
+
+  if (isEnsProvenance(result.value.provenance)) {
+    const scoped = result.value.provenance.scopedToNetworkId;
+    // Unscoped (coinType 60) → mainnet address, valid when active network is mainnet-bound.
+    // Scoped → address is meaningful ONLY on scopedToNetworkId.
+    if (scoped !== undefined && scoped !== activeNetworkId) {
+      // Mismatch: this capability is bound to a different network than the result's scope.
+      // Re-obtain a NameResolutionCapability for `activeNetworkId` and call resolveName again.
+      // Do not reuse the address from this result on the active network.
+      return { needsRebind: true as const, priorScope: scoped };
+    }
+  }
+  return result;
+}
+```
+
+**What the adapter does *not* provide:**
+
+- No per-call `networkId` / `coinType` override on `resolveName` — scope is entirely from the bound
+  `NetworkConfig` + wired clients (`publicClient`, optional `ensL1Client`).
+- No multi-network resolve in one capability instance — switching networks means dispose-and-recreate
+  the runtime (or otherwise obtain a fresh capability for the target `NetworkConfig`).
+- Reverse (`resolveAddress`) does not carry `scopedToNetworkId` or `coinType` — re-resolution for
+  forward send paths only.
+
+**UI-only note:** Choosing when to re-resolve (debounce, loading state, fail-safe block vs. auto
+re-resolve) is consumer/UIKit policy. The adapter supplies the scoped provenance facts and a
+network-bound `resolveName`; the UI wires the active-network capability and triggers the second call.
+
+---
+
 ## Common Mistakes
 
 - **Switching on `error.message` instead of `error.code`.** Messages are for humans and are not
@@ -373,6 +451,13 @@ from `NAME_NOT_FOUND`), never a quiet retry that returns a stale on-chain addres
 - **Treating a missing `avatarUrl` as an error.** Avatar is best-effort — a valid, verified name
   often has no avatar, and a transient avatar failure also yields no key. Absence of `avatarUrl` is
   normal, never a signal that the name is untrustworthy.
+- **Rendering an `ipfs://` or `eip155:` avatar in a CSP-restricted `<img>`.** The adapter returns
+  the URI verbatim; gateway `ipfs://` to HTTPS (or proxy) before assigning `src`. Expect silent
+  non-display if you only allow `https:` / `data:image/*`.
+- **Blocking forever when `scopedToNetworkId` ≠ active network.** The adapter does not accept a
+  target network on `resolveName` — re-resolve by calling `resolveName` on a capability bound to the
+  user's selected network (Pattern 7). Fail-safe blocking without re-resolution is a UI policy, not
+  an adapter limitation.
 - **Expecting `NAME_NOT_FOUND` from `resolveAddress`.** The reverse path emits `ADDRESS_NOT_FOUND`
   (and never `NAME_NOT_FOUND` / `UNSUPPORTED_NAME`). Switch on the codes the method can actually
   produce.
@@ -386,4 +471,5 @@ from `NAME_NOT_FOUND`), never a quiet retry that returns a stale on-chain addres
 - [`examples/forward-resolve`](./examples/forward-resolve) — a runnable end-to-end forward example.
 - [`examples/reverse-resolve`](./examples/reverse-resolve) — a runnable end-to-end reverse example.
 - [`examples/ens-v2-resolve`](./examples/ens-v2-resolve) — a runnable ENS v2 example: `isEnsProvenance`
-  narrowing, observed `external`, and the L1 cross-chain (`ensL1Client`) wiring.
+  narrowing, observed `external`, L1 cross-chain (`ensL1Client`) wiring, and `scopedToNetworkId`.
+- Pattern 7 (above) — re-resolve when provenance scope and the active network diverge.
