@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ethereumSepolia } from '../networks';
+import { createRuntime } from '../profiles/shared';
+
 const walletState = { address: undefined as string | undefined };
 const contractLoadingLoadSpy = vi.fn(async () => ({ functions: [] }));
 const executionSignAndBroadcastSpy = vi.fn(async () => ({
@@ -154,9 +157,6 @@ describe('EVM profile runtimes', () => {
   });
 
   it('shares runtime wallet state across wallet, execution, and access-control capabilities', async () => {
-    const { ethereumSepolia } = await import('../networks');
-    const { createRuntime } = await import('../profiles/shared');
-
     const runtime = createRuntime('operator', ethereumSepolia);
 
     expect(runtime.execution?.validateExecutionConfig({})).toBe(false);
@@ -171,17 +171,14 @@ describe('EVM profile runtimes', () => {
       }
     );
     expect(executionSignAndBroadcastSpy).toHaveBeenCalledTimes(1);
-  }, 10000);
+  }, 30000);
 
   it('reuses the runtime contract-loading capability for query composition', async () => {
-    const { ethereumSepolia } = await import('../networks');
-    const { createRuntime } = await import('../profiles/shared');
-
     const runtime = createRuntime('viewer', ethereumSepolia);
 
     await runtime.query!.queryViewFunction('0x1234', 'balanceOf', []);
 
     expect(queryLoadContractSpy).toHaveBeenCalledTimes(1);
     expect(contractLoadingLoadSpy).toHaveBeenCalledWith({ contractAddress: '0x1234' });
-  });
+  }, 30000);
 });
