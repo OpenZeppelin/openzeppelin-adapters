@@ -122,9 +122,12 @@ export const capabilityFactories: CapabilityFactoryMap = {
   relayer: (config: NetworkConfig) => createRelayer(toTypedEvmNetworkConfig(config)),
   nameResolution: (config: NetworkConfig) => {
     const typed = toTypedEvmNetworkConfig(config);
+    // ensL1Client is only useful for L2→L1 cross-chain; on mainnet-bound the bound client already
+    // has the Universal Resolver, so building a second mainnet client is waste-only.
+    // Obs: hand-rolled chainId:1 whose viemChain lacks ensUniversalResolver now → UNSUPPORTED_NETWORK (was L1 path); unreachable for shipped configs (viem `mainnet` defines the UR).
     return createNameResolution(typed, {
       publicClient: ensClient(typed),
-      ensL1Client: ensL1Client(typed), // SF-5 — enables the L1 cross-chain path (D-V1)
+      ...(typed.chainId === mainnet.id ? {} : { ensL1Client: ensL1Client(typed) }), // SF-5 / D-V1
     });
   },
   accessControl: (config: NetworkConfig) => {
@@ -160,7 +163,9 @@ function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): Capabi
     nameResolution: () =>
       createNameResolution(config, {
         publicClient: ensClient(config),
-        ensL1Client: ensL1Client(config), // SF-5 — enables the L1 cross-chain path (D-V1)
+        // ensL1Client is only useful for L2→L1 cross-chain; skip on mainnet-bound (waste-only).
+        // Obs: hand-rolled chainId:1 whose viemChain lacks ensUniversalResolver now → UNSUPPORTED_NETWORK (was L1 path); unreachable for shipped configs (viem `mainnet` defines the UR).
+        ...(config.chainId === mainnet.id ? {} : { ensL1Client: ensL1Client(config) }), // SF-5 / D-V1
       }),
     accessControl: (_runtimeConfig, getCapability) =>
       createAccessControl(config, {
