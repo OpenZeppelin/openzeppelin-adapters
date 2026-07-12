@@ -157,8 +157,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -242,8 +242,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -354,8 +354,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -424,8 +424,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@babel/runtime@7.29.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -466,8 +466,8 @@ importers:
   packages/adapter-runtime-utils:
     devDependencies:
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@types/node':
         specifier: ^25.0.0
         version: 25.9.1
@@ -509,8 +509,8 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -570,8 +570,8 @@ importers:
         specifier: ^2.0.0
         version: 2.3.1(@babel/runtime@7.29.2)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.1.0
-        version: 3.1.1
+        specifier: ^3.2.0
+        version: 3.2.0
       '@openzeppelin/ui-utils':
         specifier: ^2.0.0
         version: 2.0.0
@@ -1686,8 +1686,8 @@ packages:
   '@openzeppelin/ui-types@2.0.0':
     resolution: {integrity: sha512-wJE+oxiPo/Syu4Gcm9C8yhWzGN/fOD66IjKFUxMIgr0ddZxjSgQmho00m7NlFM7xQwYRG/e5y1s+Iyjg233l1w==}
 
-  '@openzeppelin/ui-types@3.1.1':
-    resolution: {integrity: sha512-0vcFoW4E1eLGZZJ5O89Og8HBaSOND34qIUmMDYQ2XftDBVCgVetzRTDTRFA+MsNrcD/fa2L1e6GnuI1kIzTTrA==}
+  '@openzeppelin/ui-types@3.2.0':
+    resolution: {integrity: sha512-884c+a8k/EM86wNuknwUUjWvWXTwlW7twjUoNpkFtOD1fzKvP8/T//m4Jzw8TMGUA9PbpLVVOsyffNfCz2gLbA==}
 
   '@openzeppelin/ui-utils@2.0.0':
     resolution: {integrity: sha512-nOFe2H8Yeg/gGX64NDHDPg4icPCCLKo9Y4S0LJFOmucFJ7o7VhG/WYf+lXRxCgUgkShd8ctTB0hDg/vDVnWrkA==}
@@ -10977,7 +10977,7 @@ snapshots:
 
   '@openzeppelin/ui-types@2.0.0': {}
 
-  '@openzeppelin/ui-types@3.1.1': {}
+  '@openzeppelin/ui-types@3.2.0': {}
 
   '@openzeppelin/ui-utils@2.0.0':
     dependencies:
