@@ -49,7 +49,7 @@ describe('INV-20 — bounded work: exactly two calls per vector, no retries', ()
     expect(spy.resolveAddressCalls).toBe(4);
   });
 
-  it('a throwing vector is called exactly twice — the throw triggers no retry', async () => {
+  it('a throwing vector is called exactly once — no retry and no wasteful second determinism call', async () => {
     const { spy, factory } = spyOnFactory(() =>
       makeStub({
         resolveName: () => {
@@ -61,7 +61,8 @@ describe('INV-20 — bounded work: exactly two calls per vector, no retries', ()
       makeCapability: factory,
       forwardVectors: [{ input: 'x.eth', expect: { ok: false, code: 'NAME_NOT_FOUND' } }],
     });
-    expect(spy.resolveNameCalls).toBe(2); // the two determinism calls, and no more
+    // First call threw → INV-12 second invocation is skipped (determinism ungradable).
+    expect(spy.resolveNameCalls).toBe(1);
   });
 });
 

@@ -173,14 +173,17 @@ async function runVector(
   const call = (): unknown => method.call(instance, vector.input);
 
   const outcome1 = await invoke(call);
-  const outcome2 = await invoke(call); // INV-12 second call on the SAME instance
 
   // --- Exception containment (INV-9 / INV-8) on the first call ---
+  // Skip the INV-12 second invocation when the first threw — determinism is ungradable and the
+  // extra contained call would be waste-only. Contained-call semantics otherwise unchanged.
   if (outcome1.threw) {
     return outcome1.disposed
       ? skippedForFailedCall(direction, vector, keys, 'call threw RuntimeDisposedError')
       : failedForThrow(direction, vector, keys, `call threw/rejected — ${outcome1.description}`);
   }
+
+  const outcome2 = await invoke(call); // INV-12 second call on the SAME instance
 
   // --- Shape containment (INV-9): grade the RETURNED value through a runtime guard, never the
   // adapter's compile-time type. A return that is not a discriminable `{ ok: true | false }`
