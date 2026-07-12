@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapters-vite",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "private": false,
   "description": "Shared Vite and Vitest integration helpers for OpenZeppelin adapter packages",
   "keywords": [
@@ -41,11 +41,11 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@openzeppelin/adapter-evm": "^2.1.1",
-    "@openzeppelin/adapter-midnight": "^2.1.1",
-    "@openzeppelin/adapter-polkadot": "^2.1.1",
-    "@openzeppelin/adapter-solana": "^2.1.1",
-    "@openzeppelin/adapter-stellar": "^2.1.1",
+    "@openzeppelin/adapter-evm": "^2.2.0",
+    "@openzeppelin/adapter-midnight": "^2.2.0",
+    "@openzeppelin/adapter-polkadot": "^2.2.0",
+    "@openzeppelin/adapter-solana": "^2.2.0",
+    "@openzeppelin/adapter-stellar": "^2.2.0",
     "vite": "^7.0.0"
   },
   "peerDependenciesMeta": {
