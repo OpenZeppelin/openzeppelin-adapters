@@ -99,9 +99,11 @@ describe('resolveName — return-shape closure (INV-1)', () => {
 });
 
 describe('resolveName — success-value fidelity (INV-2)', () => {
-  it('passes the resolved hex through VERBATIM — no checksum rewrite, no coercion', async () => {
+  it('EIP-55-checksums the resolved address via getAddress (never surfaces raw lowercase multicoin bytes)', async () => {
+    // Multicoin / non-default paths can return lowercase hex; the success arm always rewrites to EIP-55.
+    const lowercase = VITALIK_ADDRESS.toLowerCase();
     const { client, getEnsAddress } = makeClient({
-      getEnsAddress: vi.fn().mockResolvedValue(VITALIK_ADDRESS),
+      getEnsAddress: vi.fn().mockResolvedValue(lowercase),
     });
     const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
 
@@ -109,7 +111,8 @@ describe('resolveName — success-value fidelity (INV-2)', () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.address).toBe(VITALIK_ADDRESS); // byte-identical
+    expect(result.value.address).toBe(VITALIK_ADDRESS); // EIP-55 checksummed
+    expect(result.value.address).not.toBe(lowercase);
     // SF-5 re-baseline (DEV-APPROVED, revised D-V9): the mainnet-bound forward-success provenance is
     // now an EnsProvenance — a strict superset of the SF-2 base `{ label, external }`. On this
     // on-chain (no CCIP-Read) mock, `external` stays observed-false and `coinType` is 60 (unscoped, so
@@ -123,6 +126,15 @@ describe('resolveName — success-value fidelity (INV-2)', () => {
     expect(getEnsAddress).toHaveBeenCalledTimes(1);
   });
 
+  it('a malformed / non-EVM resolved value folds to NAME_NOT_FOUND (never ok:true)', async () => {
+    // ENSIP-9 multicoin records are arbitrary user-set bytes — fund-safety requires validation.
+    const { client } = makeClient({
+      getEnsAddress: vi.fn().mockResolvedValue('0xdead'), // too short to be an EVM address
+    });
+    const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
+    expect(expectError(await service.resolveName('evil.eth')).code).toBe('NAME_NOT_FOUND');
+  });
+
   it('echoes the caller ORIGINAL input as value.name, not the normalized form', async () => {
     const { client, getEnsAddress } = makeClient({
       getEnsAddress: vi.fn().mockResolvedValue(VITALIK_ADDRESS),
@@ -134,12 +146,10 @@ describe('resolveName — success-value fidelity (INV-2)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.name).toBe('Vitalik.ETH'); // original echoed
-    // …but the network call used the NORMALIZED form. SF-5 unifies the success routine over
-    // `(client, coinType)`, so the mainnet-bound call now carries an explicit `coinType: 60n` (viem's
-    // default, made explicit) alongside the unchanged `strict: true`.
+    // Mainnet-bound (coinType 60) omits explicit `coinType` so viem uses its default (legacy-
+    // compatible, checksummed) path — only `name` + `strict: true` are passed.
     expect(getEnsAddress).toHaveBeenCalledWith({
       name: 'vitalik.eth',
-      coinType: 60n,
       strict: true,
     });
   });
@@ -174,6 +184,7 @@ describe('resolveName — never-throw for expected failures (INV-6)', () => {
     ['viem TimeoutError', makeTimeoutError()],
     ['viem HttpRequestError', makeHttpError()],
     ['decoded ResolverNotFound revert', makeDecodedRevert('ResolverNotFound')],
+    ['decoded ResolverError revert', makeDecodedRevert('ResolverError')],
     ['decoded UnsupportedResolverProfile revert', makeDecodedRevert('UnsupportedResolverProfile')],
     ['ChainDoesNotSupportContract', makeChainUnsupportedError()],
     ['a non-Error primitive throw (string)', 'boom'],
@@ -239,6 +250,14 @@ describe('resolveName — NAME_NOT_FOUND from BOTH the null path and classified 
     expect(expectError(await service.resolveName('unregistered.eth')).code).toBe('NAME_NOT_FOUND');
   });
 
+  it('ResolverError revert → NAME_NOT_FOUND (viem null-equivalent UR error)', async () => {
+    const { client } = makeClient({
+      getEnsAddress: vi.fn().mockRejectedValue(makeDecodedRevert('ResolverError')),
+    });
+    const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
+    expect(expectError(await service.resolveName('unregistered.eth')).code).toBe('NAME_NOT_FOUND');
+  });
+
   it('an unregistered name on an ENS-SUPPORTED network is NAME_NOT_FOUND, NOT UNSUPPORTED_NETWORK', async () => {
     // The D-B support-gate already passed (fixture chain has a Universal Resolver), so a resolver-level
     // revert reaching the catch is necessarily about the NAME — the fork-verify note (Invariants Q1).
@@ -279,6 +298,7 @@ describe('resolveName — total & closed classification over the seven-code unio
   const TABLE: ReadonlyArray<readonly [string, unknown, NameResolutionError['code']]> = [
     ['decoded ResolverNotFound', makeDecodedRevert('ResolverNotFound'), 'NAME_NOT_FOUND'],
     ['decoded ResolverNotContract', makeDecodedRevert('ResolverNotContract'), 'NAME_NOT_FOUND'],
+    ['decoded ResolverError', makeDecodedRevert('ResolverError'), 'NAME_NOT_FOUND'],
     [
       'decoded UnsupportedResolverProfile',
       makeDecodedRevert('UnsupportedResolverProfile'),

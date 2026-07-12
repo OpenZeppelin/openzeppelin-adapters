@@ -484,7 +484,12 @@ describe('INV-8 / INV-10 / INV-11 · D3 — decoded UR HttpError gateway revert'
     expect(r.code).not.toBe('ADDRESS_NOT_FOUND');
   });
 
-  it.each([['ResolverNotFound'], ['ResolverNotContract'], ['UnsupportedResolverProfile']])(
+  it.each([
+    ['ResolverNotFound'],
+    ['ResolverNotContract'],
+    ['ResolverError'],
+    ['UnsupportedResolverProfile'],
+  ])(
     'stays DISTINCT from the resolver-semantic revert %s — NOT a gateway row, falls to ADAPTER_ERROR',
     (errorName) => {
       // These are SF-2 control-path outcomes (pre-classified via the typed constructors), deliberately

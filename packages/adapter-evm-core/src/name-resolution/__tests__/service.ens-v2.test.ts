@@ -45,7 +45,6 @@ import {
   ALCHEMY_KEY,
   BASE_COIN_TYPE,
   BASE_COIN_TYPE_BIGINT,
-  ETH_COIN_TYPE_BIGINT,
   EVM_NETWORK_CONFIG,
   foreignRealmError,
   KEYED_L1_RPC_URL,
@@ -123,13 +122,21 @@ describe('resolveName — return-shape closure over every SF-5 path (INV-1)', ()
 });
 
 describe('resolveName — success-value fidelity on BOTH branches; only provenance changes (INV-2)', () => {
-  it('L1-path success passes the resolved hex through VERBATIM and echoes the original name', async () => {
+  it('L1-path success EIP-55-checksums the resolved address and echoes the original name', async () => {
+    const lowercase = VITALIK_ADDRESS.toLowerCase();
     const { service } = makeL1Service({
-      getEnsAddress: vi.fn().mockResolvedValue(VITALIK_ADDRESS),
+      getEnsAddress: vi.fn().mockResolvedValue(lowercase),
     });
     const value = expectOk(await service.resolveName('Vitalik.ETH')); // mixed-case input
-    expect(value.address).toBe(VITALIK_ADDRESS); // byte-identical, never CAIP-10 rewritten
+    expect(value.address).toBe(VITALIK_ADDRESS); // EIP-55 checksummed (multicoin path returns raw bytes)
     expect(value.name).toBe('Vitalik.ETH'); // original echoed, not normalized
+  });
+
+  it('L1-path malformed multicoin bytes fold to NAME_NOT_FOUND (never ok:true)', async () => {
+    const { service } = makeL1Service({
+      getEnsAddress: vi.fn().mockResolvedValue('0xdead'),
+    });
+    expect(expectError(await service.resolveName('evil.eth')).code).toBe('NAME_NOT_FOUND');
   });
 
   it('a null return on the L1 branch is NAME_NOT_FOUND — never { ok:true } with a placeholder address', async () => {
@@ -267,13 +274,12 @@ describe('resolveName — never-throw across the new branches (INV-11)', () => {
 });
 
 describe('resolveName — strict:true is mandatory on BOTH client-selection branches (INV-12)', () => {
-  it('mainnet-bound call carries { coinType: 60n, strict: true }', async () => {
+  it('mainnet-bound call omits coinType (viem default path) and carries strict: true', async () => {
     const { client, getEnsAddress } = makeClient();
     const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
     await service.resolveName('vitalik.eth');
     expect(getEnsAddress).toHaveBeenCalledWith({
       name: 'vitalik.eth',
-      coinType: ETH_COIN_TYPE_BIGINT,
       strict: true,
     });
   });
@@ -597,7 +603,7 @@ describe('resolveName — bounded work + caller-measured elapsedMs (INV-23)', ()
       ),
     });
     await baselineClient
-      .getEnsAddress({ name: 'vitalik.eth', coinType: ETH_COIN_TYPE_BIGINT, strict: true })
+      .getEnsAddress({ name: 'vitalik.eth', strict: true })
       .catch(() => undefined);
 
     // Through the service: getEnsAddress runs on the per-call observing client built over

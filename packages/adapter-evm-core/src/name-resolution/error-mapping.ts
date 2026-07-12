@@ -26,12 +26,14 @@
  * defense-in-depth `erc4626/error-mapping.ts` already applies.
  *
  * @remarks
- * The class → code table below is pinned to `viem@2.44.4` (the workspace-pinned version). A `viem`
- * major bump requires re-validating it. ENS Universal-Resolver reverts (`ResolverNotFound`,
- * `ResolverNotContract`, `UnsupportedResolverProfile`) and the UTS-46 `normalize()`-throw are **not**
- * mapper rows: SF-2 Design pre-classifies them on the resolution control path via the typed
- * constructors here (preserving INV-11), so this module maps only the transport-generic failures
- * (timeout / gateway / offchain / chain-unsupported) and provides the total `ADAPTER_ERROR` fallback.
+ * The class → code table below was validated against `viem@2.44.x` (the workspace lockfile pin); the
+ * declared peer/dependency floor remains `^2.35.0`. A `viem` major bump requires re-validating it.
+ * ENS Universal-Resolver reverts (`ResolverNotFound`, `ResolverNotContract`, `ResolverError`,
+ * `UnsupportedResolverProfile`) and the UTS-46 `normalize()`-throw are **not** mapper rows: SF-2/SF-3
+ * Design pre-classifies them on the resolution control path via the typed constructors here
+ * (preserving INV-11), so this module maps only the transport-generic failures (timeout / gateway /
+ * offchain / chain-unsupported) and provides the total `ADAPTER_ERROR` fallback. Unknown
+ * `errorName`s from older floors in the `^2.35` range likewise fall to that fallback (total).
  *
  * @module name-resolution/error-mapping
  */
@@ -116,8 +118,9 @@ const HTTP_REQUEST_ERROR_NAMES: ReadonlySet<string> = new Set(['HttpRequestError
  * error's own `.name` is `ContractFunctionRevertedError`), so it is matched via `extractRevertInfo`,
  * not the `.name` needle. It belongs in the same `EXTERNAL_GATEWAY_ERROR` bucket as `OffchainLookup*`
  * (D-E Part B). The resolution-*semantic* UR reverts (`ResolverNotFound` / `ResolverNotContract` /
- * `UnsupportedResolverProfile`) are deliberately absent — SF-2 pre-classifies those on its control
- * path via the constructors (INV-11); only the gateway-transport failure is a mapper row.
+ * `ResolverError` / `UnsupportedResolverProfile`) are deliberately absent — SF-2/SF-3 pre-classify
+ * those on their control paths via the constructors (INV-11); only the gateway-transport failure is a
+ * mapper row.
  */
 const ENS_GATEWAY_REVERT_ERROR_NAMES: ReadonlySet<string> = new Set(['HttpError']);
 
@@ -326,14 +329,15 @@ export function mapNameResolutionError(
     return unsupportedNetwork(context.networkId ?? '');
   }
 
-  // The resolution-*semantic* ENS reverts (ResolverNotFound / ResolverNotContract /
-  // UnsupportedResolverProfile) and the UTS-46 `normalize()` throw are NOT mapper rows: SF-2 Design
-  // finalized them as caller control-path outcomes, pre-classified via the typed constructors above
-  // (`unsupportedNetwork`, `unsupportedName`, `nameNotFound`) — which is what preserves INV-11 (the
-  // mapper never fabricates a not-found, and never needs the `name`/`address` it does not carry).
-  // (The gateway-*transport* revert `HttpError` IS a mapper row — handled at Row 3 above.) A
-  // resolver-semantic revert that nonetheless reaches this mapper is unclassified transport noise and
-  // falls to the ADAPTER_ERROR fallback below (safe: totality + `cause` preserved).
+  // The resolution-*semantic* ENS reverts (ResolverNotFound / ResolverNotContract / ResolverError /
+  // UnsupportedResolverProfile) and the UTS-46 `normalize()` throw are NOT mapper rows: SF-2/SF-3
+  // Design finalized them as caller control-path outcomes, pre-classified via the typed constructors
+  // above (`unsupportedNetwork`, `unsupportedName`, `nameNotFound`, `addressNotFound`) — which is
+  // what preserves INV-11 (the mapper never fabricates a not-found, and never needs the `name`/
+  // `address` it does not carry). (The gateway-*transport* revert `HttpError` IS a mapper row —
+  // handled at Row 3 above.) A resolver-semantic revert that nonetheless reaches this mapper is
+  // unclassified transport noise and falls to the ADAPTER_ERROR fallback below (safe: totality +
+  // `cause` preserved).
 
   // Row 6 (INV-1 / INV-6 / INV-7): total fallback — never invent a code, preserve the cause by
   // reference, redact credential-bearing substrings from the renderable message (INV-16).

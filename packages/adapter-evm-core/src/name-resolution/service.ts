@@ -20,10 +20,13 @@
  *   the not-found / unsupported-name / unsupported-network codes on its control path (Part A);
  *   everything else is delegated to SF-1's total `mapNameResolutionError` (Part B).
  *
- * The forward-path native-error → code table (Design D-E) is pinned to **viem@2.44.4**: the UR revert
- * `errorName`s (`ResolverNotFound`, `ResolverNotContract`, `UnsupportedResolverProfile`) are reached
- * via `extractRevertInfo(err).errorName` and pre-classified here; a viem major bump requires
- * re-validating this table and SF-1's mapper.
+ * The forward-path native-error → code table (Design D-E) was validated against **viem@2.44.x** (the
+ * workspace lockfile pin); the declared peer/dependency floor remains `^2.35.0` (ENS v2 readiness —
+ * see `.changeset/ens-v2-viem-floor.md`). The UR revert `errorName`s (`ResolverNotFound`,
+ * `ResolverNotContract`, `ResolverError`, `UnsupportedResolverProfile`) are reached via
+ * `extractRevertInfo(err).errorName` and pre-classified here; a viem major bump requires
+ * re-validating this table and SF-1's mapper. Unknown `errorName`s degrade safely via SF-1's
+ * `ADAPTER_ERROR` fallback (so older floors in the `^2.35` range remain total).
  *
  * @module name-resolution/service
  */
@@ -33,6 +36,7 @@ import {
   ccipRequest,
   createPublicClient,
   custom,
+  getAddress,
   type Address,
   type CcipRequestParameters,
   type Hex,
@@ -248,20 +252,40 @@ export class EvmNameResolutionService {
     try {
       // The one network call — `strict: true` is mandatory on BOTH branches (INV-12, fund-safety):
       // distinct failure classes surface as typed reverts instead of collapsing into `null`.
-      const address = await callClient.getEnsAddress({ name: normalized, coinType, strict: true });
+      //
+      // coinType policy (L1 + M1):
+      //   - Unscoped mainnet (`coinType === 60`): OMIT explicit `coinType` so viem uses its default
+      //     `getEnsAddress` path. That path returns an EIP-55 checksummed address AND is legacy
+      //     `addr(bytes32)`-compatible — forcing `coinType: 60n` would select the ENSIP-9 multicoin
+      //     `addr(bytes32,uint256)` profile and make legacy-only resolvers revert
+      //     `UnsupportedResolverProfile` → `UNSUPPORTED_NAME`.
+      //   - Chain-scoped (`coinType !== 60`): pass `coinType` explicitly (ENS v2 L1 cross-chain).
+      //     That path returns raw decoded multicoin bytes — validated + EIP-55-checksummed below.
+      const address = await callClient.getEnsAddress({
+        name: normalized,
+        ...(coinType !== ETH_COIN_TYPE ? { coinType } : {}),
+        strict: true,
+      });
       if (address === null) {
         // Structural success, empty record — the non-throw no-record path (INV-2, case 1).
         return { ok: false, error: nameNotFound(name) };
       }
-      // Success: pass the resolved hex through verbatim, echo the caller's ORIGINAL input as `name`
-      // (not the normalized form), and attach a fresh EnsProvenance built from the observed facts
-      // (INV-2/INV-3). A `null` can never reach here — handled above — so `value.address` is never a
-      // coerced/zero placeholder.
+      // Fund-safety (M1): an ENSIP-9 multicoin record is arbitrary user-set bytes. Never surface
+      // `ok: true` with a non-EVM / malformed address — fold to NAME_NOT_FOUND (no usable addr).
+      if (!isValidEvmAddress(address)) {
+        return { ok: false, error: nameNotFound(name) };
+      }
+      // EIP-55 checksum via viem `getAddress` — matches the default (no-coinType) resolver path and
+      // every other viem address surface. Idempotent when the default path already checksummed.
+      const checksummed = getAddress(address);
+      // Success: echo the caller's ORIGINAL input as `name` (not the normalized form), and attach a
+      // fresh EnsProvenance built from the observed facts (INV-2/INV-3). A `null` / invalid address
+      // can never reach here — handled above — so `value.address` is never a coerced/zero placeholder.
       return {
         ok: true,
         value: {
           name,
-          address,
+          address: checksummed,
           provenance: buildEnsProvenance({
             external: sawOffchain,
             coinType,
@@ -279,7 +303,10 @@ export class EvmNameResolutionService {
       switch (errorName) {
         case 'ResolverNotFound':
         case 'ResolverNotContract':
-          // Name has no usable resolver on an ENS-supporting network → no record (INV-15, NAME_NOT_FOUND).
+        case 'ResolverError':
+          // Name has no usable resolver / resolver returned a null-equivalent error on an
+          // ENS-supporting network → no record (INV-15, NAME_NOT_FOUND). `ResolverError` is in
+          // viem's `isNullUniversalResolverError` set alongside the NotFound/NotContract variants.
           return { ok: false, error: nameNotFound(name) };
         case 'UnsupportedResolverProfile':
           // Registered name whose resolver lacks the addr profile — a name-property failure (D-C).
@@ -329,15 +356,18 @@ export class EvmNameResolutionService {
    * 3. the one `getEnsName` call (`strict: true`): `null` → `ADDRESS_NOT_FOUND` (empty reverse
    *    record), else a name → success `{ forwardVerified: true, avatarUrl?, provenance }`
    * 4. `catch`: `ReverseAddressMismatch` / `ResolverNotFound` / `ResolverNotContract` /
-   *    `UnsupportedResolverProfile` → `ADDRESS_NOT_FOUND` (D-R2/D-R4); `default` → SF-1 mapper (Part B)
+   *    `ResolverError` / `UnsupportedResolverProfile` → `ADDRESS_NOT_FOUND` (D-R2/D-R4); `default` →
+   *    SF-1 mapper (Part B)
    *
    * Gates 1–2 run before any network round-trip (INV-16). Avatar (`tryGetAvatar`) runs only after a
    * successful reverse and is failure/latency-isolated — it can only add or omit `avatarUrl`, never
    * fail the result (INV-17).
    *
-   * The reverse-path revert `errorName` table is pinned to **viem@2.44.4** (same as `resolveName` /
-   * SF-1's mapper): a viem major bump requires re-validating `ReverseAddressMismatch`'s membership in
-   * `isNullUniversalResolverError` and the UR revert `errorName` strings.
+   * The reverse-path revert `errorName` table was validated against **viem@2.44.x** (same as
+   * `resolveName` / SF-1's mapper); the declared floor remains `^2.35.0`. A viem major bump requires
+   * re-validating `ReverseAddressMismatch`'s membership in `isNullUniversalResolverError` and the UR
+   * revert `errorName` strings (incl. `ResolverError`). Unknown names degrade via SF-1's
+   * `ADAPTER_ERROR` fallback.
    *
    * @throws {RuntimeDisposedError} on use-after-dispose (guard proxy, before this body) — the sole throw.
    */
@@ -380,6 +410,7 @@ export class EvmNameResolutionService {
         case 'ReverseAddressMismatch': // Approach A: SUPPRESS the mismatched name (D-R2 / INV-11).
         case 'ResolverNotFound':
         case 'ResolverNotContract':
+        case 'ResolverError': // null-equivalent UR error (viem `isNullUniversalResolverError`).
         case 'UnsupportedResolverProfile': // reverse resolver lacks name() → no usable record (D-R4).
           return { ok: false, error: addressNotFound(address) };
         default:
@@ -467,7 +498,13 @@ export class EvmNameResolutionService {
    */
   private async tryGetAvatar(name: string): Promise<string | undefined> {
     try {
-      const avatar = await this.publicClient.getEnsAvatar({ name, strict: true });
+      // Normalize first (L2): `getEnsName` may return a mixed-case / un-normalized claim; viem's
+      // `getEnsAvatar` expects an ENSIP-15-normalized name and otherwise silently yields null.
+      // A normalize throw is absorbed by the catch → undefined (best-effort, INV-17).
+      const avatar = await this.publicClient.getEnsAvatar({
+        name: normalizeName(name),
+        strict: true,
+      });
       return avatar ?? undefined;
     } catch {
       return undefined;

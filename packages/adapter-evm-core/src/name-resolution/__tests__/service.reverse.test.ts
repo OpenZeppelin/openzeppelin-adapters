@@ -262,6 +262,7 @@ describe('resolveAddress — never-throw for expected failures (INV-6)', () => {
     ['decoded ReverseAddressMismatch revert', makeDecodedRevert('ReverseAddressMismatch')],
     ['decoded ResolverNotFound revert', makeDecodedRevert('ResolverNotFound')],
     ['decoded ResolverNotContract revert', makeDecodedRevert('ResolverNotContract')],
+    ['decoded ResolverError revert', makeDecodedRevert('ResolverError')],
     ['decoded UnsupportedResolverProfile revert', makeDecodedRevert('UnsupportedResolverProfile')],
     ['ChainDoesNotSupportContract', makeChainUnsupportedError()],
     ['a non-Error primitive throw (string)', 'boom'],
@@ -336,6 +337,7 @@ describe('resolveAddress — ADDRESS_NOT_FOUND from null, the reverts, AND malfo
     'ReverseAddressMismatch',
     'ResolverNotFound',
     'ResolverNotContract',
+    'ResolverError',
     'UnsupportedResolverProfile',
   ])('%s revert → ADDRESS_NOT_FOUND', async (errorName) => {
     const { client } = makeClient({
@@ -415,6 +417,7 @@ describe('resolveAddress — total & closed classification over the seven-code u
     ],
     ['decoded ResolverNotFound', makeDecodedRevert('ResolverNotFound'), 'ADDRESS_NOT_FOUND'],
     ['decoded ResolverNotContract', makeDecodedRevert('ResolverNotContract'), 'ADDRESS_NOT_FOUND'],
+    ['decoded ResolverError', makeDecodedRevert('ResolverError'), 'ADDRESS_NOT_FOUND'],
     [
       'decoded UnsupportedResolverProfile',
       makeDecodedRevert('UnsupportedResolverProfile'),
@@ -767,6 +770,16 @@ describe('resolveAddress — bounded work + caller-measured elapsedMs (INV-18)',
     const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
     await service.resolveAddress(VITALIK_ADDRESS);
     expect(getEnsAvatar).toHaveBeenCalledTimes(1);
+  });
+
+  it('normalizes the reverse-claimed name before getEnsAvatar (ENSIP-15)', async () => {
+    // A mixed-case reverse claim must be normalized; passing it raw makes getEnsAvatar silently drop.
+    const { client, getEnsAvatar } = makeClient({
+      getEnsName: vi.fn().mockResolvedValue('Vitalik.ETH'),
+    });
+    const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
+    await service.resolveAddress(VITALIK_ADDRESS);
+    expect(getEnsAvatar).toHaveBeenCalledWith({ name: 'vitalik.eth', strict: true });
   });
 
   it('a reverse timeout maps to RESOLUTION_TIMEOUT with a REAL finite elapsedMs (never the -1 sentinel)', async () => {
