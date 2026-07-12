@@ -199,7 +199,10 @@ export function sanitizeSlug(input: string): string {
   const slug = input
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    // The preceding collapse leaves at most one leading/trailing `_`, so single-char
+    // anchors suffice. Avoiding the `_+` quantifiers keeps this linear-time (no
+    // polynomial backtracking on adversarial `_`-heavy input — CodeQL js/polynomial-redos).
+    .replace(/^_|_$/g, '');
   return slug.length > 0 ? slug : 'unnamed';
 }
 
