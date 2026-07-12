@@ -60,7 +60,7 @@
   "devDependencies": {
     "@openzeppelin/adapter-runtime-utils": "workspace:*",
     "@openzeppelin/ui-components": "^2.0.0",
-    "@openzeppelin/ui-types": "^3.1.0",
+    "@openzeppelin/ui-types": "^3.2.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^19.1.9",
@@ -74,7 +74,7 @@
   },
   "peerDependencies": {
     "@openzeppelin/ui-components": "^2.0.0",
-    "@openzeppelin/ui-types": "^3.1.0",
+    "@openzeppelin/ui-types": "^3.2.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

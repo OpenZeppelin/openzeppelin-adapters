@@ -35,6 +35,7 @@ export default {
       [
         'adapter-evm',
         'adapter-evm-core',
+        'adapter-runtime-utils',
         'adapter-midnight',
         'adapter-polkadot',
         'adapter-solana',
@@ -45,13 +46,10 @@ export default {
         'deps',
         'docs',
         'release',
+        'spec',
       ],
     ],
     'scope-empty': [2, 'never'],
   },
-  ignores: [
-    (message) =>
-      message.includes('[skip ci]') ||
-      /^chore\(release\):.+/.test(message),
-  ],
+  ignores: [(message) => message.includes('[skip ci]') || /^chore\(release\):.+/.test(message)],
 };

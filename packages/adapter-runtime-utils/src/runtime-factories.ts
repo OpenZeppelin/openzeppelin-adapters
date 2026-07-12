@@ -78,5 +78,8 @@ export function createLazyRuntimeCapabilityFactories<TConfig extends NetworkConf
     accessControl: creators.accessControl
       ? (_config: NetworkConfig) => getCapability('accessControl')
       : undefined,
+    nameResolution: creators.nameResolution
+      ? (_config: NetworkConfig) => getCapability('nameResolution')
+      : undefined,
   };
 }

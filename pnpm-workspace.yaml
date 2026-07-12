@@ -7,6 +7,10 @@ overrides:
   '@paulmillr/qr': 'npm:qr@^0.5.0'
   '@walletconnect/modal': '2.7.0'
   '@types/react': ^19.1.8
+  # Exact pin: dedupe / peer-align with linked @openzeppelin/ui-react (peer 7.80.0). Without it,
+  # adapter packages (^7.62.0) resolve a different 7.x under local UI link and TS2322 Control-type
+  # errors surface (adapter-stellar 7.71.2 vs ui-react 7.80.0). See chore commit a3ba40a.
+  react-hook-form: 7.80.0
   '@wagmi/core': ^2.20.3
   glob: ^11.1.0
   zod: ^3.25.76

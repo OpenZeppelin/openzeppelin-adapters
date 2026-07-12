@@ -217,6 +217,8 @@ export {
   gweiToWei,
   // Artifacts
   validateAndConvertEvmArtifacts,
+  // Public client (needed by the adapter-evm registration layer to build the injected ENS client)
+  createEvmPublicClient,
 } from './utils';
 
 // ============================================================================
@@ -301,6 +303,8 @@ export {
   createExplorer,
   createIRS,
   type CreateIRSOptions,
+  createNameResolution,
+  type CreateNameResolutionOptions,
   createNetworkCatalog,
   createQuery,
   createRelayer,
@@ -351,6 +355,32 @@ export {
   type Erc4626ErrorContext,
   type Erc4626Operation,
 } from './erc4626';
+
+// ============================================================================
+// Name Resolution Module - ENS native-error → typed-union mapping (SF-1)
+// ============================================================================
+export {
+  mapNameResolutionError,
+  nameNotFound,
+  addressNotFound,
+  unsupportedName,
+  unsupportedNetwork,
+  ELAPSED_UNMEASURED,
+  type NameResolutionErrorContext,
+  // SF-2 forward path: sync shape gate, provenance builder, and the forward service.
+  isValidName,
+  normalizeName,
+  baseEnsProvenance,
+  EvmNameResolutionService,
+  createEvmNameResolutionService,
+  // SF-5 ENS v2: the EnsProvenance extension type + guard + builders (exported for downstream
+  // narrowing via `isEnsProvenance` — SC-005 — without pulling in the service).
+  isEnsProvenance,
+  buildEnsProvenance,
+  deriveCoinType,
+  scopedNetworkId,
+  type EnsProvenance,
+} from './name-resolution';
 
 // ============================================================================
 // Profile Module - runtime composition helpers

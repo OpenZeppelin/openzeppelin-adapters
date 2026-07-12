@@ -162,6 +162,12 @@ const baseConfig = [
   },
 
   {
+    // Runnable documentation examples legitimately use console for output.
+    files: ['**/docs/**/examples/**/*.ts', '**/docs/**/examples/**/*.tsx'],
+    rules: { 'no-console': 'off' },
+  },
+
+  {
     files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx', '**/*.cjs', '**/*.mjs'],
     plugins: { prettier: prettierPlugin },
     rules: {

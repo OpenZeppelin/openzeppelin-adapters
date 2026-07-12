@@ -90,6 +90,7 @@ const DISPOSABLE_CAPABILITY_KEYS: Array<keyof CapabilityFactoryMap> = [
   'relayer',
   'accessControl',
   'wallet',
+  'nameResolution',
 ];
 
 function createRuntimeEventBus(): RuntimeEventBus {
@@ -241,6 +242,16 @@ export function createRuntimeFromFactories(
       : {}),
     ...(PROFILE_REQUIREMENTS[profile].includes('accessControl')
       ? { accessControl: sharedState.getCapability('accessControl') }
+      : {}),
+    // nameResolution is an OPTIONAL, cross-profile capability gated on FACTORY PRESENCE — NOT on
+    // PROFILE_REQUIREMENTS. Adapters that ship a name-resolution (ENS) factory expose it on every
+    // profile; adapters that don't simply omit it (runtime.nameResolution stays undefined) without
+    // making any profile unsatisfiable. Gating on the requirements map instead would make it
+    // mandatory and throw UnsupportedProfileError on every chain without an ENS factory. Construction
+    // is eager (like the other capabilities) during createRuntimeFromFactories and does no I/O, so
+    // exposing it as the safe superset costs nothing when unused.
+    ...(factories.nameResolution
+      ? { nameResolution: sharedState.getCapability('nameResolution') }
       : {}),
     dispose() {
       sharedState.dispose();

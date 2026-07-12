@@ -11,15 +11,16 @@ echo "🔍 Validating commit message format..."
 if [ -s "$HOME/.nvm/nvm.sh" ]; then
   export NVM_DIR="$HOME/.nvm"
   \. "$NVM_DIR/nvm.sh"
-  nvm use 20 >/dev/null 2>&1 || true
+  nvm use 22 >/dev/null 2>&1 || true
   echo "✅ Using Node.js $(node -v) from NVM"
 fi
 
-# Require Node.js 20+
-node_version=$(node -v | cut -d. -f1 | sed 's/v//')
-if [ "$node_version" -lt 20 ]; then
-  echo "❌ Error: Node.js version $(node -v) is incompatible. This project requires Node.js 20+."
-  echo "❌ Commit validation aborted. Please use Node.js 20+ for development."
+# Require Node.js >= 22.13.0 (pnpm@11 requires Node.js >= 22.13)
+node_major=$(node -v | cut -d. -f1 | sed 's/v//')
+node_minor=$(node -v | cut -d. -f2)
+if [ "$node_major" -lt 22 ] || { [ "$node_major" -eq 22 ] && [ "$node_minor" -lt 13 ]; }; then
+  echo "❌ Error: Node.js version $(node -v) is incompatible. This project requires Node.js >= 22.13.0."
+  echo "❌ Commit validation aborted. Please use Node.js >= 22.13.0 for development."
   exit 1
 fi
 
