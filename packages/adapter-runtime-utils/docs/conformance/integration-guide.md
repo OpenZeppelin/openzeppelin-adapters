@@ -22,8 +22,8 @@ copy-paste:
 
 ```ts
 // packages/adapter-evm-core/src/name-resolution/conformance.test.ts
-import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance';
-import { createNameResolution } from '../create-name-resolution';
+import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance/vitest';
+import { createNameResolution } from '../capabilities/name-resolution';
 import { mockEnsClient } from './__fixtures__/mock-ens-client';
 
 // The factory is the single DI seam. It returns a FRESH capability per call, wrapping a
@@ -125,7 +125,7 @@ legitimate provenance labels don't fit the default allowlist, pass a full overri
 **verbatim** — not merged with the default, so include every rule you want:
 
 ```ts
-import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance';
+import { describeConformance } from '@openzeppelin/adapter-runtime-utils/conformance/vitest';
 import type { LabelPolicy } from '@openzeppelin/adapter-runtime-utils/conformance';
 
 const solanaLabelPolicy: LabelPolicy = {
