@@ -1,5 +1,22 @@
 # @openzeppelin/adapter-evm-core
 
+## 1.1.0
+
+### Minor Changes
+
+- [#50](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/50) [`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc) Thanks [@pasevin](https://github.com/pasevin)! - Add the ENS name-resolution capability for EVM: forward resolution (`resolveName`), reverse resolution (`resolveAddress` with a concrete `forwardVerified` boolean and optional avatar), the synchronous `isValidName` shape check, and the native-error → closed 7-code `NameResolutionError` mapping (expected failures return `{ ok: false }` and never throw). Includes ENS v2 (L1-only: CCIP-Read + cross-chain via `coinType`) with the EVM-specific `EnsProvenance` extension type and the `isEnsProvenance` type guard.
+
+  Hardening: the SF-5 forward path builds its observing client with `retryCount: 0` so the borrowed transport is the sole retry owner (no `elapsedMs` inflation into `RESOLUTION_TIMEOUT`), and error-mapping credential redaction is widened to base64url and hyphenated bare-trailing keys plus more keyed query params (the opaque `cause` stays unredacted).
+
+### Patch Changes
+
+- [#50](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/50) [`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc) Thanks [@pasevin](https://github.com/pasevin)! - Raise the `@openzeppelin/ui-types` range floor from `^3.1.0` to `^3.2.0`. The ENS v2 name-resolution work populates `ResolutionProvenance.external` and `ResolutionProvenance.scopedToNetworkId`, which were introduced in `@openzeppelin/ui-types@3.2.0`; a consumer pinned to `3.1.0` would not have these fields on the shared provenance contract. No runtime change for workspace builds (the lockfile already resolves ui-types 3.2.0, which satisfies both the old and new floors).
+
+- [#50](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/50) [`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc) Thanks [@pasevin](https://github.com/pasevin)! - Raise every declared `viem` range floor to `^2.35.0` — the minimum version the official ENS v2 readiness guide requires. viem 2.35.0 is where the new DAO-owned Universal Resolver proxy (`0xeeee…eeee`) landed in the chain definitions; the old floors (`^2.28.0` peer, `^2.33.3` dependency) let a consumer-pinned viem resolve ENS names through the pre-v2 Universal Resolver, which breaks as ENS v2 rolls out. No runtime change for workspace builds (the lockfile already resolves viem 2.44.4, which satisfies the new floor).
+
+- Updated dependencies [[`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc), [`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc), [`fd4f177`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/fd4f177c01c1a49ba3092daac1448afa94a26ccc)]:
+  - @openzeppelin/adapter-runtime-utils@0.1.0
+
 ## 1.0.0
 
 ### Major Changes
