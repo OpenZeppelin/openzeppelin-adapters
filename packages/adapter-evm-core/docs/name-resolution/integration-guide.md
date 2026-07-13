@@ -471,7 +471,7 @@ if (rev.ok && reverseNameVisibleOnRow(rev.value.provenance, activeNetworkId)) {
 **`isEnsProvenance(reverse)` on L1 hits:** after a Sepolia miss-fallback to mainnet L1, the success
 provenance is an `EnsProvenance` (`system: 'ens'`, `coinType: 60`, observed `external`) with **absent**
 `scopedToNetworkId`. That is intentional adapter-internal enrichment — **not** the scope signal. A
-Sepolia-local bound hit has `scopedToNetworkId === 'sepolia'` (or your bound id) and `isEnsProvenance ===
+Sepolia-local bound hit has `scopedToNetworkId === 'ethereum-sepolia'` (or your bound id) and `isEnsProvenance ===
 false`. Do not teach "`isEnsProvenance` ⇒ global name" — use `scopedToNetworkId` absence instead.
 
 ### Default-primary vs ENSIP-19 L2-primary (UX caveat)
@@ -501,7 +501,7 @@ const l1Client = {
 } as unknown as PublicClient;
 
 const service = createEvmNameResolutionService(
-  { id: 'sepolia', chainId: 11155111 /* … */ } as never,
+  { id: 'ethereum-sepolia', chainId: 11155111 /* … */ } as never,
   boundClient,
   l1Client,
 );

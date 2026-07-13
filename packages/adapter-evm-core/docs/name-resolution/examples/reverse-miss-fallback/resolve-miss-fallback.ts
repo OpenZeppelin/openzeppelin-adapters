@@ -16,7 +16,7 @@ import { createEvmNameResolutionService, isEnsProvenance } from '@openzeppelin/a
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
 
 const sepoliaConfig = {
-  id: 'sepolia',
+  id: 'ethereum-sepolia',
   chainId: 11155111,
 } as never;
 
@@ -71,7 +71,9 @@ async function main(): Promise<void> {
     console.log(`  coinType: ${provenance.coinType} (do NOT use for display gate)`);
   }
   console.log(`  show on Base row: ${visibleOnRow(provenance.scopedToNetworkId, 'base-mainnet')}`);
-  console.log(`  show on Sepolia row: ${visibleOnRow(provenance.scopedToNetworkId, 'sepolia')}`);
+  console.log(
+    `  show on Sepolia row: ${visibleOnRow(provenance.scopedToNetworkId, 'ethereum-sepolia')}`
+  );
 }
 
 void main();
