@@ -6,7 +6,7 @@
 > expected failure path**.
 
 This is the EVM **name-resolution** capability delivered in `@openzeppelin/adapter-evm-core`,
-covering both directions plus ENS v2:
+covering both directions plus ENS v2 and mainnet-L1 reverse:
 
 - **Forward** (name → address), SF-2 — backs the UIKit's address-input path so a dapp can accept
   ENS names without any bespoke ENS code.
@@ -15,6 +15,10 @@ covering both directions plus ENS v2:
 - **ENS v2** (L1-only: CCIP-Read / offchain gateways + cross-chain via `coinType`), SF-5 — every
   forward result now carries an EVM-specific `EnsProvenance` with **observed** offchain facts you
   narrow to via `isEnsProvenance`, and an L2-bound runtime can resolve chain-scoped names on L1.
+- **Mainnet-L1 reverse miss-fallback**, SF-1 (002) — on non-mainnet-bound adapters, reverse tries
+  the bound chain first; on a **definitive empty** only, consults the gated mainnet L1 client for the
+  default primary name (+ avatar), with provenance that marks **global vs network-local** scope via
+  base `scopedToNetworkId`.
 
 ## Overview
 
@@ -52,9 +56,10 @@ you. See the [Integration Guide](./integration-guide.md).
   hardening** — the reverse path returns the avatar *URI* verbatim on `ResolvedName.avatarUrl`
   (not in provenance); fetching, gatewaying (`ipfs://` → `https://`), and safely rendering it is the
   consumer's responsibility (see Safety).
-- No **`EnsProvenance` on reverse results** — `resolveAddress` (SF-3) still carries the base
-  `ResolutionProvenance`, so `isEnsProvenance` narrows `false` on a reverse result. The v2
-  provenance upgrade is forward-path only.
+- No **`EnsProvenance` on every reverse result** — bound-mainnet and bound-local hits carry base
+  `ResolutionProvenance` only (`isEnsProvenance` → `false`). **L1 miss-fallback/direct hits** also
+  attach adapter-internal `EnsProvenance` (`coinType: 60`) for EVM-aware enrichment — but chain-agnostic
+  display gates must **not** use that discriminant (see Key Concepts → scope gate).
 - No **Namechain / ENS-L2 resolution** — ENS v2 is **L1-only** (the Namechain L2 was cancelled in
   early 2026). Cross-chain names resolve on L1 via `coinType`, not on an ENS L2.
 
@@ -108,8 +113,16 @@ if (rev.ok) {
   // rev.value.name is SAFE to render as-is: forwardVerified is always true here.
   display(rev.value.name);                       // e.g. 'vitalik.eth'
   if (rev.value.avatarUrl) showAvatar(rev.value.avatarUrl); // optional, best-effort
+
+  // Chain-agnostic scope gate (002 SF-1) — base field ONLY; never isEnsProvenance / coinType.
+  const scope = rev.value.provenance.scopedToNetworkId;
+  const showOnThisRow = scope === undefined || scope === activeNetworkId;
+  if (showOnThisRow) display(rev.value.name);
 } else if (rev.error.code === 'ADDRESS_NOT_FOUND') {
   display(truncate('0xd8dA6BF…'));               // no verified name → show hex
+} else if (rev.error.code === 'RESOLUTION_TIMEOUT' || rev.error.code === 'EXTERNAL_GATEWAY_ERROR') {
+  // Bound or L1 infrastructure failure — NOT a silent miss; do not assume L1 was tried on timeout.
+  showResolutionError(rev.error);
 }
 ```
 
@@ -153,6 +166,18 @@ always-present `system: 'ens'` discriminant; `label` is a display string that is
   mismatched name. Either it returns a name that provably forward-resolves back to the queried
   address (`forwardVerified: true`), or it returns `ADDRESS_NOT_FOUND`. There is no
   `forwardVerified: false` path in this adapter — the anti-spoofing decision is made *for* you.
+- **Reverse miss-fallback (002 SF-1, Option B).** On a non-mainnet-bound adapter with a wired
+  `ensL1Client`: when the bound chain has a Universal Resolver, bound reverse runs first; only on a
+  **definitive empty** (no usable primary — not a gateway/transport failure) does the adapter consult
+  mainnet L1 for the default primary (`coinType` 60). Bound-local hits win without L1; bound failures
+  surface typed errors and **never** silently fall through to L1. Non-UR + L1 → L1 direct; non-UR + no
+  L1 → `UNSUPPORTED_NETWORK`; mainnet-bound → bound only.
+- **Reverse provenance scope (chain-agnostic gate).** Distinguish global vs network-local using base
+  `scopedToNetworkId` **only** — absent ⇒ global / mainnet identity (show on any row); present ⇒
+  network-local (hide on rows scoped to a different network). **Never** use `isEnsProvenance` or
+  `coinType` as the display-safety gate (Principle II). L1 reverse hits may carry `EnsProvenance`
+  (`coinType: 60`) as adapter-internal enrichment; Sepolia-local hits carry `scopedToNetworkId` without
+  `EnsProvenance`.
 - **Avatar is best-effort and isolated.** The reverse call fetches the avatar in a separate,
   failure- and latency-isolated step. A slow, failing, or missing avatar can only omit
   `avatarUrl` — it never delays past the reverse read's error surface and never fails the result.
@@ -167,9 +192,15 @@ always-present `system: 'ens'` discriminant; `label` is a display string that is
   chain-scoped names on L1 and the result carries `scopedToNetworkId` = the bound network's id, so
   you can bind the address to the right chain. Without `ensL1Client`, an L2-bound resolve still
   returns `UNSUPPORTED_NETWORK` — the L1 path is additive and gated.
-- **Gateway failure is never a silent fallback.** A v2 resolution is a **single** strict
-  `getEnsAddress` call. If the CCIP-Read gateway fails, you get `EXTERNAL_GATEWAY_ERROR` — distinct
-  from `NAME_NOT_FOUND`, and never a quiet retry that returns a stale on-chain result.
+- **Gateway failure is never a silent fallback (forward or reverse).** Forward: a v2 resolution is a
+  **single** strict `getEnsAddress` call — CCIP-Read gateway failure → `EXTERNAL_GATEWAY_ERROR`. Reverse:
+  a bound gateway/timeout failure returns a typed error and **does not** miss-fall back to L1; only a
+  definitive empty triggers L1 consultation. L1 gateway failures likewise surface typed errors — never
+  silent hex or invented names.
+- **Default-primary-only on L1 reverse (not ENSIP-19 L2 primary).** L1 `getEnsName` uses viem's
+  default `coinType` 60 (mainnet primary). An address with only an ENSIP-19 L2-scoped primary and no
+  coinType-60 primary returns `ADDRESS_NOT_FOUND` after the L1 attempt — not an L2 name. Product UX
+  should treat that as "no display name," not a bug.
 
 ## API Reference
 
@@ -215,15 +246,19 @@ registration, the consumer resolve loop, and common mistakes. Runnable examples 
 - **Forward provenance carries no avatar.** `EnsProvenance` (`system`, `coinType`,
   `scopedToNetworkId`, `external`) describes how the *address* was resolved, not display metadata.
   Avatars are reverse-only (`avatarUrl` on `ResolvedName`).
-- **ENS resolution starts on L1.** The forward path uses the bound client when the bound chain
-  carries an ENS Universal Resolver (mainnet-bound, `coinType` 60); otherwise, **iff** the runtime
-  wired an `ensL1Client`, it resolves the name chain-scoped on L1 (`coinType = toCoinType(boundChainId)`)
-  and stamps `scopedToNetworkId`. A bound network with no Universal Resolver **and** no `ensL1Client`
-  returns `UNSUPPORTED_NETWORK` **before any I/O** — there is never a silent cross-chain fallback.
-  The reverse path (`resolveAddress`) remains mainnet-style L1 only.
+- **ENS resolution starts on L1 (forward); reverse may miss-fallback to L1.** The forward path uses
+  the bound client when the bound chain carries an ENS Universal Resolver (mainnet-bound, `coinType` 60);
+  otherwise, **iff** the runtime wired an `ensL1Client`, it resolves the name chain-scoped on L1
+  (`coinType = toCoinType(boundChainId)`) and stamps `scopedToNetworkId`. A bound network with no
+  Universal Resolver **and** no `ensL1Client` returns `UNSUPPORTED_NETWORK` **before any I/O** — there
+  is never a silent cross-chain fallback. The reverse path (`resolveAddress`) uses the same injected
+  `ensL1Client` under the Option B ladder (002 SF-1): bound-first on UR-carrying chains, L1 only after
+  definitive empty or when the bound chain has no UR.
 - **Chain-scoped addresses must be bound to their network.** When `provenance.scopedToNetworkId` is
-  present (a `coinType !== 60` result), the resolved address is meaningful **only** on that network —
-  treat it as scoped, not as a plain mainnet address.
+  present on a **forward** result (`coinType !== 60`), the resolved address is meaningful **only** on
+  that network. On **reverse**, `scopedToNetworkId` marks a **bound-local primary name** (network-local
+  identity), not an address scope — use the same gate: hide when the row's network ≠ `scopedToNetworkId`.
+  When absent on reverse, the name is global / mainnet identity — safe to show on any row.
 - **Network scope is bound at construction — re-resolve to change it.** `resolveName(name)` has no
   target-network parameter; the `coinType` and `scopedToNetworkId` on a success reflect the
   capability's **bound** `NetworkConfig` (the network the runtime was created with). To resolve a name

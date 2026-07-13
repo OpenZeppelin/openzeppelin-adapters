@@ -42,6 +42,7 @@ import {
   type Hex,
   type PublicClient,
 } from 'viem';
+import { mainnet } from 'viem/chains';
 
 import type { ResolutionResult, ResolvedAddress, ResolvedName } from '@openzeppelin/ui-types';
 import { logger } from '@openzeppelin/ui-utils';
@@ -58,7 +59,19 @@ import {
   unsupportedNetwork,
 } from './error-mapping';
 import { isValidName as isValidEnsName, normalizeName } from './name-validation';
-import { baseEnsProvenance } from './provenance';
+import { baseEnsProvenance, boundReverseProvenance } from './provenance';
+
+/** Which reverse client / provenance policy a single `attemptReverse` executes (002 SF-1). */
+type ReverseAttemptKind = 'bound' | 'l1';
+
+/**
+ * Outcome of one reverse I/O attempt. Distinguishes definitive empty (miss-fallback eligible on
+ * bound) from typed transport failure (never eligible — INV-9).
+ */
+type ReverseAttemptOutcome =
+  | { readonly kind: 'success'; readonly value: ResolvedName }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'failure'; readonly result: ResolutionResult<ResolvedName> };
 
 /** The ENSIP-9 coinType for ETH / Ethereum mainnet — a mainnet-bound (unscoped) resolution (D-V1). */
 const ETH_COIN_TYPE = 60n;
@@ -335,130 +348,152 @@ export class EvmNameResolutionService {
   }
 
   /**
-   * Reverse resolution: address → name (SF-3). Returns a discriminated {@link ResolutionResult};
-   * **never throws for an expected failure** (INV-6). The sole sanctioned throw is
-   * `RuntimeDisposedError`, raised by the factory's guard proxy *before* this body runs.
+   * Reverse resolution: address → name (002 SF-1 / Option B miss-fallback). Returns a discriminated
+   * {@link ResolutionResult}; **never throws for an expected failure** (INV-7). The sole sanctioned
+   * throw is `RuntimeDisposedError`, raised by the factory's guard proxy *before* this body runs.
    *
-   * Delegates the reverse read AND forward-verification to viem's `getEnsName` (`strict: true`,
-   * INV-7): the Universal Resolver's `reverseWithGateways` reads the reverse record, forward-resolves
-   * the claimed name, and verifies it matches `address` — reverting `ReverseAddressMismatch` on a
-   * mismatch. So a returned name is ALWAYS forward-verified ⇒ `forwardVerified: true` (Approach A,
-   * D-R3 / INV-3). A mismatch, an empty record, an address-scoped resolver revert, or a malformed
-   * address all fold to `ADDRESS_NOT_FOUND` on this control path via SF-1's `addressNotFound`
-   * (INV-8/INV-9/INV-11) — the adapter **never surfaces a mismatched name**, and SF-1's mapper stays
-   * untouched (no reverse-path mapper row).
+   * Option B ladder (Specify Revision 1 / Design D-R1–D-R10):
    *
-   * Fixed classification precedence (INV-12):
+   * 0. use-after-dispose → `RuntimeDisposedError` (guard proxy)
+   * 1. malformed address → `ADDRESS_NOT_FOUND` (sync, before I/O)
+   * 2. `supportsEns()` → bound `attemptReverse` first
+   *      - success → bound provenance per D-R7; stop (no L1)
+   *      - failure → typed error; stop (**no** miss-fallback — INV-9)
+   *      - empty + `ensL1Client` + not mainnet-bound → L1 `attemptReverse`
+   *      - empty + (no L1 or mainnet-bound) → `ADDRESS_NOT_FOUND`
+   * 3. else `ensL1Client` + not mainnet-bound → L1 direct
+   * 4. else → `UNSUPPORTED_NETWORK` (sync, before I/O)
    *
-   * 0. use-after-dispose → `RuntimeDisposedError` (raised by the guard proxy, before this body)
-   * 1. no Universal Resolver on the bound chain → `UNSUPPORTED_NETWORK`  (sync, before any I/O — D-B)
-   * 2. malformed address (`!isValidEvmAddress`) → `ADDRESS_NOT_FOUND`     (sync, before any I/O — D-R1)
-   * 3. the one `getEnsName` call (`strict: true`): `null` → `ADDRESS_NOT_FOUND` (empty reverse
-   *    record), else a name → success `{ forwardVerified: true, avatarUrl?, provenance }`
-   * 4. `catch`: `ReverseAddressMismatch` / `ResolverNotFound` / `ResolverNotContract` /
-   *    `ResolverError` / `UnsupportedResolverProfile` → `ADDRESS_NOT_FOUND` (D-R2/D-R4); `default` →
-   *    SF-1 mapper (Part B)
-   *
-   * Gates 1–2 run before any network round-trip (INV-16). Avatar (`tryGetAvatar`) runs only after a
-   * successful reverse and is failure/latency-isolated — it can only add or omit `avatarUrl`, never
-   * fail the result (INV-17).
-   *
-   * The reverse-path revert `errorName` table was validated against **viem@2.44.x** (same as
-   * `resolveName` / SF-1's mapper); the declared floor remains `^2.35.0`. A viem major bump requires
-   * re-validating `ReverseAddressMismatch`'s membership in `isNullUniversalResolverError` and the UR
-   * revert `errorName` strings (incl. `ResolverError`). Unknown names degrade via SF-1's
-   * `ADAPTER_ERROR` fallback.
+   * Bound and L1 attempts use `strict: true`, Approach A suppress-on-mismatch, observing clients
+   * for truthful `viaGateway`, and selected-client avatar affinity (INV-18).
    *
    * @throws {RuntimeDisposedError} on use-after-dispose (guard proxy, before this body) — the sole throw.
    */
   async resolveAddress(address: string): Promise<ResolutionResult<ResolvedName>> {
-    // (1) Network-scope gate (D-B) — sync, before any I/O. Past this point the network is known to
-    // support ENS, so every resolver-level revert below is address-scoped, never network-scoped: this
-    // is what makes the `ADDRESS_NOT_FOUND` classification in the catch correct (INV-8/INV-16).
-    if (!this.supportsEns()) {
-      return { ok: false, error: unsupportedNetwork(this.networkConfig.id) };
-    }
-
-    // (2) Address-shape gate (D-R1) — malformed input maps to ADDRESS_NOT_FOUND, never-throw, before
-    // any I/O (INV-8/INV-12/INV-16). The closed union has no "invalid address" code; ADDRESS_NOT_FOUND
-    // is the deliberate never-throw fit, mirroring how the forward path routes a malformed name to
-    // UNSUPPORTED_NAME. The input `address` is echoed on the error (INV-19: caller's own data only).
+    // (1) Address-shape gate (D-R1) — malformed input maps to ADDRESS_NOT_FOUND, never-throw, before
+    // any I/O (INV-8/INV-12/INV-21). The input `address` is echoed on the error (INV-23).
     if (!isValidEvmAddress(address)) {
       return { ok: false, error: addressNotFound(address) };
     }
 
-    // (3) The one reverse network call — `strict: true` is mandatory (INV-7, fund-safety parallel to
-    // the forward `getEnsAddress`): distinct failure classes surface as typed reverts instead of
-    // collapsing into `null`. `elapsedMs` is measured around it so a mapped RESOLUTION_TIMEOUT carries
-    // a real number, not SF-1's -1 sentinel (INV-18 / SF-1 INV-12 caller obligation). Only this call is
-    // timed — the avatar hops are deliberately outside the window (INV-17/INV-18).
+    // (2) UR-carrying bound chain — bound reverse first (INV-6).
+    if (this.supportsEns()) {
+      const boundOutcome = await this.attemptReverse(this.publicClient, address, 'bound');
+      if (boundOutcome.kind === 'success') {
+        return { ok: true, value: boundOutcome.value };
+      }
+      // INV-9 KEY: bound gateway/transport/timeout failure must NOT fall through to L1.
+      if (boundOutcome.kind === 'failure') {
+        return boundOutcome.result;
+      }
+      // Definitive bound empty — miss-fallback to L1 only when wired and not mainnet-bound (INV-22).
+      if (this.ensL1Client && !this.isMainnetBound()) {
+        return this.finishL1Attempt(address);
+      }
+      return { ok: false, error: addressNotFound(address) };
+    }
+
+    // (3) Non-UR + L1 wired → L1 direct (mainnet-bound never reaches here with L1 — INV-22).
+    if (this.ensL1Client && !this.isMainnetBound()) {
+      return this.finishL1Attempt(address);
+    }
+
+    // (4) No UR and no L1 client — pre-I/O unsupported (INV-21).
+    return { ok: false, error: unsupportedNetwork(this.networkConfig.id) };
+  }
+
+  /**
+   * Terminal handling for an L1 reverse attempt (direct or miss-fallback). No further client exists
+   * after L1 — empty and failure both terminate here (INV-10).
+   */
+  private async finishL1Attempt(address: string): Promise<ResolutionResult<ResolvedName>> {
+    const l1Outcome = await this.attemptReverse(this.ensL1Client!, address, 'l1');
+    if (l1Outcome.kind === 'success') {
+      return { ok: true, value: l1Outcome.value };
+    }
+    if (l1Outcome.kind === 'failure') {
+      return l1Outcome.result;
+    }
+    return { ok: false, error: addressNotFound(address) };
+  }
+
+  /**
+   * One reverse I/O against `client`: observing wrapper, strict `getEnsName`, Approach A catch table,
+   * avatar on success via the **same** client (D-R8 / INV-18). Returns success | empty | failure so
+   * the ladder can distinguish miss-fallback eligibility from typed transport failure (INV-9).
+   */
+  private async attemptReverse(
+    client: PublicClient,
+    address: string,
+    kind: ReverseAttemptKind
+  ): Promise<ReverseAttemptOutcome> {
+    let sawOffchain = false;
+    const callClient = deriveObservingClient(client, () => {
+      sawOffchain = true;
+    });
+
     const started = performance.now();
     let name: string | null;
     try {
-      name = await this.publicClient.getEnsName({ address: address as Address, strict: true });
+      // INV-13 / INV-27: `strict: true` mandatory; L1 omits `coinType` (default 60 — mainnet primary).
+      name = await callClient.getEnsName({ address: address as Address, strict: true });
     } catch (error) {
-      // (4) Classify. The mismatch signal and the reverse-node resolver-semantic reverts are all
-      // address-scoped "no usable, forward-verified reverse record" outcomes → ADDRESS_NOT_FOUND on
-      // THIS control path via SF-1's `addressNotFound` (INV-9, preserving SF-1 INV-11: the mapper never
-      // fabricates a not-found). Everything else → SF-1's total mapper (INV-10, Part B). `error
-      // instanceof BaseError` gates the `errorName` read; a foreign-realm viem that defeats `instanceof`
-      // yields `undefined` and falls to the mapper's ADAPTER_ERROR fallback — safe (never a
-      // wrong/coerced name, never a throw, INV-11 still holds), just less precise. Kept symmetric with
-      // the forward path's identical gate.
+      // INV-8: Approach A + resolver-semantic reverts → empty (miss-fallback-eligible on bound).
       const errorName = error instanceof BaseError ? extractRevertInfo(error).errorName : undefined;
       switch (errorName) {
-        case 'ReverseAddressMismatch': // Approach A: SUPPRESS the mismatched name (D-R2 / INV-11).
+        case 'ReverseAddressMismatch':
         case 'ResolverNotFound':
         case 'ResolverNotContract':
-        case 'ResolverError': // null-equivalent UR error (viem `isNullUniversalResolverError`).
-        case 'UnsupportedResolverProfile': // reverse resolver lacks name() → no usable record (D-R4).
-          return { ok: false, error: addressNotFound(address) };
+        case 'ResolverError':
+        case 'UnsupportedResolverProfile':
+          return { kind: 'empty' };
         default:
-          // Gateway / offchain / timeout / transport / unclassifiable (incl. non-Error throws) → SF-1's
-          // total, codomain-closed mapper. `viaGateway: false` on the base v1 path; the genuinely-gateway
-          // reverts classify unconditionally, SF-5 owns the explicit CCIP-Read `viaGateway: true` context.
-          //
-          // KNOWN LIMITATION (Finding 4, deliberate): the reverse path does NOT observe offchain
-          // traversal — offchain observation is forward-only by design (SF-5 D-V5; `resolveVia` alone
-          // wraps `ccipRead`), so `viaGateway` is unconditionally `false` here. Consequence: an ENSIP-19
-          // L2-primary reverse resolution that fails with a gateway *timeout* mis-buckets as
-          // RESOLUTION_TIMEOUT instead of EXTERNAL_GATEWAY_ERROR. OffchainLookup-*shaped* reverse
-          // failures are unaffected — they classify correctly via SF-1 mapper Row 3 regardless of
-          // `viaGateway`; only the timeout-shaped gateway failure loses the gateway precedence (INV-10).
-          // Accepted SF-5 scope; see SF-5 06-docs.md § Known Limitations.
+          // INV-9 / INV-14: gateway / timeout / transport → typed failure; observed `viaGateway`.
           return {
-            ok: false,
-            error: mapNameResolutionError(error, {
-              networkId: this.networkConfig.id,
-              elapsedMs: performance.now() - started,
-              viaGateway: false,
-            }),
+            kind: 'failure',
+            result: {
+              ok: false,
+              error: mapNameResolutionError(error, {
+                networkId: this.networkConfig.id,
+                elapsedMs: performance.now() - started,
+                viaGateway: sawOffchain,
+              }),
+            },
           };
       }
     }
 
-    // (5) Empty reverse record — a NON-throw no-record path → ADDRESS_NOT_FOUND (INV-8, never presented
-    // as success, so `value.name` is never a coerced/placeholder string — INV-2).
     if (name === null) {
-      return { ok: false, error: addressNotFound(address) };
+      return { kind: 'empty' };
     }
 
-    // (6) Success. The UR already forward-verified the name (D-R3) ⇒ `forwardVerified` is the constant
-    // literal `true`, a concrete boolean (INV-3). Avatar is fetched separately, best-effort and isolated
-    // (INV-17): it can only ADD `avatarUrl` or leave it absent — it can never fail or throw this result.
-    // `address` is echoed as supplied by the caller (no adapter-side re-checksum — D-R6 / INV-2), and
-    // `avatarUrl` is spread conditionally so the key is absent when undefined (INV-4).
-    const avatarUrl = await this.tryGetAvatar(name);
+    const avatarUrl = await this.tryGetAvatar(client, name);
+    const provenance =
+      kind === 'l1'
+        ? buildEnsProvenance({
+            external: sawOffchain,
+            coinType: ETH_COIN_TYPE,
+            networkId: this.networkConfig.id,
+          })
+        : this.isMainnetBound()
+          ? baseEnsProvenance()
+          : boundReverseProvenance(this.networkConfig.id);
+
     return {
-      ok: true,
+      kind: 'success',
       value: {
         address,
         name,
         forwardVerified: true,
         ...(avatarUrl !== undefined ? { avatarUrl } : {}),
-        provenance: baseEnsProvenance(),
+        provenance,
       },
     };
+  }
+
+  /** True when the bound chain is Ethereum mainnet — drives miss-fallback fence and D-R7 scope (INV-22). */
+  private isMainnetBound(): boolean {
+    return this.networkConfig.chainId === mainnet.id;
   }
 
   /**
@@ -496,12 +531,12 @@ export class EvmNameResolutionService {
    * (and the avatar record) is never logged. viem defaults are used; no custom gateway/host or deadline
    * is hardcoded (INV-18/INV-20). No retry loop — a single bounded `await` (INV-18).
    */
-  private async tryGetAvatar(name: string): Promise<string | undefined> {
+  private async tryGetAvatar(client: PublicClient, name: string): Promise<string | undefined> {
     try {
       // Normalize first (L2): `getEnsName` may return a mixed-case / un-normalized claim; viem's
       // `getEnsAvatar` expects an ENSIP-15-normalized name and otherwise silently yields null.
       // A normalize throw is absorbed by the catch → undefined (best-effort, INV-17).
-      const avatar = await this.publicClient.getEnsAvatar({
+      const avatar = await client.getEnsAvatar({
         name: normalizeName(name),
         strict: true,
       });
