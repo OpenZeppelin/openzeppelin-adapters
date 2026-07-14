@@ -1,5 +1,11 @@
 # @openzeppelin/adapter-evm-core
 
+## 1.2.0
+
+### Minor Changes
+
+- [#53](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/53) [`d75eb46`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/d75eb4674f2f4bfa6e6425db258c3df1f63e6c36) Thanks [@pasevin](https://github.com/pasevin)! - Add Option B miss-fallback reverse resolution on non-mainnet-bound EVM adapters: bound reverse first when ENS is supported; on definitive empty only, consult the gated mainnet L1 client for the default primary name (+ avatar). L1 hits carry `EnsProvenance` with absent `scopedToNetworkId` (global/mainnet identity); non-mainnet bound-local hits now set `scopedToNetworkId` to the bound network id so chain-agnostic consumers can distinguish network-local from global scope. Bound gateway/transport failures never fall through to L1.
+
 ## 1.1.0
 
 ### Minor Changes
