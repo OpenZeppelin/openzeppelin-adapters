@@ -28,3 +28,12 @@ import type { ResolutionProvenance } from '@openzeppelin/ui-types';
 export function baseEnsProvenance(): ResolutionProvenance {
   return { label: 'ENS', external: false };
 }
+
+/**
+ * Provenance for a **non-mainnet bound-local** reverse hit (002 SF-1 / D-R7). Marks the name as
+ * network-local via `scopedToNetworkId` so chain-agnostic consumers can gate display without EVM
+ * imports (INV-5 / INV-28). Mainnet-bound hits keep {@link baseEnsProvenance} (absent scope).
+ */
+export function boundReverseProvenance(networkId: string): ResolutionProvenance {
+  return { label: 'ENS', external: false, scopedToNetworkId: networkId };
+}

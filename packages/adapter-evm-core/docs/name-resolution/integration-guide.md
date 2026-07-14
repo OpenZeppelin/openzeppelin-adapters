@@ -1,16 +1,17 @@
-# Integration Guide — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5)
+# Integration Guide — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5 · L1 reverse SF-1)
 
 How to wire and use the EVM name-resolution capability. A few patterns cover almost every
 consumer: **register** the capability into an EVM runtime, **call** forward resolution (name →
 address) from a consumer, **call** reverse resolution (address → name, for display), **read ENS v2
-provenance** (SF-5), **wire the optional L1 cross-chain client**, and **test** against a mocked
-client.
+provenance** (SF-5), **wire the optional L1 cross-chain client**, **apply the reverse miss-fallback
+ladder and chain-agnostic scope gate** (002 SF-1), and **test** against a mocked client.
 
-> Scope: all three delivered slices — forward (SF-2), reverse + avatar (SF-3), and ENS v2 (SF-5:
+> Scope: all four delivered slices — forward (SF-2), reverse + avatar (SF-3), ENS v2 (SF-5:
 > `EnsProvenance` on every forward result, observed `external`, the optional `ensL1Client` for L1
-> cross-chain resolution, and `coinType` / `scopedToNetworkId` scoping). Registration (Pattern 1)
-> is shared by all of it — one capability instance, one bound client plus an optional L1 client,
-> serves `resolveName` (v1 and v2) and `resolveAddress` alike.
+> cross-chain resolution, and `coinType` / `scopedToNetworkId` scoping), and mainnet-L1 reverse
+> miss-fallback (002 SF-1: bound-first, empty-only L1 consult, provenance scope via base
+> `scopedToNetworkId`). Registration (Pattern 1) is shared — one capability instance, one bound
+> client plus an optional L1 client, serves `resolveName` and `resolveAddress` alike.
 
 ---
 
@@ -59,10 +60,14 @@ Notes:
   `contracts.ensUniversalResolver`, so the **bound** client resolves mainnet-bound (`coinType` 60).
 - For a network whose bound chain has **no** Universal Resolver (an L2), the wired `ensL1Client`
   lets `resolveName` resolve the name **chain-scoped on L1** (`coinType = toCoinType(boundChainId)`),
-  and the success provenance carries `scopedToNetworkId`. Omit `ensL1Client` and that same L2-bound
-  resolve returns `UNSUPPORTED_NETWORK` — the L1 path is additive and **gated** on this field.
-- Wiring `ensL1Client` is a one-time cost per capability instance (a borrowed client); the L1 hop
-  only happens when the bound chain has no UR, so a mainnet-bound resolve never redundantly hits L1.
+  and the success provenance carries `scopedToNetworkId`. It also enables **reverse** miss-fallback
+  and direct L1 reverse (002 SF-1) — same injection, no second config knob. Omit `ensL1Client` and
+  that same L2-bound forward resolve returns `UNSUPPORTED_NETWORK`; reverse on non-UR chains likewise
+  returns `UNSUPPORTED_NETWORK` before I/O.
+- Wiring `ensL1Client` is a one-time cost per capability instance (a borrowed client). Forward: the L1
+  hop only happens when the bound chain has no UR. Reverse: L1 is consulted after a **definitive bound
+  empty** on UR-carrying non-mainnet chains, or directly when the bound chain has no UR — never on bound
+  gateway/transport failure, and never redundantly on mainnet-bound reverse.
 - No cleanup registration is needed — a viem `http` client holds no handle requiring teardown,
   and the capability borrows (does not own) **either** client.
 - Both v1 and v2 forward resolution rely on viem's **default** CCIP-Read handling (the Universal
@@ -153,17 +158,18 @@ async function displayForAddress(
   const result = await cap.resolveAddress(address);
   if (result.ok) {
     // result.value.name is ALREADY forward-verified (forwardVerified === true). Render as-is.
-    // avatarUrl is present only when an avatar was surfaced — it is best-effort, may be absent
-    // even for a valid name, and is UNTRUSTED name-owner content (fetch/render defensively).
+    // Chain-agnostic scope gate (002 SF-1) — see Pattern 8 before showing on a network-scoped row.
     return { kind: 'name', name: result.value.name, avatarUrl: result.value.avatarUrl };
   }
 
-  // Switch on the CODE. Every reverse failure means "no verified name" for display purposes.
+  // Switch on the CODE. ADDRESS_NOT_FOUND = no verified name for display.
+  // RESOLUTION_TIMEOUT / EXTERNAL_GATEWAY_ERROR = infrastructure failure — NOT an empty record;
+  // on UR-carrying chains the adapter did NOT fall through to L1 (002 SF-1 INV-9).
   switch (result.error.code) {
-    case 'ADDRESS_NOT_FOUND':      return { kind: 'hex' }; // no record, OR a suppressed mismatch
+    case 'ADDRESS_NOT_FOUND':      return { kind: 'hex' };
     case 'UNSUPPORTED_NETWORK':    return { kind: 'hex' };
-    case 'RESOLUTION_TIMEOUT':     return { kind: 'hex' }; // optionally retry / show a spinner
-    case 'EXTERNAL_GATEWAY_ERROR': return { kind: 'hex' };
+    case 'RESOLUTION_TIMEOUT':
+    case 'EXTERNAL_GATEWAY_ERROR': return { kind: 'hex' }; // consider surfacing error vs silent hex
     case 'ADAPTER_ERROR':
       console.error('unclassified reverse-resolution error', result.error.cause);
       return { kind: 'hex' };
@@ -297,8 +303,10 @@ Key properties to internalize:
 - **Narrow, don't string-match.** `isEnsProvenance` checks the always-present `system: 'ens'`
   discriminant. `provenance.label` is a display string with two values (`'ENS'` /
   `'ENS via external gateway'`) — matching on it is a bug.
-- **Reverse results won't narrow.** `resolveAddress` (reverse) carries base provenance, so
-  `isEnsProvenance` returns `false` there — by design (no observed offchain facts on a reverse read).
+- **Reverse results: scope via base `scopedToNetworkId` only (Pattern 8).** On L1 miss-fallback/direct
+  successes, `isEnsProvenance` may return `true` (`coinType: 60`) — that is **adapter-internal
+  enrichment**, not the chain-agnostic display gate. On bound-local hits (e.g. a Sepolia primary),
+  `scopedToNetworkId` is present and `isEnsProvenance` is `false`. Never gate display on `coinType`.
 
 ## Pattern 6: L1 cross-chain resolution from an L2-bound runtime
 
@@ -395,12 +403,116 @@ async function resolveForActiveNetwork(
   `NetworkConfig` + wired clients (`publicClient`, optional `ensL1Client`).
 - No multi-network resolve in one capability instance — switching networks means dispose-and-recreate
   the runtime (or otherwise obtain a fresh capability for the target `NetworkConfig`).
-- Reverse (`resolveAddress`) does not carry `scopedToNetworkId` or `coinType` — re-resolution for
-  forward send paths only.
+- Reverse (`resolveAddress`) carries **provenance scope** via base `scopedToNetworkId` (002 SF-1) —
+  see Pattern 8. Re-resolution for forward send paths only uses Pattern 7.
 
 **UI-only note:** Choosing when to re-resolve (debounce, loading state, fail-safe block vs. auto
 re-resolve) is consumer/UIKit policy. The adapter supplies the scoped provenance facts and a
 network-bound `resolveName`; the UI wires the active-network capability and triggers the second call.
+
+---
+
+## Pattern 8: Reverse miss-fallback ladder + chain-agnostic scope gate (002 SF-1)
+
+On non-mainnet-bound adapters with the standard `ensL1Client` injection (Pattern 1), `resolveAddress`
+follows an **Option B miss-fallback ladder**. Forward asymmetry is preserved: `resolveName` does **not**
+gain miss-fallback.
+
+### Ladder (behavioral)
+
+| Bound network | `ensL1Client` | What happens |
+|---------------|---------------|--------------|
+| Mainnet (has UR) | any | Bound reverse only — no L1 hop, even on empty |
+| UR-carrying non-mainnet (e.g. Sepolia) | wired | Bound reverse first → name hit: stop with bound-local provenance → bound **empty**: one L1 consult → bound **failure** (timeout/gateway): typed error, **no L1** |
+| No UR (e.g. Base) | wired | L1 reverse direct (default primary, `coinType` 60) |
+| No UR | absent | `UNSUPPORTED_NETWORK` (sync, before I/O) |
+
+**Miss-fallback discipline:** L1 fires **only** on a definitive empty/no-record from bound reverse
+(`null`, Approach A mismatch, resolver-semantic reverts). Gateway/transport/timeout on bound reverse
+returns `RESOLUTION_TIMEOUT` or `EXTERNAL_GATEWAY_ERROR` and **never** consults L1. This is
+**distinct from** forward's single-call / no v2→v1 error-fallback rule (SF-5).
+
+### Provenance three-row contract (D-R7 / INV-28)
+
+Scope is keyed on **where the name resolved**, via base `scopedToNetworkId` **only**:
+
+| Path | `scopedToNetworkId` | `isEnsProvenance` | Meaning for display gate |
+|------|---------------------|-------------------|--------------------------|
+| Bound hit on **mainnet** | **absent** | `false` | Global / mainnet identity — show on any row |
+| Bound hit on **non-mainnet** UR chain (e.g. Sepolia local primary) | **present** = bound `networkId` | `false` | Network-local — hide on rows for other networks |
+| **L1** hit (miss-fallback or direct) | **absent** | **`true`** (`coinType: 60`) | Global / mainnet identity — show on any row |
+
+**Principle II (chain-agnostic consumers):** the UIKit `AddressNameResolutionProvider` gate (and any
+chain-agnostic code) **MUST** branch on `scopedToNetworkId` only — **MUST NOT** import
+`isEnsProvenance`, inspect `coinType`, or narrow to `EnsProvenance` for display safety. EVM-aware
+callers may read `coinType` / `external` after narrowing as enrichment only.
+
+```ts
+import type { ResolutionProvenance } from '@openzeppelin/ui-types';
+
+/** Chain-agnostic gate — safe in UIKit without EVM imports. */
+function reverseNameVisibleOnRow(
+  provenance: ResolutionProvenance,
+  rowNetworkId: string,
+): boolean {
+  const scope = provenance.scopedToNetworkId;
+  // Absent scope ⇒ global / mainnet identity — show anywhere.
+  if (scope === undefined) return true;
+  // Present ⇒ network-local primary — show only on matching row.
+  return scope === rowNetworkId;
+}
+
+// Usage after resolveAddress success:
+if (rev.ok && reverseNameVisibleOnRow(rev.value.provenance, activeNetworkId)) {
+  display(rev.value.name);
+}
+```
+
+**`isEnsProvenance(reverse)` on L1 hits:** after a Sepolia miss-fallback to mainnet L1, the success
+provenance is an `EnsProvenance` (`system: 'ens'`, `coinType: 60`, observed `external`) with **absent**
+`scopedToNetworkId`. That is intentional adapter-internal enrichment — **not** the scope signal. A
+Sepolia-local bound hit has `scopedToNetworkId === 'ethereum-sepolia'` (or your bound id) and `isEnsProvenance ===
+false`. Do not teach "`isEnsProvenance` ⇒ global name" — use `scopedToNetworkId` absence instead.
+
+### Default-primary vs ENSIP-19 L2-primary (UX caveat)
+
+L1 reverse uses viem's default `coinType` 60 (Ethereum mainnet primary). It does **not** pass
+`toCoinType(boundChainId)`. An address whose only reverse record is an ENSIP-19 **L2-scoped** primary
+(with no coinType-60 primary) returns `ADDRESS_NOT_FOUND` after the L1 attempt — not the L2 name.
+Product copy should treat that as "no ENS display name," not a resolution bug. ENSIP-19 L2-primary
+reverse is deferred product scope.
+
+### Mocked test snippet (Sepolia miss-fallback)
+
+```ts
+import { createEvmNameResolutionService } from '@openzeppelin/adapter-evm-core';
+import type { PublicClient } from 'viem';
+
+const boundClient = {
+  chain: { id: 11155111, contracts: { ensUniversalResolver: { address: '0xeeee…' } } },
+  getEnsName: async () => null, // definitive empty on Sepolia
+  getEnsAvatar: async () => null,
+} as unknown as PublicClient;
+
+const l1Client = {
+  chain: { id: 1, contracts: { ensUniversalResolver: { address: '0x…' } } },
+  getEnsName: async () => 'vitalik.eth',
+  getEnsAvatar: async () => 'https://example.com/avatar.png',
+} as unknown as PublicClient;
+
+const service = createEvmNameResolutionService(
+  { id: 'ethereum-sepolia', chainId: 11155111 /* … */ } as never,
+  boundClient,
+  l1Client,
+);
+
+const result = await service.resolveAddress('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
+// result.ok === true; result.value.name === 'vitalik.eth'
+// result.value.provenance.scopedToNetworkId === undefined  (global — gate shows on any row)
+// isEnsProvenance(result.value.provenance) === true         (enrichment only — not the gate)
+```
+
+See [`examples/reverse-miss-fallback/`](./examples/reverse-miss-fallback/) for a runnable mock.
 
 ---
 
@@ -433,9 +545,18 @@ network-bound `resolveName`; the UI wires the active-network capability and trig
   **not** map it to a mechanism name — that interpretation is the consumer's (UIKit SF-6).
 - **Treating a `scopedToNetworkId` address as a mainnet address.** When the key is present, the
   address is scoped to that network; binding it to mainnet (or another chain) is a fund-safety bug.
-- **Calling `isEnsProvenance` on a reverse (`resolveAddress`) result and expecting `true`.** Reverse
-  results carry base provenance (no `system`), so the guard returns `false` — the v2 fields exist on
-  forward results only.
+- **Calling `isEnsProvenance` on a reverse result and using it as the scope gate.** L1 miss-fallback
+  successes may return `true` — that marks adapter-internal ENS enrichment (`coinType: 60`), not
+  "show on every row." Chain-agnostic gates use **`scopedToNetworkId` absent vs present** only
+  (Pattern 8). Sepolia-local names are `isEnsProvenance === false` but **scoped** — gating on
+  `isEnsProvenance` would wrongly show them globally.
+- **Assuming bound reverse timeout/gateway failure will try L1.** It will not (002 SF-1 INV-9). Surface
+  `RESOLUTION_TIMEOUT` / `EXTERNAL_GATEWAY_ERROR` — do not treat it like `ADDRESS_NOT_FOUND`.
+- **Expecting ENSIP-19 L2 primary on L1 reverse.** Only coinType-60 default primary is returned; L2-only
+  primaries → `ADDRESS_NOT_FOUND` (Pattern 8 UX caveat).
+- **Calling `isEnsProvenance` on a reverse result and expecting always `false`.** Bound hits: `false`.
+  L1 miss-fallback/direct hits: **`true`** — enrichment only; scope still comes from absent
+  `scopedToNetworkId`.
 - **Expecting a silent fallback to a v1/on-chain result when a v2 gateway fails.** There is none —
   a CCIP-Read failure is `EXTERNAL_GATEWAY_ERROR`, distinct from `NAME_NOT_FOUND`. Don't write code
   that assumes a stale address comes back on gateway error.
@@ -470,6 +591,8 @@ network-bound `resolveName`; the UI wires the active-network capability and trig
 - [API Reference](./api-reference.md) — full typed surface and the seven-code error union.
 - [`examples/forward-resolve`](./examples/forward-resolve) — a runnable end-to-end forward example.
 - [`examples/reverse-resolve`](./examples/reverse-resolve) — a runnable end-to-end reverse example.
-- [`examples/ens-v2-resolve`](./examples/ens-v2-resolve) — a runnable ENS v2 example: `isEnsProvenance`
-  narrowing, observed `external`, L1 cross-chain (`ensL1Client`) wiring, and `scopedToNetworkId`.
+- [`examples/ens-v2-resolve`](./examples/ens-v2-resolve) — ENS v2 forward: `isEnsProvenance`, L1 cross-chain.
+- [`examples/reverse-miss-fallback`](./examples/reverse-miss-fallback) — mocked Sepolia miss-fallback,
+  scope gate, and bound-failure-no-L1 discipline (002 SF-1).
 - Pattern 7 (above) — re-resolve when provenance scope and the active network diverge.
+- Pattern 8 (above) — reverse miss-fallback ladder + chain-agnostic scope gate.

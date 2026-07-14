@@ -508,26 +508,24 @@ describe('resolveAddress — suppress-on-mismatch is the anti-spoofing crux (INV
     expect(error.code).not.toBe('NAME_NOT_FOUND');
   });
 
-  it('structural: no code path extracts a name from a ReverseAddressMismatch revert', () => {
-    // The mismatch `case` returns `addressNotFound(address)` — it reads no name from the revert, and
-    // SF-3 builds no raw reverse-record reader (`name(bytes32)` ABI) that could recover a name.
+  it('structural: ReverseAddressMismatch folds to empty inside attemptReverse — no name extracted', () => {
+    // 002 SF-1 moved Approach A into `attemptReverse`: mismatch → `{ kind: 'empty' }`, never a surfaced
+    // name and never a raw `name(bytes32)` reader that could recover one.
     const src = readServiceSource();
-    expect(src).toMatch(
-      /case 'ReverseAddressMismatch':[\s\S]*?return \{ ok: false, error: addressNotFound/
-    );
+    expect(src).toMatch(/case 'ReverseAddressMismatch':[\s\S]*?return \{ kind: 'empty' \}/);
     expect(src).not.toMatch(/name\(bytes32\)/);
   });
 });
 
 describe('resolveAddress — deterministic classification precedence (INV-12)', () => {
-  it('support-gate wins over the address-shape gate: malformed address on unsupported network → UNSUPPORTED_NETWORK', async () => {
+  it('address-shape gate runs before unsupported-network: malformed address on non-ENS network → ADDRESS_NOT_FOUND (Design step 1)', async () => {
     const { client, getEnsName } = makeClient({ supported: false });
     const service = createEvmNameResolutionService(EVM_NETWORK_CONFIG, client);
-    // `0xnothex` would also fail the shape gate, but the support-gate (level 1) runs first.
+    // 002 SF-1 ladder step 1 is malformed → ADDRESS_NOT_FOUND (sync, before supportsEns / I/O).
     const error = expectError(await service.resolveAddress('0xnothex'));
-    expect(error.code).toBe('UNSUPPORTED_NETWORK');
-    if (error.code !== 'UNSUPPORTED_NETWORK') return;
-    expect(error.networkId).toBe(EVM_NETWORK_CONFIG.id);
+    expect(error.code).toBe('ADDRESS_NOT_FOUND');
+    if (error.code !== 'ADDRESS_NOT_FOUND') return;
+    expect(error.address).toBe('0xnothex');
     expect(getEnsName).not.toHaveBeenCalled();
   });
 });

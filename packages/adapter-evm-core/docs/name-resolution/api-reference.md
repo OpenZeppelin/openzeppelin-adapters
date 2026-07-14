@@ -1,4 +1,4 @@
-# API Reference — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5)
+# API Reference — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5 · L1 reverse SF-1)
 
 Complete typed surface for the EVM name-resolution capability, as exported from
 `@openzeppelin/adapter-evm-core`. Value types (`ResolutionResult`, `ResolvedAddress`,
@@ -6,12 +6,13 @@ Complete typed surface for the EVM name-resolution capability, as exported from
 interface are **owned by `@openzeppelin/ui-types`** — this package implements against them and
 re-exports nothing of them; import them from `@openzeppelin/ui-types`.
 
-> Scope: this reference covers all three delivered slices — the **forward** path (name → address,
-> SF-2), the **reverse** path (`resolveAddress`, `forwardVerified`, avatar, SF-3), and **ENS v2**
-> (SF-5): the `EnsProvenance` extension type + `isEnsProvenance` guard carried on every forward
-> success, the observed-`external` upgrade, the optional `ensL1Client` for L1 cross-chain
-> resolution, and `coinType` / `scopedToNetworkId` chain-scoping. The base `ResolutionProvenance`
-> contract is **unchanged** by SF-5 (`EnsProvenance` is a strict superset).
+> Scope: this reference covers all four delivered slices — the **forward** path (name → address,
+> SF-2), the **reverse** path (`resolveAddress`, `forwardVerified`, avatar, SF-3 + 002 SF-1
+> miss-fallback), and **ENS v2** (SF-5): the `EnsProvenance` extension type + `isEnsProvenance` guard
+> carried on every forward success and on **L1 reverse** successes, the observed-`external` upgrade,
+> the optional `ensL1Client` for L1 cross-chain **and** reverse miss-fallback, and
+> `coinType` / `scopedToNetworkId` chain-scoping. Reverse scope for chain-agnostic consumers rides
+> base `scopedToNetworkId` only (INV-28).
 
 ---
 
@@ -25,7 +26,7 @@ re-exports nothing of them; import them from `@openzeppelin/ui-types`.
 | `createEvmNameResolutionService` | function | ✅ |
 | `isValidName` | function | ✅ |
 | `normalizeName` | function | ✅ |
-| `baseEnsProvenance` | function | ✅ (reverse-path provenance, SF-3) |
+| `baseEnsProvenance` | function | ✅ (mainnet-bound reverse provenance, SF-3 / 002) |
 | `EnsProvenance` | type | ✅ **(SF-5)** — forward-result provenance extension |
 | `isEnsProvenance` | function (type guard) | ✅ **(SF-5)** — the sole sanctioned narrowing path |
 | `buildEnsProvenance` | function | ✅ **(SF-5)** — the forward provenance builder |
@@ -92,21 +93,20 @@ Dependencies injected into `createNameResolution`.
   When the bound network's chain has **no** Universal Resolver and no `ensL1Client` is wired,
   `resolveName` returns a typed `UNSUPPORTED_NETWORK` — it does not throw.
 
-- `ensL1Client` (`viem.PublicClient`, **optional — SF-5**) — a dedicated **mainnet** viem client,
-  used **only** when the bound network has no Universal Resolver, to resolve an ENS name
-  **chain-scoped to the bound network** on L1 (`coinType = toCoinType(boundChainId)`, ENSIP-9/11).
-  Like `publicClient`, it is **borrowed, never disposed**.
+- `ensL1Client` (`viem.PublicClient`, **optional — SF-5 + 002 SF-1**) — a dedicated **mainnet** viem
+  client. **Forward (SF-5):** used when the bound network has no Universal Resolver, to resolve an ENS
+  name **chain-scoped to the bound network** on L1 (`coinType = toCoinType(boundChainId)`, ENSIP-9/11).
+  **Reverse (002 SF-1):** used on non-mainnet-bound profiles for miss-fallback (after bound definitive
+  empty on UR-carrying chains) or direct L1 reverse when the bound chain has no UR. Like
+  `publicClient`, it is **borrowed, never disposed**.
 
-  - When **present** and the bound network is an L2 (no UR): `resolveName` resolves the name on L1
-    with the bound chain's `coinType`, and the success `provenance` carries `scopedToNetworkId =
-    config.id`.
-  - When **absent**: an L2-bound `resolveName` returns `UNSUPPORTED_NETWORK` exactly as SF-2 did —
-    the L1 cross-chain path is additive and gated on this field.
-  - When the bound network **already** has a Universal Resolver (mainnet-bound), `ensL1Client` is
-    **not** consulted — the bound `publicClient` wins (no redundant L1 hop) and `coinType` is `60`.
-
-  This is the field a runtime wires to enable L1 cross-chain resolution. See the
-  [Integration Guide](./integration-guide.md), Pattern 5.
+  - When **present** and the bound network is an L2 (no UR): `resolveName` resolves on L1 with scoped
+    `coinType`; `resolveAddress` uses L1 reverse direct.
+  - When **present** and the bound network is UR-carrying non-mainnet (e.g. Sepolia): `resolveAddress`
+    tries bound reverse first, then L1 only on definitive empty — never on bound gateway failure.
+  - When **absent**: L2-bound forward/reverse (no UR) returns `UNSUPPORTED_NETWORK`.
+  - When the bound network **already** has a Universal Resolver **and** is mainnet: `ensL1Client` is
+    **not** consulted for reverse (bound-only); forward uses bound client with `coinType` 60.
 
 ---
 
@@ -208,9 +208,10 @@ See [Error surface](#error-surface) for every code's shape.
 resolveAddress(address: string): Promise<ResolutionResult<ResolvedName>>
 ```
 
-Reverse resolution: address → name (SF-3). Returns a discriminated `ResolutionResult`. **Never
-throws for an expected failure.** The one sanctioned throw is `RuntimeDisposedError` on
-use-after-dispose, raised by the guard proxy *before* this body runs.
+Reverse resolution: address → name (SF-3 + **002 SF-1** Option B miss-fallback). Returns a
+discriminated `ResolutionResult`. **Never throws for an expected failure.** The one sanctioned
+throw is `RuntimeDisposedError` on use-after-dispose, raised by the guard proxy *before* this body
+runs.
 
 **On success** (`{ ok: true }`) the `value` is a `ResolvedName`:
 
@@ -220,78 +221,60 @@ interface ResolvedName {
   readonly name: string;                     // the verified primary name (e.g. 'vitalik.eth')
   readonly forwardVerified: boolean;         // ALWAYS true on this adapter (see note)
   readonly avatarUrl?: string;               // present only when an avatar was surfaced
-  readonly provenance: ResolutionProvenance; // { label: 'ENS', external: false }
+  readonly provenance: ResolutionProvenance; // base and/or EnsProvenance — see provenance table
 }
 ```
 
 > **`forwardVerified` is constant `true` here (Approach A, anti-spoofing crux).** viem's
-> `getEnsName` forward-verifies **inside** the Universal Resolver: it reads the reverse
-> (primary-name) record, forward-resolves the claimed name, and reverts `ReverseAddressMismatch`
-> if it does not match the queried address — so a name is *only* ever returned when it provably
-> round-trips. A mismatch is therefore never surfaced; it folds to `ADDRESS_NOT_FOUND`. The
-> `ResolvedName` type permits `forwardVerified: false` (the shared contract reserves it for
-> adapters that surface unverified names), but **this EVM adapter never emits it** — the field is
-> the literal `true` on every success. `rev.value.name` is safe to render directly.
+> `getEnsName` forward-verifies inside the Universal Resolver; mismatches fold to empty /
+> `ADDRESS_NOT_FOUND`. Render `rev.value.name` directly.
 
-The `address` is echoed exactly as supplied (no adapter-side re-checksum). `avatarUrl` is spread
-conditionally — the **key is absent** when no avatar was found, never `avatarUrl: undefined`.
+> **Provenance by path (002 SF-1 / D-R7).** Scope for chain-agnostic consumers is **base
+> `scopedToNetworkId` only** (INV-28):
 
-> **`avatarUrl` URI schemes (reverse only).** Populated by viem's `getEnsAvatar` → ENS `avatar` text
-> record → `parseAvatarRecord` (which may follow NFT metadata and IPFS hops). The adapter returns the
-> final string **verbatim** — no scheme normalization. Common forms include `https://…`, `data:…`,
-> `ipfs://…`, and `eip155:…` NFT references (viem may resolve these to another URI). The field lives
-> on `ResolvedName`, **not** on `EnsProvenance`. Consumers that render in CSP-restricted `<img>` slots
-> (allowing only `https:` and `data:image/*`) must gateway `ipfs://` to HTTPS before use; otherwise
-> the URI fails closed and will not display. Opt-in adapter-side IPFS gatewaying would be a cleaner UI
-> contract but is **not** implemented — do not assume HTTPS-only values.
+| Path | `scopedToNetworkId` | Typical `provenance` shape | `isEnsProvenance` |
+|------|---------------------|----------------------------|-------------------|
+| Bound hit on **mainnet** | **absent** | `baseEnsProvenance()` | `false` |
+| Bound hit on **non-mainnet** UR chain | **present** = bound `networkId` | base provenance + `scopedToNetworkId` (internal `boundReverseProvenance`) | `false` |
+| **L1** hit (miss-fallback or direct) | **absent** | `buildEnsProvenance({ coinType: 60, … })` | **`true`** |
 
-> **Network scope is not a `resolveName` parameter.** `coinType` / `scopedToNetworkId` on forward
-> provenance reflect the capability's bound `NetworkConfig`. To resolve for a different network, use a
-> capability instance bound to that network and call `resolveName` again. See
-> [Integration Guide — Pattern 7](./integration-guide.md#pattern-7-re-resolve-a-name-for-the-users-active-network-scopedtonetworkid-mismatch).
+L1 successes carry `EnsProvenance` (`coinType: 60`, observed `external`) as **adapter-internal
+enrichment** — chain-agnostic display gates must **not** branch on `isEnsProvenance` / `coinType`.
+Non-mainnet bound-local scope is a **minor behavioral change** vs `001` SF-3 (now sets
+`scopedToNetworkId`); see `.changeset/ens-mainnet-l1-reverse.md`.
 
-> **Reverse keeps base provenance (not `EnsProvenance`).** SF-5's provenance upgrade is
-> **forward-path only**. `resolveAddress` still attaches `baseEnsProvenance()` =
-> `{ label: 'ENS', external: false }`, which has **no** `system` field — so `isEnsProvenance(rev.value.provenance)`
-> returns `false` on a reverse result. This is intentional (the reverse read has no observed offchain
-> facts to substantiate); do not expect `coinType` / `scopedToNetworkId` on a reverse result.
+> **L1 reverse uses default primary (`coinType` 60).** L1 `getEnsName` omits `coinType` override.
+> Addresses with only an ENSIP-19 L2 primary and no coinType-60 primary → `ADDRESS_NOT_FOUND` after
+> L1 empty — not the L2 name.
 
-**Avatar is best-effort and fully isolated.** After a successful reverse read, the service makes a
-separate `getEnsAvatar` lookup (a second Universal-Resolver round-trip, plus a possible third hop
-inside viem's `parseAvatarRecord` for NFT / IPFS / HTTP asset resolution). **Any** avatar outcome —
-gateway error, unreachable host, malformed record, timeout — yields no `avatarUrl` and **never**
-fails, throws, or reclassifies the reverse result. The avatar hops are deliberately **outside** the
-`elapsedMs` window that a `RESOLUTION_TIMEOUT` would report.
+The `address` is echoed exactly as supplied. `avatarUrl` is spread conditionally — the **key is
+absent** when no avatar was found. Avatar is fetched from the **same client** that produced the name
+(bound client for bound hit; L1 client for L1 hit).
 
-**Fixed classification precedence** (each gate short-circuits to a typed error):
+**Option B ladder precedence** (002 SF-1):
 
 | Order | Condition | Result |
 |------|-----------|--------|
-| 0 | Method called on a disposed capability | **throws** `RuntimeDisposedError` (guard proxy, before body) |
-| 1 | Bound chain has no ENS Universal Resolver | `{ ok: false, error: { code: 'UNSUPPORTED_NETWORK', networkId } }` — **sync, before any I/O** |
-| 2 | `address` is not a well-formed EVM address | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` — **sync, before any I/O** |
-| 3a | `getEnsName` returns `null` (empty reverse record) | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
-| 3b | `getEnsName` returns a (forward-verified) name | `{ ok: true, value: { address, name, forwardVerified: true, avatarUrl?, provenance } }` |
-| 4 | Revert `ReverseAddressMismatch` (forward-mismatch — **suppressed**) | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
-| 4 | Revert `ResolverNotFound` / `ResolverNotContract` / `UnsupportedResolverProfile` | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
-| 4 | Anything else (gateway / offchain / timeout / transport / unclassifiable) | mapped by the error layer → `EXTERNAL_GATEWAY_ERROR` \| `RESOLUTION_TIMEOUT` \| `ADAPTER_ERROR` |
+| 0 | Method called on a disposed capability | **throws** `RuntimeDisposedError` (guard proxy) |
+| 1 | `address` is not a well-formed EVM address | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` — **sync, before I/O** |
+| 2a | Bound chain **has** UR → bound `getEnsName` **success** | `{ ok: true, value }` with bound provenance (D-R7 row) — **no L1** |
+| 2b | Bound chain has UR → bound **failure** (gateway/timeout/transport) | mapped typed error — **no L1 miss-fallback** (INV-9) |
+| 2c | Bound chain has UR → bound **empty** + `ensL1Client` + not mainnet-bound | L1 `getEnsName` (one consult) |
+| 2d | Bound chain has UR → bound **empty** + (no L1 or mainnet-bound) | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
+| 3 | No UR + `ensL1Client` + not mainnet-bound | L1 reverse direct |
+| 4 | No UR and no `ensL1Client` | `{ ok: false, error: { code: 'UNSUPPORTED_NETWORK', networkId } }` — **sync, before I/O** |
 
-Gates 1–2 run **before any network round-trip**. The one reverse read uses `strict: true`. Every
-"no usable, forward-verified reverse record" outcome (empty record, mismatch, the address-scoped
-resolver reverts, and a malformed-address input) deliberately collapses onto the single
-`ADDRESS_NOT_FOUND` code — the adapter never distinguishes "no record" from "spoofed record" to the
-caller, and never surfaces the rejected name.
+**Definitive empty** (miss-fallback-eligible on bound): `null`, `ReverseAddressMismatch`, and
+resolver-semantic reverts (`ResolverNotFound`, `ResolverNotContract`, `ResolverError`,
+`UnsupportedResolverProfile`). **Not** gateway/timeout/transport — those are `{ kind: 'failure' }`.
 
-> **`instanceof BaseError` gate — safe degradation (symmetric with `resolveName`).** The
-> revert-classification `switch` reads the decoded `errorName` only when the caught error is a viem
-> `BaseError`. If two copies of viem coexist so a `ReverseAddressMismatch` (or other UR revert)
-> defeats `instanceof`, the `errorName` is not read and the error falls through to the mapping
-> layer's `ADAPTER_ERROR` fallback. This is **safe** — the mismatched name is still never surfaced,
-> never a throw, `cause` preserved — only *less precise* (a clean address-not-found is reported as
-> an adapter fault rather than `ADDRESS_NOT_FOUND`). In the normal single-copy case the precise
-> `ADDRESS_NOT_FOUND` is produced.
+L1 terminal: success with L1 provenance; empty → `ADDRESS_NOT_FOUND`; failure → mapped typed error.
+No third client after L1.
 
-See [Error surface](#error-surface) for every code's shape.
+Gates 1 and 4 run **before any network round-trip**. Every `getEnsName` uses `strict: true`.
+Reverse I/O uses `deriveObservingClient` for truthful `viaGateway` on errors.
+
+See [Integration Guide — Pattern 8](./integration-guide.md#pattern-8-reverse-miss-fallback-ladder--chain-agnostic-scope-gate-002-sf-1) and [Error surface](#error-surface).
 
 ### `service.dispose()`
 
@@ -381,25 +364,18 @@ ENSIP-15/UTS-46 normalization of an ENS name. **Throws** on a structurally-inval
 function baseEnsProvenance(): ResolutionProvenance
 ```
 
-The provenance builder for the **reverse** path (`resolveAddress`, SF-3). Returns a
-**freshly-allocated** base `ResolutionProvenance` on every call:
+Provenance builder for **mainnet-bound reverse hits** (`resolveAddress`). Returns a freshly-allocated
+base `ResolutionProvenance`:
 
 ```ts
 { label: 'ENS', external: false }
 ```
 
-- `label` — the fixed, user-safe literal `'ENS'`. A **display** string, not a discriminant;
-  never a URL, gateway host, or keyed identifier. Do not branch on it.
-- `external` — `false`. The reverse read has no observed offchain facts to report.
-- `scopedToNetworkId` — deliberately **absent** (no chain-scoping on the reverse path).
+- `scopedToNetworkId` — **absent** (global / mainnet identity — byte-stable vs `001` SF-3).
+- No `system` field — `isEnsProvenance()` → `false`.
 
-> **Since SF-5, this is reverse-only.** The forward path (`resolveName`) no longer calls
-> `baseEnsProvenance()` — it builds an [`EnsProvenance`](#ensprovenance-sf-5) via
-> [`buildEnsProvenance`](#buildensprovenance-sf-5) instead. `baseEnsProvenance()` produces no
-> `system` field, so `isEnsProvenance()` narrows `false` on a reverse result — by design.
-
-A fresh object per call (no shared/frozen singleton), so no two success results alias one
-provenance.
+Forward path (`resolveName`) uses [`buildEnsProvenance`](#buildensprovenance-sf-5) instead. Non-mainnet
+bound-local reverse hits use the same base shape with `scopedToNetworkId` set (module-internal builder).
 
 ---
 

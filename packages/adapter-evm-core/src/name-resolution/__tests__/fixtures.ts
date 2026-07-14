@@ -41,6 +41,23 @@ export const VITALIK_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
 /** A dummy ENS Universal Resolver address that marks a chain as ENS-supporting (D-B / INV-16). */
 const UNIVERSAL_RESOLVER = '0xce01f8eee7E479C928F8919abD53E553a36CeF67';
 
+/**
+ * Sepolia — UR-carrying non-mainnet bound chain (002 SF-1 first-class miss-fallback case).
+ * `chainId` matches viem Sepolia; `id` is the repo network slug used for D-R7 scope.
+ */
+export const SEPOLIA_NETWORK_CONFIG = {
+  id: 'ethereum-sepolia',
+  exportConstName: 'ethereumSepolia',
+  name: 'Ethereum Sepolia',
+  ecosystem: 'evm',
+  network: 'ethereum',
+  type: 'testnet',
+  isTestnet: true,
+  chainId: 11_155_111,
+  rpcUrl: 'https://sepolia.example.com',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+} as const;
+
 /** A valid EVM `NetworkConfig` (only `ecosystem: 'evm'` + `id` are load-bearing for SF-2). */
 export const EVM_NETWORK_CONFIG = {
   id: 'ethereum-mainnet',
@@ -86,6 +103,8 @@ export interface MakeClientOptions {
   readonly getEnsAvatar?: ReturnType<typeof vi.fn>;
   /** Whether the bound chain exposes an ENS Universal Resolver (D-B support-gate). Default `true`. */
   readonly supported?: boolean;
+  /** viem `chain.id` on the bound mock when `supported` (default `1`). */
+  readonly boundChainId?: number;
   /**
    * SF-5 — install a source-level `ccipRead.request` on the mock so the service's per-call observing
    * wrapper (INV-9) delegates to it instead of viem's networked `ccipRequest`. When `offchain: true`
@@ -118,10 +137,11 @@ export function makeClient(opts: MakeClientOptions = {}): MockClient {
   const getEnsName = opts.getEnsName ?? vi.fn().mockResolvedValue(VITALIK_NAME);
   const getEnsAvatar = opts.getEnsAvatar ?? vi.fn().mockResolvedValue(AVATAR_URL);
   const supported = opts.supported ?? true;
+  const boundChainId = opts.boundChainId ?? 1;
   const chain = supported
     ? {
-        id: 1,
-        name: 'Ethereum',
+        id: boundChainId,
+        name: boundChainId === SEPOLIA_NETWORK_CONFIG.chainId ? 'Sepolia' : 'Ethereum',
         contracts: { ensUniversalResolver: { address: UNIVERSAL_RESOLVER } },
       }
     : { id: 999, name: 'NoEns' };
@@ -133,6 +153,47 @@ export function makeClient(opts: MakeClientOptions = {}): MockClient {
     ...(ccipRequest ? { ccipRead: { request: ccipRequest } } : {}),
   } as unknown as PublicClient;
   return { client, getEnsAddress, getEnsName, getEnsAvatar, ccipRequest };
+}
+
+/** A paired bound + mainnet L1 mock for 002 SF-1 reverse miss-fallback tests. */
+export interface DualReverseClients {
+  readonly bound: MockClient;
+  readonly l1: MockClient;
+}
+
+export interface MakeDualReverseClientsOptions {
+  readonly boundGetEnsName?: ReturnType<typeof vi.fn>;
+  readonly boundGetEnsAvatar?: ReturnType<typeof vi.fn>;
+  readonly l1GetEnsName?: ReturnType<typeof vi.fn>;
+  readonly l1GetEnsAvatar?: ReturnType<typeof vi.fn>;
+  /** Bound chain carries a UR (default `true`). */
+  readonly boundSupported?: boolean;
+  /** viem `chain.id` on the bound mock when UR-present (default Sepolia). */
+  readonly boundChainId?: number;
+}
+
+/**
+ * Build separate bound and L1 `PublicClient` stubs so spies can assert call order / client affinity
+ * (INV-9, INV-18, INV-19). The L1 client always carries a mainnet-shaped chain id for realism.
+ */
+export function makeDualReverseClients(
+  opts: MakeDualReverseClientsOptions = {}
+): DualReverseClients {
+  const bound = makeClient({
+    getEnsName: opts.boundGetEnsName,
+    getEnsAvatar: opts.boundGetEnsAvatar,
+    supported: opts.boundSupported ?? true,
+    boundChainId: opts.boundChainId ?? SEPOLIA_NETWORK_CONFIG.chainId,
+  });
+  const l1GetEnsName = opts.l1GetEnsName ?? vi.fn().mockResolvedValue(VITALIK_NAME);
+  const l1GetEnsAvatar = opts.l1GetEnsAvatar ?? vi.fn().mockResolvedValue(AVATAR_URL);
+  const l1 = makeClient({
+    getEnsName: l1GetEnsName,
+    getEnsAvatar: l1GetEnsAvatar,
+    supported: true,
+    boundChainId: 1,
+  });
+  return { bound, l1 };
 }
 
 // ---------------------------------------------------------------------------

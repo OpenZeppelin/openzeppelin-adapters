@@ -24,7 +24,13 @@ Expected output for an address with a forward-consistent reverse record:
   forwardVerified: true
   avatarUrl: (none — best-effort, absent is normal)
   provenance: label=ENS external=false
+  scopedToNetworkId: (absent — global on mainnet-bound)
 ```
+
+On a **non-mainnet-bound** runtime (e.g. Sepolia with standard `ensL1Client` wiring), an address with
+no bound reverse but a mainnet primary may resolve via **miss-fallback** — `scopedToNetworkId` stays
+absent (global), and `isEnsProvenance` may be `true` on the L1 path. See
+[`reverse-miss-fallback`](../reverse-miss-fallback/) and Integration Guide Pattern 8.
 
 Try an address with no reverse record (e.g. `pnpm tsx resolve-address.ts 0x0000000000000000000000000000000000000001`)
 to see the `ADDRESS_NOT_FOUND` branch, or a malformed address (`0xnope`) to see it rejected by the
