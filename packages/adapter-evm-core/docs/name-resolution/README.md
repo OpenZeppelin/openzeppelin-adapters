@@ -105,19 +105,21 @@ if (result.ok) {
 **Reverse** (address → name, for display) is the mirror call:
 
 ```ts
-// Feature-detect the reverse method specifically — it may be absent on older adapters.
 if (!cap.resolveAddress) return; // show truncated hex
 
 const rev = await cap.resolveAddress('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045');
 if (rev.ok) {
-  // rev.value.name is SAFE to render as-is: forwardVerified is always true here.
-  display(rev.value.name);                       // e.g. 'vitalik.eth'
-  if (rev.value.avatarUrl) showAvatar(rev.value.avatarUrl); // optional, best-effort
-
   // Chain-agnostic scope gate (002 SF-1) — base field ONLY; never isEnsProvenance / coinType.
   const scope = rev.value.provenance.scopedToNetworkId;
   const showOnThisRow = scope === undefined || scope === activeNetworkId;
-  if (showOnThisRow) display(rev.value.name);
+
+  if (showOnThisRow) {
+    // rev.value.name is SAFE to render as-is: forwardVerified is always true here.
+    display(rev.value.name);                       // e.g. 'vitalik.eth'
+    if (rev.value.avatarUrl) showAvatar(rev.value.avatarUrl); // optional, best-effort
+  } else {
+    display(truncate('0xd8dA6BF…'));               // network-local name on wrong row → show hex
+  }
 } else if (rev.error.code === 'ADDRESS_NOT_FOUND') {
   display(truncate('0xd8dA6BF…'));               // no verified name → show hex
 } else if (rev.error.code === 'RESOLUTION_TIMEOUT' || rev.error.code === 'EXTERNAL_GATEWAY_ERROR') {
