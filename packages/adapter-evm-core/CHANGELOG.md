@@ -1,5 +1,11 @@
 # @openzeppelin/adapter-evm-core
 
+## 1.3.0
+
+### Minor Changes
+
+- [#55](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/55) [`83941c1`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/83941c11544dcafa1f67cf2a8d22b4397388e90b) Thanks [@pasevin](https://github.com/pasevin)! - Opt-in mainnet-L1 miss-fallback for forward+reverse ENS resolution (definitive-miss only, never-silent) with cross-network provenance triplet; requires @openzeppelin/ui-types ^3.3.0.
+
 ## 1.2.0
 
 ### Minor Changes
