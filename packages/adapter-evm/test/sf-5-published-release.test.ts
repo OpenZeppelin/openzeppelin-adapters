@@ -6,7 +6,7 @@
  * ui-types ^3.3.0 floor, and 003 delta bundled into the npm tarball — not runtime behavior
  * (covered by SF-1–SF-4 suites).
  */
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -147,7 +147,7 @@ describe('SF-5 published release correctness', () => {
           encoding: 'utf8',
         }).trim();
         tarballPath = resolve(ADAPTER_EVM_ROOT, tarballName);
-        execSync(`tar -xzf ${JSON.stringify(tarballPath)}`, { cwd: extractRoot, stdio: 'pipe' });
+        execFileSync('tar', ['-xzf', tarballPath], { cwd: extractRoot, stdio: 'pipe' });
         tarballDistBundle = collectBundledJs(join(extractRoot, 'package', 'dist'));
       } finally {
         rmSync(extractRoot, { recursive: true, force: true });

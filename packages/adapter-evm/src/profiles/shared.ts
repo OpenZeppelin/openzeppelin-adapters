@@ -144,11 +144,10 @@ export const capabilityFactories: CapabilityFactoryMap = {
   wallet: (config: NetworkConfig) => createWallet(toTypedEvmNetworkConfig(config)),
   uiKit: (config: NetworkConfig) => createUiKit(toTypedEvmNetworkConfig(config)),
   relayer: (config: NetworkConfig) => createRelayer(toTypedEvmNetworkConfig(config)),
-  nameResolution: (config: NetworkConfig) =>
-    createNameResolution(
-      toTypedEvmNetworkConfig(config),
-      buildNameResolutionCreateOptions(toTypedEvmNetworkConfig(config))
-    ),
+  nameResolution: (config: NetworkConfig) => {
+    const typedConfig = toTypedEvmNetworkConfig(config);
+    return createNameResolution(typedConfig, buildNameResolutionCreateOptions(typedConfig));
+  },
   accessControl: (config: NetworkConfig) => {
     const typedConfig = toTypedEvmNetworkConfig(config);
     const execution = createExecution(typedConfig);
