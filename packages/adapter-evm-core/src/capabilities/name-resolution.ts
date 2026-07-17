@@ -22,13 +22,25 @@ export interface CreateNameResolutionOptions {
   readonly publicClient: PublicClient;
 
   /**
-   * SF-5 — NEW, OPTIONAL. A dedicated **mainnet** viem client, used ONLY when the bound network has
-   * no Universal Resolver, to resolve an ENS name chain-scoped to the bound network via L1
-   * (`coinType = toCoinType(boundChainId)`, D-V1). Also borrowed, never disposed (INV-21). When
-   * absent, an L2-bound `resolveName` returns `UNSUPPORTED_NETWORK` exactly as SF-2 does today
-   * (D-B preserved) — so wiring it is purely additive.
+   * SF-5 — OPTIONAL. A dedicated **mainnet** viem client, used for:
+   *   - `001` SF-5 non-UR forward chain-scoped resolution (`coinType = toCoinType(boundChainId)`)
+   *   - L1 miss-fallback on reverse (002) and forward (SF-4) **only when**
+   *     {@link enableMainnetL1MissFallback} is explicitly `true`
+   *
+   * Also borrowed, never disposed (INV-21). Wiring `ensL1Client` does **not** imply opt-in.
+   * Default miss-fallback posture remains OFF (003 SF-1).
    */
   readonly ensL1Client?: PublicClient;
+
+  /**
+   * SF-1 (003) — OPTIONAL. When `true`, permits mainnet-L1 miss-fallback after a **definitive**
+   * bound-chain empty / NAME_NOT_FOUND-class miss on **both** `resolveAddress` and `resolveName`
+   * (UR-carrying bound chains). When absent or `false` (default), preserves safe posture: reverse
+   * does not consult L1 on bound empty; forward stays bound-UR-authoritative on bound miss.
+   *
+   * Does not relax never-silent-fallback — transport/gateway/timeout failures remain terminal.
+   */
+  readonly enableMainnetL1MissFallback?: boolean;
 }
 
 /**
@@ -53,7 +65,8 @@ export function createNameResolution(
   const service = createEvmNameResolutionService(
     networkConfig,
     options.publicClient,
-    options.ensL1Client
+    options.ensL1Client,
+    { enableMainnetL1MissFallback: options.enableMainnetL1MissFallback }
   );
 
   return guardRuntimeCapability(

@@ -29,5 +29,15 @@ export {
   type EnsProvenance,
 } from './ens-provenance';
 export { isValidName, normalizeName } from './name-validation';
-export { baseEnsProvenance } from './provenance';
-export { EvmNameResolutionService, createEvmNameResolutionService } from './service';
+export {
+  baseEnsProvenance,
+  boundReverseProvenance,
+  composeNetworkFallbackProvenance,
+  MAINNET_NETWORK_ID,
+  networkFallbackProvenanceFields,
+} from './provenance';
+export {
+  EvmNameResolutionService,
+  createEvmNameResolutionService,
+  type CreateEvmNameResolutionServiceOptions,
+} from './service';

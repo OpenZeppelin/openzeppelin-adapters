@@ -1,4 +1,4 @@
-# API Reference — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5 · L1 reverse SF-1)
+# API Reference — ENS Name Resolution (forward SF-2 · reverse SF-3 · ENS v2 SF-5 · L1 miss-fallback 003)
 
 Complete typed surface for the EVM name-resolution capability, as exported from
 `@openzeppelin/adapter-evm-core`. Value types (`ResolutionResult`, `ResolvedAddress`,
@@ -6,13 +6,11 @@ Complete typed surface for the EVM name-resolution capability, as exported from
 interface are **owned by `@openzeppelin/ui-types`** — this package implements against them and
 re-exports nothing of them; import them from `@openzeppelin/ui-types`.
 
-> Scope: this reference covers all four delivered slices — the **forward** path (name → address,
-> SF-2), the **reverse** path (`resolveAddress`, `forwardVerified`, avatar, SF-3 + 002 SF-1
-> miss-fallback), and **ENS v2** (SF-5): the `EnsProvenance` extension type + `isEnsProvenance` guard
-> carried on every forward success and on **L1 reverse** successes, the observed-`external` upgrade,
-> the optional `ensL1Client` for L1 cross-chain **and** reverse miss-fallback, and
-> `coinType` / `scopedToNetworkId` chain-scoping. Reverse scope for chain-agnostic consumers rides
-> base `scopedToNetworkId` only (INV-28).
+> Scope: this reference covers all delivered slices — the **forward** path (name → address,
+> SF-2), the **reverse** path (`resolveAddress`, `forwardVerified`, avatar, SF-3 + 003 SF-3
+> opt-in miss-fallback), **ENS v2** (SF-5), and **003 cross-network fallback provenance** (SF-2:
+> base triplet on L1 miss-fallback successes). Reverse scope for chain-agnostic show/hide rides
+> base `scopedToNetworkId` only (INV-28); fallback disclaimer rides the triplet only.
 
 ---
 
@@ -27,6 +25,9 @@ re-exports nothing of them; import them from `@openzeppelin/ui-types`.
 | `isValidName` | function | ✅ |
 | `normalizeName` | function | ✅ |
 | `baseEnsProvenance` | function | ✅ (mainnet-bound reverse provenance, SF-3 / 002) |
+| `MAINNET_NETWORK_ID` | constant | ✅ **(003 SF-2)** — canonical mainnet repo network id (`ethereum-mainnet`) |
+| `networkFallbackProvenanceFields` | function | ✅ **(003 SF-2)** — DRY triplet builder |
+| `composeNetworkFallbackProvenance` | function | ✅ **(003 SF-2)** — spread triplet onto existing provenance |
 | `EnsProvenance` | type | ✅ **(SF-5)** — forward-result provenance extension |
 | `isEnsProvenance` | function (type guard) | ✅ **(SF-5)** — the sole sanctioned narrowing path |
 | `buildEnsProvenance` | function | ✅ **(SF-5)** — the forward provenance builder |
@@ -75,7 +76,8 @@ no RPC resource of its own, because it borrows the injected client (see `CreateN
 ```ts
 interface CreateNameResolutionOptions {
   readonly publicClient: PublicClient;
-  readonly ensL1Client?: PublicClient;   // SF-5, optional
+  readonly ensL1Client?: PublicClient;              // SF-5 + 003 — optional mainnet client
+  readonly enableMainnetL1MissFallback?: boolean;  // 003 SF-1 — default OFF (strict `true` only)
 }
 ```
 
@@ -93,20 +95,29 @@ Dependencies injected into `createNameResolution`.
   When the bound network's chain has **no** Universal Resolver and no `ensL1Client` is wired,
   `resolveName` returns a typed `UNSUPPORTED_NETWORK` — it does not throw.
 
-- `ensL1Client` (`viem.PublicClient`, **optional — SF-5 + 002 SF-1**) — a dedicated **mainnet** viem
-  client. **Forward (SF-5):** used when the bound network has no Universal Resolver, to resolve an ENS
-  name **chain-scoped to the bound network** on L1 (`coinType = toCoinType(boundChainId)`, ENSIP-9/11).
-  **Reverse (002 SF-1):** used on non-mainnet-bound profiles for miss-fallback (after bound definitive
-  empty on UR-carrying chains) or direct L1 reverse when the bound chain has no UR. Like
+- `ensL1Client` (`viem.PublicClient`, **optional — SF-5 + 003**) — a dedicated **mainnet** viem
+  client. **Forward (SF-5 / `001` 1b):** used when the bound network has no Universal Resolver, to
+  resolve an ENS name **chain-scoped to the bound network** on L1 (`coinType = toCoinType(boundChainId)`).
+  **Miss-fallback (003 SF-3 / SF-4):** used after a definitive bound-empty / `NAME_NOT_FOUND` on
+  UR-carrying non-mainnet chains **only when** `enableMainnetL1MissFallback === true`. Like
   `publicClient`, it is **borrowed, never disposed**.
 
   - When **present** and the bound network is an L2 (no UR): `resolveName` resolves on L1 with scoped
-    `coinType`; `resolveAddress` uses L1 reverse direct.
-  - When **present** and the bound network is UR-carrying non-mainnet (e.g. Sepolia): `resolveAddress`
-    tries bound reverse first, then L1 only on definitive empty — never on bound gateway failure.
+    `coinType` (canonical 1b — **no** fallback triplet); `resolveAddress` uses L1 reverse direct when
+    opted in (**no** triplet — not preceded by bound miss).
+  - When **present** and the bound network is UR-carrying non-mainnet (e.g. Sepolia) **with opt-in ON**:
+    `resolveAddress` / `resolveName` try bound first, then L1 only on definitive empty / `NAME_NOT_FOUND`
+    — never on bound gateway failure. L1 success after bound miss emits the SF-2 fallback triplet.
+  - When **present** but opt-in **OFF** (default): `ensL1Client` still powers forward `001` 1b on
+    non-UR chains; UR-carrying bound-empty reverse/forward does **not** consult L1.
   - When **absent**: L2-bound forward/reverse (no UR) returns `UNSUPPORTED_NETWORK`.
   - When the bound network **already** has a Universal Resolver **and** is mainnet: `ensL1Client` is
-    **not** consulted for reverse (bound-only); forward uses bound client with `coinType` 60.
+    **not** consulted for miss-fallback; forward uses bound client with `coinType` 60.
+
+- `enableMainnetL1MissFallback` (`boolean`, **optional — 003 SF-1**) — consumer opt-in for mainnet-L1
+  miss-fallback on **both** directions. Normalized to strict `=== true` at construction; absent,
+  `false`, or any other value ⇒ **OFF**. Does not relax never-silent-fallback: bound transport/gateway
+  failures remain terminal. Wiring `ensL1Client` alone does **not** imply opt-in.
 
 ---
 
@@ -189,8 +200,9 @@ validation, so an input that is *both* malformed *and* on an unsupported network
 | 1d | No UR **and** no `ensL1Client` | `{ ok: false, error: { code: 'UNSUPPORTED_NETWORK', networkId } }` — **sync, before any I/O** |
 | 2 | `isValidName(name)` is `false` | `{ ok: false, error: { code: 'UNSUPPORTED_NAME', name, reason } }` |
 | 3 | `normalizeName(name)` throws | `{ ok: false, error: { code: 'UNSUPPORTED_NAME', name, reason } }` |
-| 4a | `getEnsAddress` returns `null` (empty record) | `{ ok: false, error: { code: 'NAME_NOT_FOUND', name } }` |
-| 4b | `getEnsAddress` returns an address | `{ ok: true, value: { name, address, provenance } }` (provenance = `EnsProvenance`) |
+| 4a | `getEnsAddress` returns `null` (empty record) on **bound UR** branch | `{ ok: false, error: { code: 'NAME_NOT_FOUND', name } }` — **unless** opt-in ON → one L1 `getEnsAddress` (003 SF-4); L1 success spreads fallback triplet |
+| 4a′ | `getEnsAddress` returns `null` on **1b** chain-scoped L1 | `{ ok: false, error: { code: 'NAME_NOT_FOUND', name } }` — terminal (not miss-fallback) |
+| 4b | `getEnsAddress` returns an address | `{ ok: true, value: { name, address, provenance } }` (provenance = `EnsProvenance`; triplet absent on bound hit) |
 | 5 | Revert `ResolverNotFound` / `ResolverNotContract` | `{ ok: false, error: { code: 'NAME_NOT_FOUND', name } }` |
 | 5 | Revert `UnsupportedResolverProfile` | `{ ok: false, error: { code: 'UNSUPPORTED_NAME', name, reason } }` |
 | 5 | Anything else (gateway / offchain / timeout / transport / unclassifiable) | mapped by the error layer → `EXTERNAL_GATEWAY_ERROR` \| `RESOLUTION_TIMEOUT` \| `ADAPTER_ERROR` |
@@ -229,19 +241,22 @@ interface ResolvedName {
 > `getEnsName` forward-verifies inside the Universal Resolver; mismatches fold to empty /
 > `ADDRESS_NOT_FOUND`. Render `rev.value.name` directly.
 
-> **Provenance by path (002 SF-1 / D-R7).** Scope for chain-agnostic consumers is **base
-> `scopedToNetworkId` only** (INV-28):
+> **Provenance by path (003 SF-2 / D-R7).** Show/hide for chain-agnostic consumers uses **base
+> `scopedToNetworkId` only** (INV-28). Cross-network fallback disclaimer uses the **triplet** only
+> (`resolvedViaNetworkFallback`, `queriedOnNetworkId`, `resolvedOnNetworkId`) — never `isEnsProvenance`
+> / `coinType` / `label`:
 
-| Path | `scopedToNetworkId` | Typical `provenance` shape | `isEnsProvenance` |
-|------|---------------------|----------------------------|-------------------|
-| Bound hit on **mainnet** | **absent** | `baseEnsProvenance()` | `false` |
-| Bound hit on **non-mainnet** UR chain | **present** = bound `networkId` | base provenance + `scopedToNetworkId` (internal `boundReverseProvenance`) | `false` |
-| **L1** hit (miss-fallback or direct) | **absent** | `buildEnsProvenance({ coinType: 60, … })` | **`true`** |
+| Path | `scopedToNetworkId` | Fallback triplet | Typical `provenance` shape | `isEnsProvenance` |
+|------|---------------------|------------------|----------------------------|-------------------|
+| Bound hit on **mainnet** | **absent** | absent | `baseEnsProvenance()` | `false` |
+| Bound hit on **non-mainnet** UR chain | **present** = bound `networkId` | absent | base + `scopedToNetworkId` | `false` |
+| **L1** after **bound-empty miss** (opt-in ON) | **absent** | **present** (complete triplet) | `buildEnsProvenance` + triplet | **`true`** |
+| **L1** direct (non-UR, opt-in ON) | **absent** | **absent** (`001` 1b parity) | `buildEnsProvenance` only | **`true`** |
 
-L1 successes carry `EnsProvenance` (`coinType: 60`, observed `external`) as **adapter-internal
+L1 successes may carry `EnsProvenance` (`coinType: 60`, observed `external`) as **adapter-internal
 enrichment** — chain-agnostic display gates must **not** branch on `isEnsProvenance` / `coinType`.
-Non-mainnet bound-local scope is a **minor behavioral change** vs `001` SF-3 (now sets
-`scopedToNetworkId`); see `.changeset/ens-mainnet-l1-reverse.md`.
+The fallback triplet is emitted **only** when L1 follows a real bound-empty miss on a UR-carrying
+chain (`precededByBoundMiss === true`), not on non-UR direct L1.
 
 > **L1 reverse uses default primary (`coinType` 60).** L1 `getEnsName` omits `coinType` override.
 > Addresses with only an ENSIP-19 L2 primary and no coinType-60 primary → `ADDRESS_NOT_FOUND` after
@@ -251,7 +266,7 @@ The `address` is echoed exactly as supplied. `avatarUrl` is spread conditionally
 absent** when no avatar was found. Avatar is fetched from the **same client** that produced the name
 (bound client for bound hit; L1 client for L1 hit).
 
-**Option B ladder precedence** (002 SF-1):
+**Option B ladder precedence** (003 SF-3; inherits 002; L1 tiers gated by `mayConsultL1ForMissFallback()`):
 
 | Order | Condition | Result |
 |------|-----------|--------|
@@ -259,10 +274,10 @@ absent** when no avatar was found. Avatar is fetched from the **same client** th
 | 1 | `address` is not a well-formed EVM address | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` — **sync, before I/O** |
 | 2a | Bound chain **has** UR → bound `getEnsName` **success** | `{ ok: true, value }` with bound provenance (D-R7 row) — **no L1** |
 | 2b | Bound chain has UR → bound **failure** (gateway/timeout/transport) | mapped typed error — **no L1 miss-fallback** (INV-9) |
-| 2c | Bound chain has UR → bound **empty** + `ensL1Client` + not mainnet-bound | L1 `getEnsName` (one consult) |
-| 2d | Bound chain has UR → bound **empty** + (no L1 or mainnet-bound) | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
-| 3 | No UR + `ensL1Client` + not mainnet-bound | L1 reverse direct |
-| 4 | No UR and no `ensL1Client` | `{ ok: false, error: { code: 'UNSUPPORTED_NETWORK', networkId } }` — **sync, before I/O** |
+| 2c | Bound chain has UR → bound **empty** + opt-in ON + `ensL1Client` + not mainnet-bound | L1 `getEnsName` (one consult) → triplet on success |
+| 2d | Bound chain has UR → bound **empty** + opt-in OFF (or no L1 / mainnet-bound) | `{ ok: false, error: { code: 'ADDRESS_NOT_FOUND', address } }` |
+| 3 | No UR + opt-in ON + `ensL1Client` + not mainnet-bound | L1 reverse direct — **no** fallback triplet |
+| 4 | No UR and (opt-in OFF or no `ensL1Client`) | `{ ok: false, error: { code: 'UNSUPPORTED_NETWORK', networkId } }` or `ADDRESS_NOT_FOUND` per branch — **sync where applicable** |
 
 **Definitive empty** (miss-fallback-eligible on bound): `null`, `ReverseAddressMismatch`, and
 resolver-semantic reverts (`ResolverNotFound`, `ResolverNotContract`, `ResolverError`,
@@ -274,7 +289,7 @@ No third client after L1.
 Gates 1 and 4 run **before any network round-trip**. Every `getEnsName` uses `strict: true`.
 Reverse I/O uses `deriveObservingClient` for truthful `viaGateway` on errors.
 
-See [Integration Guide — Pattern 8](./integration-guide.md#pattern-8-reverse-miss-fallback-ladder--chain-agnostic-scope-gate-002-sf-1) and [Error surface](#error-surface).
+See [Integration Guide — Pattern 10](./integration-guide.md#pattern-10-forward-miss-fallback-on-ur-bound-chains-003-sf-4) and [Pattern 9](./integration-guide.md#pattern-9-cross-network-fallback-provenance-003-sf-2) and [Error surface](#error-surface).
 
 ### `service.dispose()`
 
@@ -295,7 +310,8 @@ early-returns on a disposed capability).
 function createEvmNameResolutionService(
   networkConfig: TypedEvmNetworkConfig,
   publicClient: PublicClient,
-  ensL1Client?: PublicClient,          // SF-5, optional
+  ensL1Client?: PublicClient,          // SF-5 + 003, optional
+  options?: { enableMainnetL1MissFallback?: boolean }, // 003 SF-1, default OFF
 ): EvmNameResolutionService
 ```
 
@@ -376,6 +392,114 @@ base `ResolutionProvenance`:
 
 Forward path (`resolveName`) uses [`buildEnsProvenance`](#buildensprovenance-sf-5) instead. Non-mainnet
 bound-local reverse hits use the same base shape with `scopedToNetworkId` set (module-internal builder).
+
+---
+
+## Cross-network fallback provenance (003 SF-2)
+
+The **public contract** for L1 miss-fallback successes lives on base `ResolutionProvenance` in
+`@openzeppelin/ui-types@3.3.0` — three **additive optional readonly** fields. The adapter **emits**
+them; it does not invent alternate names or adapter-only encodings.
+
+### `ResolutionProvenance` fallback fields (`@openzeppelin/ui-types`)
+
+```ts
+interface ResolutionProvenance {
+  readonly label: string;
+  readonly external: boolean;
+  readonly scopedToNetworkId?: string;
+
+  /** `true` iff success followed bound-tier definitive miss → L1 consult (opt-in ON). */
+  readonly resolvedViaNetworkFallback?: boolean;
+
+  /** Network where the record was found — always `ethereum-mainnet` for 003 L1 fallback. */
+  readonly resolvedOnNetworkId?: string;
+
+  /** Bound adapter network that missed first — repo `networkConfig.id` slug. */
+  readonly queriedOnNetworkId?: string;
+}
+```
+
+**Triplet integrity** (runtime invariant):
+
+| `resolvedViaNetworkFallback` | `queriedOnNetworkId` | `resolvedOnNetworkId` | Valid? |
+|---|---|---|---|
+| `true` | non-empty string | non-empty string | **Yes** — canonical fallback |
+| `true` | absent / empty | any | **No** |
+| `undefined` / `false` | absent | absent | **Yes** — non-fallback paths |
+
+**Emission rule (finalized):** spread the triplet **only** when all hold:
+
+1. `enableMainnetL1MissFallback === true` (SF-1 gate),
+2. Success came from `ensL1Client` after a **definitive bound-tier empty** / `NAME_NOT_FOUND` on a
+   UR-carrying chain (`precededByBoundMiss === true`),
+3. Adapter is not mainnet-bound.
+
+**Excluded paths (triplet absent):** bound-local hits; mainnet-bound hits; non-UR direct L1 reverse;
+forward `001` SF-5 branch 1b chain-scoped L1; bound gateway/transport failures (no L1 consult).
+
+On L1 miss-fallback successes, `scopedToNetworkId` is **absent** (D-R7) — triplet carries bound-miss
+context; scope gate and fallback disclaimer are **orthogonal**.
+
+**Golden example (Sepolia bound-empty → L1 reverse success):**
+
+```ts
+{
+  label: 'ENS',
+  external: false,
+  // scopedToNetworkId intentionally absent
+  resolvedViaNetworkFallback: true,
+  queriedOnNetworkId: 'ethereum-sepolia',
+  resolvedOnNetworkId: 'ethereum-mainnet',
+  // adapter-only (do NOT branch disclaimer on these):
+  system: 'ens',
+  coinType: 60,
+}
+```
+
+Chain-agnostic classification: `resolvedViaNetworkFallback === true` only — **never** infer from
+absent `scopedToNetworkId`, `label`, or `external`. UIKit uses `@openzeppelin/ui-utils`
+`isCrossNetworkFallback` / `getFallbackNetworks`.
+
+### `MAINNET_NETWORK_ID` (003 SF-2)
+
+```ts
+const MAINNET_NETWORK_ID: 'ethereum-mainnet';
+```
+
+Canonical mainnet repo network id — matches `packages/adapter-evm/src/networks/mainnet.ts`. Used as
+`resolvedOnNetworkId` on every 003 L1 miss-fallback success.
+
+### `networkFallbackProvenanceFields(args)`
+
+```ts
+function networkFallbackProvenanceFields(args: {
+  readonly queriedOnNetworkId: string;
+  readonly resolvedOnNetworkId: string;
+}): Pick<
+  ResolutionProvenance,
+  'resolvedViaNetworkFallback' | 'queriedOnNetworkId' | 'resolvedOnNetworkId'
+>;
+```
+
+Single DRY builder for the triplet. Sets `resolvedViaNetworkFallback: true` atomically with both ids.
+Fresh object per call. Does **not** set `label`, `external`, or `scopedToNetworkId`.
+
+### `composeNetworkFallbackProvenance(provenance, args)`
+
+```ts
+function composeNetworkFallbackProvenance(
+  provenance: ResolutionProvenance,
+  args: {
+    readonly queriedOnNetworkId: string;
+    readonly resolvedOnNetworkId: string;
+  },
+): ResolutionProvenance;
+```
+
+Spreads {@link networkFallbackProvenanceFields} onto an existing success provenance (reverse L1 after
+bound miss; forward SF-4 L1 after bound `NAME_NOT_FOUND`). Preserves underlying `label` / `external` /
+`scopedToNetworkId`.
 
 ---
 

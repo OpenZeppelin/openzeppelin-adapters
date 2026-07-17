@@ -155,6 +155,13 @@ export function makeClient(opts: MakeClientOptions = {}): MockClient {
   return { client, getEnsAddress, getEnsName, getEnsAvatar, ccipRequest };
 }
 
+/**
+ * 003 SF-1 — explicit opt-in bag for tests that expect `002` L1 miss-fallback behavior.
+ * Default factory posture is OFF; pass this as the fourth argument to
+ * `createEvmNameResolutionService` when the ladder should consult L1 after bound empty.
+ */
+export const ENABLE_MAINNET_L1_MISS_FALLBACK = { enableMainnetL1MissFallback: true as const };
+
 /** A paired bound + mainnet L1 mock for 002 SF-1 reverse miss-fallback tests. */
 export interface DualReverseClients {
   readonly bound: MockClient;

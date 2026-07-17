@@ -1,21 +1,33 @@
 /**
- * 002 SF-1 · `service.ts` — Option B miss-fallback reverse ladder (mainnet L1) test suite.
+ * 002 SF-1 / 003 SF-3 · `service.ts` — Option B miss-fallback reverse ladder test suite.
  *
- * Extends the `001` SF-3 baseline in `service.reverse.test.ts` with the Specify Revision 1 ladder:
- * bound-first on UR-carrying chains (Sepolia first-class), empty-only miss-fallback to gated L1,
- * non-UR + L1 direct, never-silent-fallback on bound transport/gateway failure (KEY INV-9), and
- * D-R7 / Principle II provenance via base `scopedToNetworkId` only (INV-5, INV-28).
+ * **SF-3 primary ON matrix** (opt-in gated 002 fidelity + SF-2 triplet on bound-empty → L1):
+ * bound-first on UR-carrying chains, empty-only miss-fallback to gated L1, non-UR direct L1
+ * (triplet absent — `precededByBoundMiss` false), never-silent-fallback on bound failures (KEY
+ * INV-9), D-R7 scope + SF-2 fallback triplet via `helpers/fallback-provenance.ts`.
+ *
+ * Extends the `001` SF-3 baseline in `service.reverse.test.ts`. Opt-in OFF reverse contract lives
+ * in `service.mainnet-l1-opt-in.test.ts` (SF-1 ownership, SF-3 INV-2 cross-reference).
+ *
+ * All L1 miss-fallback scenarios require `ENABLE_MAINNET_L1_MISS_FALLBACK` (default OFF elsewhere).
  *
  * Organized by invariant category. Every `describe` names the invariant(s) it covers.
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ResolutionProvenance, ResolutionResult, ResolvedName } from '@openzeppelin/ui-types';
+import type { ResolutionResult, ResolvedName } from '@openzeppelin/ui-types';
+
+import {
+  chainAgnosticScope,
+  expectCompleteFallbackTriplet,
+  expectNoFallbackTriplet,
+} from './helpers/fallback-provenance';
 
 import { isEnsProvenance } from '../ens-provenance';
 import { createEvmNameResolutionService } from '../service';
 import {
   AVATAR_URL,
+  ENABLE_MAINNET_L1_MISS_FALLBACK,
   EVM_NETWORK_CONFIG,
   L2_NETWORK_CONFIG,
   makeClient,
@@ -42,16 +54,48 @@ function expectValue(result: ResolutionResult<ResolvedName>): ResolvedName {
   return result.value;
 }
 
-/**
- * Chain-agnostic display-safety gate (INV-28): consumers MUST discriminate scope using base
- * `scopedToNetworkId` only — never `isEnsProvenance` / `coinType`.
- */
-function chainAgnosticScope(provenance: ResolutionProvenance): 'global' | { local: string } {
-  if ('scopedToNetworkId' in provenance && provenance.scopedToNetworkId !== undefined) {
-    return { local: provenance.scopedToNetworkId };
-  }
-  return 'global';
-}
+// ===========================================================================
+// SF-2 cross-network fallback triplet — bound-miss-only emission (D-S3-1)
+// ===========================================================================
+
+describe('resolveAddress — SF-2 fallback triplet (bound-empty miss only)', () => {
+  it('UR bound-empty → L1 success emits complete fallback triplet', async () => {
+    const { bound, l1 } = makeDualReverseClients({
+      boundGetEnsName: vi.fn().mockResolvedValue(null),
+      l1GetEnsName: vi.fn().mockResolvedValue(VITALIK_NAME),
+    });
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
+
+    const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
+
+    expectCompleteFallbackTriplet(value.provenance, SEPOLIA_NETWORK_CONFIG.id);
+    expect('scopedToNetworkId' in value.provenance).toBe(false);
+  });
+
+  it('non-UR direct L1 success omits fallback triplet (forward 001-1b parity)', async () => {
+    const { client: boundClient, getEnsName: boundGetEnsName } = makeClient({ supported: false });
+    const l1GetEnsName = vi.fn().mockResolvedValue(VITALIK_NAME);
+    const { client: l1Client } = makeClient({ getEnsName: l1GetEnsName, boundChainId: 1 });
+    const service = createEvmNameResolutionService(
+      L2_NETWORK_CONFIG,
+      boundClient,
+      l1Client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
+
+    const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
+
+    expect(boundGetEnsName).not.toHaveBeenCalled();
+    expectNoFallbackTriplet(value.provenance);
+    expect(chainAgnosticScope(value.provenance)).toBe('global');
+    expect(isEnsProvenance(value.provenance)).toBe(true);
+  });
+});
 
 // ===========================================================================
 // Request/Response Contract — provenance three-row (INV-5, INV-28)
@@ -63,13 +107,19 @@ describe('resolveAddress — D-R7 provenance three-row (INV-5, INV-28)', () => {
       boundGetEnsName: vi.fn().mockResolvedValue(null),
       l1GetEnsName: vi.fn().mockResolvedValue(VITALIK_NAME),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
 
     expect(value.name).toBe(VITALIK_NAME);
     expect(chainAgnosticScope(value.provenance)).toBe('global');
     expect('scopedToNetworkId' in value.provenance).toBe(false);
+    expectCompleteFallbackTriplet(value.provenance, SEPOLIA_NETWORK_CONFIG.id);
     // Adapter-internal enrichment (must NOT be used for display-safety gating):
     expect(isEnsProvenance(value.provenance)).toBe(true);
     if (isEnsProvenance(value.provenance)) expect(value.provenance.coinType).toBe(60);
@@ -87,6 +137,7 @@ describe('resolveAddress — D-R7 provenance three-row (INV-5, INV-28)', () => {
     expect(value.name).toBe(localName);
     expect(chainAgnosticScope(value.provenance)).toEqual({ local: SEPOLIA_NETWORK_CONFIG.id });
     expect(isEnsProvenance(value.provenance)).toBe(false);
+    expectNoFallbackTriplet(value.provenance);
     expect(l1.getEnsName).not.toHaveBeenCalled();
   });
 
@@ -101,6 +152,7 @@ describe('resolveAddress — D-R7 provenance three-row (INV-5, INV-28)', () => {
 
     expect(value.provenance).toEqual({ label: 'ENS', external: false });
     expect(chainAgnosticScope(value.provenance)).toBe('global');
+    expectNoFallbackTriplet(value.provenance);
     expect(l1.getEnsName).not.toHaveBeenCalled();
   });
 });
@@ -114,7 +166,12 @@ describe('resolveAddress — Option B ladder selection (INV-6)', () => {
     const boundGetEnsName = vi.fn().mockResolvedValue(null);
     const l1GetEnsName = vi.fn().mockResolvedValue(VITALIK_NAME);
     const { bound, l1 } = makeDualReverseClients({ boundGetEnsName, l1GetEnsName });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
 
@@ -139,13 +196,19 @@ describe('resolveAddress — Option B ladder selection (INV-6)', () => {
     const { client: boundClient, getEnsName: boundGetEnsName } = makeClient({ supported: false });
     const l1GetEnsName = vi.fn().mockResolvedValue(VITALIK_NAME);
     const { client: l1Client } = makeClient({ getEnsName: l1GetEnsName, boundChainId: 1 });
-    const service = createEvmNameResolutionService(L2_NETWORK_CONFIG, boundClient, l1Client);
+    const service = createEvmNameResolutionService(
+      L2_NETWORK_CONFIG,
+      boundClient,
+      l1Client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
 
     expect(boundGetEnsName).not.toHaveBeenCalled();
     expect(l1GetEnsName).toHaveBeenCalledTimes(1);
     expect(chainAgnosticScope(value.provenance)).toBe('global');
+    expectNoFallbackTriplet(value.provenance);
     expect(isEnsProvenance(value.provenance)).toBe(true);
   });
 
@@ -200,7 +263,8 @@ describe('resolveAddress — definitive-empty triggers exactly one L1 consult (I
       const service = createEvmNameResolutionService(
         SEPOLIA_NETWORK_CONFIG,
         bound.client,
-        l1.client
+        l1.client,
+        ENABLE_MAINNET_L1_MISS_FALLBACK
       );
 
       expectValue(await service.resolveAddress(VITALIK_ADDRESS));
@@ -228,7 +292,8 @@ describe('resolveAddress — KEY: bound failure NEVER falls through to L1 (INV-9
       const service = createEvmNameResolutionService(
         SEPOLIA_NETWORK_CONFIG,
         bound.client,
-        l1.client
+        l1.client,
+        ENABLE_MAINNET_L1_MISS_FALLBACK
       );
 
       const error = expectError(await service.resolveAddress(VITALIK_ADDRESS));
@@ -249,7 +314,12 @@ describe('resolveAddress — L1 terminal outcomes (INV-10, INV-11)', () => {
       boundGetEnsName: vi.fn().mockResolvedValue(null),
       l1GetEnsName: vi.fn().mockResolvedValue(null),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     expect(expectError(await service.resolveAddress(VITALIK_ADDRESS)).code).toBe(
       'ADDRESS_NOT_FOUND'
@@ -261,7 +331,12 @@ describe('resolveAddress — L1 terminal outcomes (INV-10, INV-11)', () => {
       boundGetEnsName: vi.fn().mockRejectedValue(makeDecodedRevert('ReverseAddressMismatch')),
       l1GetEnsName: vi.fn().mockResolvedValue(VITALIK_NAME),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
     expect(value.name).toBe(VITALIK_NAME);
@@ -273,7 +348,12 @@ describe('resolveAddress — L1 terminal outcomes (INV-10, INV-11)', () => {
       boundGetEnsName: vi.fn().mockResolvedValue(null),
       l1GetEnsName: vi.fn().mockRejectedValue(makeDecodedRevert('ReverseAddressMismatch')),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     expect(expectError(await service.resolveAddress(VITALIK_ADDRESS)).code).toBe(
       'ADDRESS_NOT_FOUND'
@@ -286,7 +366,12 @@ describe('resolveAddress — L1 terminal outcomes (INV-10, INV-11)', () => {
       boundGetEnsName: vi.fn().mockResolvedValue(null),
       l1GetEnsName: vi.fn().mockRejectedValue(makeTimeoutError()),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const error = expectError(await service.resolveAddress(VITALIK_ADDRESS));
     expect(error.code).toBe('RESOLUTION_TIMEOUT');
@@ -303,7 +388,12 @@ describe('resolveAddress — strict:true on bound and L1 getEnsName (INV-13)', (
     const boundGetEnsName = vi.fn().mockResolvedValue(null);
     const l1GetEnsName = vi.fn().mockResolvedValue(VITALIK_NAME);
     const { bound, l1 } = makeDualReverseClients({ boundGetEnsName, l1GetEnsName });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     await service.resolveAddress(VITALIK_ADDRESS);
 
@@ -340,7 +430,12 @@ describe('resolveAddress — I/O ordering and avatar client affinity (INV-18, IN
         return AVATAR_URL;
       }),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     const value = expectValue(await service.resolveAddress(VITALIK_ADDRESS));
 
@@ -361,7 +456,12 @@ describe('resolveAddress — I/O ordering and avatar client affinity (INV-18, IN
         return VITALIK_NAME;
       }),
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     await service.resolveAddress(VITALIK_ADDRESS);
     expect(order).toEqual(['bound-name']);
@@ -377,7 +477,12 @@ describe('resolveAddress — bounded work per call (INV-20)', () => {
     const boundGetEnsName = vi.fn().mockResolvedValue(null);
     const l1GetEnsName = vi.fn().mockResolvedValue(VITALIK_NAME);
     const { bound, l1 } = makeDualReverseClients({ boundGetEnsName, l1GetEnsName });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     await service.resolveAddress(VITALIK_ADDRESS);
     expect(boundGetEnsName).toHaveBeenCalledTimes(1);
@@ -392,7 +497,12 @@ describe('resolveAddress — L1 default primary only, no bound coinType (INV-27)
       boundGetEnsName: vi.fn().mockResolvedValue(null),
       l1GetEnsName,
     });
-    const service = createEvmNameResolutionService(SEPOLIA_NETWORK_CONFIG, bound.client, l1.client);
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
 
     await service.resolveAddress(VITALIK_ADDRESS);
 
@@ -402,11 +512,11 @@ describe('resolveAddress — L1 default primary only, no bound coinType (INV-27)
 });
 
 // ===========================================================================
-// Performance, Scalability & Re-usability — forward asymmetry spot-check (INV-26)
+// Performance, Scalability & Re-usability — forward asymmetry OFF/ON (INV-37)
 // ===========================================================================
 
-describe('resolveName — forward asymmetry: no reverse miss-fallback on forward (INV-26)', () => {
-  it('Sepolia-bound forward with L1 wired does NOT miss-fall back on NAME_NOT_FOUND', async () => {
+describe('resolveName — forward asymmetry: opt-in OFF vs ON (INV-37)', () => {
+  it('default OFF: Sepolia-bound forward with L1 wired does NOT miss-fall back on NAME_NOT_FOUND', async () => {
     const boundGetEnsAddress = vi.fn().mockResolvedValue(null);
     const l1GetEnsAddress = vi.fn().mockResolvedValue(VITALIK_ADDRESS);
     const { bound, l1 } = makeDualReverseClients({
@@ -423,5 +533,31 @@ describe('resolveName — forward asymmetry: no reverse miss-fallback on forward
     if (result.ok) return;
     expect(result.error.code).toBe('NAME_NOT_FOUND');
     expect(l1GetEnsAddress).not.toHaveBeenCalled();
+  });
+
+  it('opt-in ON: Sepolia-bound forward miss-falls back to L1 (SF-4 parity with reverse)', async () => {
+    const boundGetEnsAddress = vi.fn().mockResolvedValue(null);
+    const l1GetEnsAddress = vi.fn().mockResolvedValue(VITALIK_ADDRESS);
+    const { bound, l1 } = makeDualReverseClients({
+      boundGetEnsName: vi.fn(),
+      l1GetEnsName: vi.fn(),
+    });
+    bound.client.getEnsAddress = boundGetEnsAddress;
+    l1.client.getEnsAddress = l1GetEnsAddress;
+
+    const service = createEvmNameResolutionService(
+      SEPOLIA_NETWORK_CONFIG,
+      bound.client,
+      l1.client,
+      ENABLE_MAINNET_L1_MISS_FALLBACK
+    );
+
+    const result = await service.resolveName('vitalik.eth');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.address).toBe(VITALIK_ADDRESS);
+    expect(boundGetEnsAddress).toHaveBeenCalledTimes(1);
+    expect(l1GetEnsAddress).toHaveBeenCalledTimes(1);
+    expectCompleteFallbackTriplet(result.value.provenance, SEPOLIA_NETWORK_CONFIG.id);
   });
 });

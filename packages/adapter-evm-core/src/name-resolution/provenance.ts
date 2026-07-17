@@ -11,6 +11,51 @@
 import type { ResolutionProvenance } from '@openzeppelin/ui-types';
 
 /**
+ * Canonical mainnet repo network id — MUST match `ethereumMainnet.id` in
+ * `@openzeppelin/adapter-evm` (`packages/adapter-evm/src/networks/mainnet.ts`).
+ * Single source for `resolvedOnNetworkId` on 003 L1 miss-fallback successes (INV-6 / INV-24).
+ */
+export const MAINNET_NETWORK_ID = 'ethereum-mainnet' as const;
+
+/**
+ * The three base fallback fields adapters spread onto any L1 miss-fallback success provenance.
+ * Fresh object per call (INV-12). Does not set `label`, `external`, or `scopedToNetworkId` (INV-28).
+ *
+ * @param args.queriedOnNetworkId — bound adapter `networkConfig.id` that missed first (INV-7).
+ * @param args.resolvedOnNetworkId — network where the record was found; 003 always {@link MAINNET_NETWORK_ID}.
+ */
+export function networkFallbackProvenanceFields(args: {
+  readonly queriedOnNetworkId: string;
+  readonly resolvedOnNetworkId: string;
+}): Pick<
+  ResolutionProvenance,
+  'resolvedViaNetworkFallback' | 'queriedOnNetworkId' | 'resolvedOnNetworkId'
+> {
+  return {
+    resolvedViaNetworkFallback: true,
+    queriedOnNetworkId: args.queriedOnNetworkId,
+    resolvedOnNetworkId: args.resolvedOnNetworkId,
+  };
+}
+
+/**
+ * Spread fallback triplet onto an existing success provenance (forward SF-4 / reverse L1).
+ * Preserves `label`, `external`, and `scopedToNetworkId` from the base object (INV-28).
+ */
+export function composeNetworkFallbackProvenance(
+  provenance: ResolutionProvenance,
+  args: {
+    readonly queriedOnNetworkId: string;
+    readonly resolvedOnNetworkId: string;
+  }
+): ResolutionProvenance {
+  return {
+    ...provenance,
+    ...networkFallbackProvenanceFields(args),
+  };
+}
+
+/**
  * Base provenance for a v1 forward resolution: a freshly-allocated `{ label: 'ENS', external: false }`
  * on every call (INV-5).
  *

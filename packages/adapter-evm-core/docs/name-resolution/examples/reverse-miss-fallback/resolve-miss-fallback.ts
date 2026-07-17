@@ -1,10 +1,5 @@
 /**
- * Mocked 002 SF-1 reverse miss-fallback: Sepolia-bound, empty bound reverse, mainnet L1 primary.
- *
- * Demonstrates:
- *   - Option B ladder (bound first → definitive empty → L1 consult)
- *   - Chain-agnostic scope gate via base `scopedToNetworkId` only
- *   - `isEnsProvenance === true` on L1 hit is enrichment, NOT the display gate
+ * Mocked 003 SF-3 reverse miss-fallback + SF-2 triplet: Sepolia bound-empty → L1 primary.
  *
  * Run (from this directory):
  *   pnpm tsx resolve-miss-fallback.ts
@@ -12,6 +7,7 @@
 import type { PublicClient } from 'viem';
 
 import { createEvmNameResolutionService, isEnsProvenance } from '@openzeppelin/adapter-evm-core';
+import type { ResolutionProvenance } from '@openzeppelin/ui-types';
 
 const VITALIK = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
 
@@ -20,7 +16,12 @@ const sepoliaConfig = {
   chainId: 11155111,
 } as never;
 
-/** Chain-agnostic gate — safe without EVM imports in UIKit. */
+function isCrossNetworkFallback(
+  provenance: Pick<ResolutionProvenance, 'resolvedViaNetworkFallback'>
+): boolean {
+  return provenance.resolvedViaNetworkFallback === true;
+}
+
 function visibleOnRow(scopedToNetworkId: string | undefined, rowNetworkId: string): boolean {
   if (scopedToNetworkId === undefined) return true;
   return scopedToNetworkId === rowNetworkId;
@@ -54,7 +55,9 @@ async function main(): Promise<void> {
     getEnsAvatar: async () => 'https://example.com/avatar.png',
   } as unknown as PublicClient;
 
-  const service = createEvmNameResolutionService(sepoliaConfig, boundClient, l1Client);
+  const service = createEvmNameResolutionService(sepoliaConfig, boundClient, l1Client, {
+    enableMainnetL1MissFallback: true,
+  });
   const result = await service.resolveAddress(VITALIK);
 
   if (!result.ok) {
@@ -65,11 +68,12 @@ async function main(): Promise<void> {
   const { name, provenance } = result.value;
   console.log(`Sepolia miss-fallback: ${VITALIK} → ${name}`);
   console.log(`  L1 getEnsName calls: ${l1Calls} (expect 1)`);
-  console.log(`  scopedToNetworkId: ${provenance.scopedToNetworkId ?? '(absent — global)'}`);
+  console.log(`  scopedToNetworkId: ${provenance.scopedToNetworkId ?? '(absent — global gate)'}`);
+  console.log(`  resolvedViaNetworkFallback: ${provenance.resolvedViaNetworkFallback}`);
+  console.log(`  queriedOnNetworkId: ${provenance.queriedOnNetworkId}`);
+  console.log(`  resolvedOnNetworkId: ${provenance.resolvedOnNetworkId}`);
+  console.log(`  isCrossNetworkFallback: ${isCrossNetworkFallback(provenance)}`);
   console.log(`  isEnsProvenance: ${isEnsProvenance(provenance)} (enrichment only)`);
-  if (isEnsProvenance(provenance)) {
-    console.log(`  coinType: ${provenance.coinType} (do NOT use for display gate)`);
-  }
   console.log(`  show on Base row: ${visibleOnRow(provenance.scopedToNetworkId, 'base-mainnet')}`);
   console.log(
     `  show on Sepolia row: ${visibleOnRow(provenance.scopedToNetworkId, 'ethereum-sepolia')}`
