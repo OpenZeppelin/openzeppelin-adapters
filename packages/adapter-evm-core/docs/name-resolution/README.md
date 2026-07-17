@@ -15,10 +15,13 @@ covering both directions plus ENS v2 and mainnet-L1 reverse:
 - **ENS v2** (L1-only: CCIP-Read / offchain gateways + cross-chain via `coinType`), SF-5 — every
   forward result now carries an EVM-specific `EnsProvenance` with **observed** offchain facts you
   narrow to via `isEnsProvenance`, and an L2-bound runtime can resolve chain-scoped names on L1.
-- **Mainnet-L1 reverse miss-fallback**, SF-1 (002) — on non-mainnet-bound adapters, reverse tries
-  the bound chain first; on a **definitive empty** only, consults the gated mainnet L1 client for the
-  default primary name (+ avatar), with provenance that marks **global vs network-local** scope via
-  base `scopedToNetworkId`.
+- **Mainnet-L1 miss-fallback (003)**, SF-1–SF-4 — on non-mainnet-bound adapters, **opt-in gated**
+  (default **OFF**): after a **definitive bound-chain empty** on UR-carrying chains, consult mainnet L1
+  for the default primary / forward record when the integrator sets
+  `enableMainnetL1MissFallback: true`. Reverse reframes 002's always-on ladder behind the same switch.
+  L1-fallback successes emit a **chain-agnostic fallback triplet** on base `ResolutionProvenance`
+  (`resolvedViaNetworkFallback`, `queriedOnNetworkId`, `resolvedOnNetworkId`) — owned by
+  `@openzeppelin/ui-types@3.3.0`, not adapter-invented fields.
 
 ## Overview
 
@@ -168,18 +171,28 @@ always-present `system: 'ens'` discriminant; `label` is a display string that is
   mismatched name. Either it returns a name that provably forward-resolves back to the queried
   address (`forwardVerified: true`), or it returns `ADDRESS_NOT_FOUND`. There is no
   `forwardVerified: false` path in this adapter — the anti-spoofing decision is made *for* you.
-- **Reverse miss-fallback (002 SF-1, Option B).** On a non-mainnet-bound adapter with a wired
-  `ensL1Client`: when the bound chain has a Universal Resolver, bound reverse runs first; only on a
-  **definitive empty** (no usable primary — not a gateway/transport failure) does the adapter consult
-  mainnet L1 for the default primary (`coinType` 60). Bound-local hits win without L1; bound failures
-  surface typed errors and **never** silently fall through to L1. Non-UR + L1 → L1 direct; non-UR + no
-  L1 → `UNSUPPORTED_NETWORK`; mainnet-bound → bound only.
+- **Reverse miss-fallback (003 SF-3 / 002 reframe, opt-in gated).** On a non-mainnet-bound adapter
+  with a wired `ensL1Client` and **`enableMainnetL1MissFallback: true`**: when the bound chain has a
+  Universal Resolver, bound reverse runs first; only on a **definitive empty** (no usable primary — not
+  a gateway/transport failure) does the adapter consult mainnet L1 for the default primary (`coinType`
+  60). With opt-in **OFF** (default), bound-empty returns `ADDRESS_NOT_FOUND` without L1. Bound-local
+  hits win without L1; bound failures surface typed errors and **never** silently fall through to L1.
+  Non-UR + opt-in ON → L1 direct (**no** fallback triplet — canonical `001` 1b path); non-UR + no L1
+  → `UNSUPPORTED_NETWORK`; mainnet-bound → bound only.
+- **Cross-network fallback provenance (003 SF-2).** When L1 miss-fallback succeeds after a **real
+  bound-empty miss** on a UR-carrying chain (forward or reverse), provenance carries the coordinated
+  base triplet: `resolvedViaNetworkFallback: true`, `queriedOnNetworkId` (bound `networkConfig.id`),
+  `resolvedOnNetworkId` (`ethereum-mainnet`). **`scopedToNetworkId` stays absent** on these hits
+  (002 D-R7 — global display on any row). The triplet is **omitted** on bound-local hits, mainnet-bound
+  hits, and canonical non-UR forward L1 (`001` SF-5 branch 1b). Classify with
+  `resolvedViaNetworkFallback === true` only — never infer from absent `scopedToNetworkId`, `label`, or
+  `external` (Principle II). UIKit copy uses `@openzeppelin/ui-utils` `isCrossNetworkFallback`.
 - **Reverse provenance scope (chain-agnostic gate).** Distinguish global vs network-local using base
   `scopedToNetworkId` **only** — absent ⇒ global / mainnet identity (show on any row); present ⇒
   network-local (hide on rows scoped to a different network). **Never** use `isEnsProvenance` or
-  `coinType` as the display-safety gate (Principle II). L1 reverse hits may carry `EnsProvenance`
-  (`coinType: 60`) as adapter-internal enrichment; Sepolia-local hits carry `scopedToNetworkId` without
-  `EnsProvenance`.
+  `coinType` as the display-safety gate (Principle II). L1 miss-fallback hits may carry `EnsProvenance`
+  (`coinType: 60`) as adapter-internal enrichment; the **fallback disclaimer** uses the triplet, not
+  `EnsProvenance`. Sepolia-local hits carry `scopedToNetworkId` without `EnsProvenance`.
 - **Avatar is best-effort and isolated.** The reverse call fetches the avatar in a separate,
   failure- and latency-isolated step. A slow, failing, or missing avatar can only omit
   `avatarUrl` — it never delays past the reverse read's error surface and never fails the result.
@@ -248,14 +261,18 @@ registration, the consumer resolve loop, and common mistakes. Runnable examples 
 - **Forward provenance carries no avatar.** `EnsProvenance` (`system`, `coinType`,
   `scopedToNetworkId`, `external`) describes how the *address* was resolved, not display metadata.
   Avatars are reverse-only (`avatarUrl` on `ResolvedName`).
-- **ENS resolution starts on L1 (forward); reverse may miss-fallback to L1.** The forward path uses
-  the bound client when the bound chain carries an ENS Universal Resolver (mainnet-bound, `coinType` 60);
-  otherwise, **iff** the runtime wired an `ensL1Client`, it resolves the name chain-scoped on L1
-  (`coinType = toCoinType(boundChainId)`) and stamps `scopedToNetworkId`. A bound network with no
-  Universal Resolver **and** no `ensL1Client` returns `UNSUPPORTED_NETWORK` **before any I/O** — there
-  is never a silent cross-chain fallback. The reverse path (`resolveAddress`) uses the same injected
-  `ensL1Client` under the Option B ladder (002 SF-1): bound-first on UR-carrying chains, L1 only after
-  definitive empty or when the bound chain has no UR.
+- **ENS resolution starts on L1 (forward); reverse/forward may miss-fallback to L1 when opted in.**
+  The forward path uses the bound client when the bound chain carries an ENS Universal Resolver
+  (mainnet-bound, `coinType` 60); otherwise, **iff** the runtime wired an `ensL1Client`, it resolves
+  the name chain-scoped on L1 (`coinType = toCoinType(boundChainId)`) — the canonical `001` 1b path,
+  **not** miss-fallback. UR-carrying bound forward miss-fallback to mainnet L1 runs **only** when
+  `enableMainnetL1MissFallback: true` (003 SF-4). A bound network with no Universal Resolver **and** no
+  `ensL1Client` returns `UNSUPPORTED_NETWORK` **before any I/O**. The reverse path uses the same
+  `ensL1Client` under the Option B ladder (003 SF-3), gated by the same opt-in.
+- **Opt-in default OFF (fund-safety).** Wiring `ensL1Client` does **not** enable miss-fallback.
+  Runtime profiles must pass `enableMainnetL1MissFallback: true` explicitly to permit L1 consult after
+  bound-empty / bound `NAME_NOT_FOUND`. Transport/gateway/timeout failures remain terminal — opt-in
+  relaxes **where** we look after a clean miss, not error discipline.
 - **Chain-scoped addresses must be bound to their network.** When `provenance.scopedToNetworkId` is
   present on a **forward** result (`coinType !== 60`), the resolved address is meaningful **only** on
   that network. On **reverse**, `scopedToNetworkId` marks a **bound-local primary name** (network-local

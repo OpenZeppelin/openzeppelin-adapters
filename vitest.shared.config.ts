@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config';
 
 export const sharedVitestConfig = defineConfig({
   plugins: [react()],
+  resolve: {
+    dedupe: ['@openzeppelin/ui-types', '@openzeppelin/ui-renderer'],
+  },
   optimizeDeps: {
     include: ['@openzeppelin/ui-renderer', '@openzeppelin/ui-types'],
   },

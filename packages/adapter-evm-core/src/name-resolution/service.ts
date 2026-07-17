@@ -59,7 +59,12 @@ import {
   unsupportedNetwork,
 } from './error-mapping';
 import { isValidName as isValidEnsName, normalizeName } from './name-validation';
-import { baseEnsProvenance, boundReverseProvenance } from './provenance';
+import {
+  baseEnsProvenance,
+  boundReverseProvenance,
+  composeNetworkFallbackProvenance,
+  MAINNET_NETWORK_ID,
+} from './provenance';
 
 /** Which reverse client / provenance policy a single `attemptReverse` executes (002 SF-1). */
 type ReverseAttemptKind = 'bound' | 'l1';
@@ -145,18 +150,25 @@ function describeNormalizeFailure(error: unknown): string {
  */
 export class EvmNameResolutionService {
   /**
+   * Frozen at construct time — only `=== true` enables miss-fallback (INV-2 / 003 SF-1).
+   */
+  private readonly enableMainnetL1MissFallback: boolean;
+
+  /**
    * @param networkConfig - The bound (read-only) network config.
    * @param publicClient  - The bound per-network viem client (D-A). Borrowed, never disposed (INV-21).
-   * @param ensL1Client   - SF-5, OPTIONAL. A dedicated **mainnet** viem client, used ONLY when the
-   *   bound network has no Universal Resolver, to resolve chain-scoped to the bound network via L1
-   *   (`coinType = toCoinType(boundChainId)`, D-V1). Also borrowed, never disposed. When absent, an
-   *   L2-bound `resolveName` returns `UNSUPPORTED_NETWORK` exactly as SF-2 does today (D-B preserved).
+   * @param ensL1Client   - SF-5, OPTIONAL. Mainnet client for non-UR forward chain-scoped resolution
+   *   and for L1 miss-fallback when {@link enableMainnetL1MissFallback} is explicitly `true`.
+   * @param enableMainnetL1MissFallback - 003 SF-1 opt-in; normalized to strict `true` only (INV-2).
    */
   constructor(
     private readonly networkConfig: TypedEvmNetworkConfig,
     private readonly publicClient: PublicClient,
-    private readonly ensL1Client?: PublicClient
-  ) {}
+    private readonly ensL1Client?: PublicClient,
+    enableMainnetL1MissFallback?: boolean
+  ) {
+    this.enableMainnetL1MissFallback = enableMainnetL1MissFallback === true; // INV-2, INV-9
+  }
 
   /**
    * Synchronous ENSIP-15 shape check (INV-3/INV-4). No I/O; delegates to the client-free
@@ -179,6 +191,8 @@ export class EvmNameResolutionService {
    * 2. shape gate fails → `UNSUPPORTED_NAME`
    * 3. normalize throws → `UNSUPPORTED_NAME`  (D-D backstop)
    * 4–5. delegated to {@link resolveVia}: the one `getEnsAddress` call + ordered catch.
+   * 6. 003 SF-4 (UR bound only): bound `NAME_NOT_FOUND` + opt-in ON → single L1 `resolveVia` +
+   *    SF-2 fallback triplet on success; bound gateway/`UNSUPPORTED_NAME` → terminal (INV-10).
    *
    * The selection ladder runs **before** the shape/normalize gates so an unsupported network wins
    * over a malformed name (SF-2 INV-12 precedence, preserved verbatim: a bad name on an unsupported
@@ -196,13 +210,13 @@ export class EvmNameResolutionService {
     //   (1b) the mainnet-L1 `ensL1Client` path is the CANONICAL path ONLY for chains WITHOUT their own
     //        UR (L2s resolved via CCIP-Read + chain-scoped `coinType`) — it is NOT a fallback for a
     //        name that (1a) failed to find.
-    // Consequence (intended): a testnet/chain with its own UR returns NAME_NOT_FOUND for a mainnet-only
-    // name — it never silently falls back to mainnet L1. This preserves bound-network semantics and
-    // namespace honesty: resolving a mainnet name against a bound chain and returning a mainnet address
-    // would be a cross-namespace answer the caller never asked for (a fund-safety hazard).
+    // Consequence (default OFF): a testnet/chain with its own UR returns NAME_NOT_FOUND for a
+    // mainnet-only name — it never silently falls back to mainnet L1 unless the integrator opted in
+    // via `enableMainnetL1MissFallback: true` (003 SF-1 / SF-4 implements the forward ladder).
+    const selectedBoundBranch = this.supportsEns();
     let client: PublicClient;
     let coinType: bigint;
-    if (this.supportsEns()) {
+    if (selectedBoundBranch) {
       client = this.publicClient; // bound client carries a Universal Resolver (mainnet-bound)
       coinType = ETH_COIN_TYPE; // ETH / mainnet — unscoped
     } else if (this.ensL1Client) {
@@ -235,7 +249,39 @@ export class EvmNameResolutionService {
     }
 
     // (4–5) The unified success routine — same for both client selections (INV-3).
-    return this.resolveVia(client, coinType, name, normalized);
+    const result = await this.resolveVia(client, coinType, name, normalized);
+
+    // 003 SF-4: UR-bound definitive NAME_NOT_FOUND → single L1 resolveVia when opted in (INV-1).
+    if (
+      selectedBoundBranch &&
+      this.isForwardBoundMissEligibleForL1(result) &&
+      this.mayConsultL1ForMissFallback()
+    ) {
+      const l1Result = await this.resolveVia(this.ensL1Client!, ETH_COIN_TYPE, name, normalized);
+      if (!l1Result.ok) {
+        return l1Result; // INV-12 — L1 terminal; no bound retry
+      }
+      return {
+        ok: true,
+        value: {
+          ...l1Result.value,
+          provenance: composeNetworkFallbackProvenance(l1Result.value.provenance, {
+            queriedOnNetworkId: this.networkConfig.id,
+            resolvedOnNetworkId: MAINNET_NETWORK_ID,
+          }),
+        },
+      };
+    }
+
+    return result;
+  }
+
+  /**
+   * True iff the bound-tier forward attempt is a definitive empty / no-record miss eligible for L1
+   * consult — NOT transport failure, NOT UNSUPPORTED_NAME (SF-4 INV-11 / D-S4-1).
+   */
+  private isForwardBoundMissEligibleForL1(result: ResolutionResult<ResolvedAddress>): boolean {
+    return !result.ok && result.error.code === 'NAME_NOT_FOUND';
   }
 
   /**
@@ -348,21 +394,27 @@ export class EvmNameResolutionService {
   }
 
   /**
-   * Reverse resolution: address → name (002 SF-1 / Option B miss-fallback). Returns a discriminated
-   * {@link ResolutionResult}; **never throws for an expected failure** (INV-7). The sole sanctioned
-   * throw is `RuntimeDisposedError`, raised by the factory's guard proxy *before* this body runs.
+   * Reverse resolution: address → name (002 SF-1 / 003 SF-3 Option B miss-fallback). Returns a
+   * discriminated {@link ResolutionResult}; **never throws for an expected failure** (INV-7). The
+   * sole sanctioned throw is `RuntimeDisposedError`, raised by the factory's guard proxy *before*
+   * this body runs.
    *
-   * Option B ladder (Specify Revision 1 / Design D-R1–D-R10):
+   * 003 SF-3 ladder (inherits 002 Option B; L1 tiers gated by SF-1 `mayConsultL1ForMissFallback()`):
    *
    * 0. use-after-dispose → `RuntimeDisposedError` (guard proxy)
    * 1. malformed address → `ADDRESS_NOT_FOUND` (sync, before I/O)
    * 2. `supportsEns()` → bound `attemptReverse` first
    *      - success → bound provenance per D-R7; stop (no L1)
    *      - failure → typed error; stop (**no** miss-fallback — INV-9)
-   *      - empty + `ensL1Client` + not mainnet-bound → L1 `attemptReverse`
-   *      - empty + (no L1 or mainnet-bound) → `ADDRESS_NOT_FOUND`
-   * 3. else `ensL1Client` + not mainnet-bound → L1 direct
+   *      - empty + `mayConsultL1ForMissFallback()` → L1 `attemptReverse` (003 SF-1)
+   *      - empty + gate false → `ADDRESS_NOT_FOUND`
+   * 3. else `mayConsultL1ForMissFallback()` → L1 direct (non-UR)
    * 4. else → `UNSUPPORTED_NETWORK` (sync, before I/O)
+   *
+   * L1 success after bound-empty miss: `buildEnsProvenance` + SF-2 fallback triplet
+   * (`precededByBoundMiss`). Non-UR direct L1: `buildEnsProvenance` only (001-1b parity).
+   * `scopedToNetworkId` absent on all L1 hits (002 D-R7). Opt-in OFF: bound-empty / non-UR
+   * terminate without L1 (SF-1 SC-001).
    *
    * Bound and L1 attempts use `strict: true`, Approach A suppress-on-mismatch, observing clients
    * for truthful `viaGateway`, and selected-client avatar affinity (INV-18).
@@ -386,16 +438,16 @@ export class EvmNameResolutionService {
       if (boundOutcome.kind === 'failure') {
         return boundOutcome.result;
       }
-      // Definitive bound empty — miss-fallback to L1 only when wired and not mainnet-bound (INV-22).
-      if (this.ensL1Client && !this.isMainnetBound()) {
-        return this.finishL1Attempt(address);
+      // Definitive bound empty — L1 miss-fallback only when integrator opted in (INV-5 / INV-6).
+      if (this.mayConsultL1ForMissFallback()) {
+        return this.finishL1Attempt(address, true);
       }
       return { ok: false, error: addressNotFound(address) };
     }
 
-    // (3) Non-UR + L1 wired → L1 direct (mainnet-bound never reaches here with L1 — INV-22).
-    if (this.ensL1Client && !this.isMainnetBound()) {
-      return this.finishL1Attempt(address);
+    // (3) Non-UR + opted-in L1 → L1 direct (INV-7) — canonical path, not bound miss-fallback.
+    if (this.mayConsultL1ForMissFallback()) {
+      return this.finishL1Attempt(address, false);
     }
 
     // (4) No UR and no L1 client — pre-I/O unsupported (INV-21).
@@ -405,9 +457,20 @@ export class EvmNameResolutionService {
   /**
    * Terminal handling for an L1 reverse attempt (direct or miss-fallback). No further client exists
    * after L1 — empty and failure both terminate here (INV-10).
+   *
+   * @param precededByBoundMiss - When true, bound UR tier returned definitive empty before this L1
+   *   consult — SF-2 triplet is emitted on success. False for non-UR direct L1 (001-1b parity).
    */
-  private async finishL1Attempt(address: string): Promise<ResolutionResult<ResolvedName>> {
-    const l1Outcome = await this.attemptReverse(this.ensL1Client!, address, 'l1');
+  private async finishL1Attempt(
+    address: string,
+    precededByBoundMiss: boolean
+  ): Promise<ResolutionResult<ResolvedName>> {
+    const l1Outcome = await this.attemptReverse(
+      this.ensL1Client!,
+      address,
+      'l1',
+      precededByBoundMiss
+    );
     if (l1Outcome.kind === 'success') {
       return { ok: true, value: l1Outcome.value };
     }
@@ -425,7 +488,8 @@ export class EvmNameResolutionService {
   private async attemptReverse(
     client: PublicClient,
     address: string,
-    kind: ReverseAttemptKind
+    kind: ReverseAttemptKind,
+    precededByBoundMiss = false
   ): Promise<ReverseAttemptOutcome> {
     let sawOffchain = false;
     const callClient = deriveObservingClient(client, () => {
@@ -468,7 +532,7 @@ export class EvmNameResolutionService {
     }
 
     const avatarUrl = await this.tryGetAvatar(client, name);
-    const provenance =
+    const baseProvenance =
       kind === 'l1'
         ? buildEnsProvenance({
             external: sawOffchain,
@@ -478,6 +542,16 @@ export class EvmNameResolutionService {
         : this.isMainnetBound()
           ? baseEnsProvenance()
           : boundReverseProvenance(this.networkConfig.id);
+    // SF-3 INV-3 / D-S3-1: SF-2 triplet only when L1 follows a real bound-empty miss
+    // (`precededByBoundMiss`). Non-UR direct L1 omits triplet (forward 001-1b parity).
+    // `scopedToNetworkId` stays absent on all L1 hits (INV-5 / D-R7).
+    const provenance =
+      kind === 'l1' && precededByBoundMiss
+        ? composeNetworkFallbackProvenance(baseProvenance, {
+            queriedOnNetworkId: this.networkConfig.id,
+            resolvedOnNetworkId: MAINNET_NETWORK_ID,
+          })
+        : baseProvenance;
 
     return {
       kind: 'success',
@@ -489,6 +563,19 @@ export class EvmNameResolutionService {
         provenance,
       },
     };
+  }
+
+  /**
+   * Authoritative miss-fallback eligibility for both directions (003 SF-1 INV-5).
+   * L1 consult is permitted only when opt-in is strictly true, L1 client is wired, and the adapter
+   * is not mainnet-bound (INV-24).
+   */
+  private mayConsultL1ForMissFallback(): boolean {
+    return (
+      this.enableMainnetL1MissFallback === true && // INV-2
+      this.ensL1Client !== undefined && // INV-3
+      !this.isMainnetBound() // INV-24
+    );
   }
 
   /** True when the bound chain is Ethereum mainnet — drives miss-fallback fence and D-R7 scope (INV-22). */
@@ -553,10 +640,20 @@ export class EvmNameResolutionService {
  * (D-A / INV-25). `ensL1Client` is optional: when omitted the service resolves mainnet-bound exactly
  * as SF-2 does, and an L2-bound resolve returns `UNSUPPORTED_NETWORK` (D-B preserved).
  */
+export interface CreateEvmNameResolutionServiceOptions {
+  readonly enableMainnetL1MissFallback?: boolean;
+}
+
 export function createEvmNameResolutionService(
   networkConfig: TypedEvmNetworkConfig,
   publicClient: PublicClient,
-  ensL1Client?: PublicClient
+  ensL1Client?: PublicClient,
+  options?: CreateEvmNameResolutionServiceOptions
 ): EvmNameResolutionService {
-  return new EvmNameResolutionService(networkConfig, publicClient, ensL1Client);
+  return new EvmNameResolutionService(
+    networkConfig,
+    publicClient,
+    ensL1Client,
+    options?.enableMainnetL1MissFallback
+  );
 }

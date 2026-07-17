@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createNameResolution } from '../capabilities';
 import { ethereumSepolia } from '../networks';
 import { createRuntime } from '../profiles/shared';
 
@@ -181,4 +182,26 @@ describe('EVM profile runtimes', () => {
     expect(queryLoadContractSpy).toHaveBeenCalledTimes(1);
     expect(contractLoadingLoadSpy).toHaveBeenCalledWith({ contractAddress: '0x1234' });
   }, 30000);
+
+  it('threads enableMainnetL1MissFallback from CreateRuntimeOptions into createNameResolution', () => {
+    vi.mocked(createNameResolution).mockClear();
+
+    createRuntime('viewer', ethereumSepolia, {
+      nameResolution: { enableMainnetL1MissFallback: true },
+    });
+
+    expect(createNameResolution).toHaveBeenCalledWith(
+      ethereumSepolia,
+      expect.objectContaining({ enableMainnetL1MissFallback: true })
+    );
+  });
+
+  it('omits enableMainnetL1MissFallback when runtime options do not opt in', () => {
+    vi.mocked(createNameResolution).mockClear();
+
+    createRuntime('viewer', ethereumSepolia);
+
+    const [, options] = vi.mocked(createNameResolution).mock.calls.at(-1) ?? [];
+    expect(options).not.toHaveProperty('enableMainnetL1MissFallback');
+  });
 });

@@ -371,8 +371,13 @@ export {
   isValidName,
   normalizeName,
   baseEnsProvenance,
+  boundReverseProvenance,
+  composeNetworkFallbackProvenance,
+  MAINNET_NETWORK_ID,
+  networkFallbackProvenanceFields,
   EvmNameResolutionService,
   createEvmNameResolutionService,
+  type CreateEvmNameResolutionServiceOptions,
   // SF-5 ENS v2: the EnsProvenance extension type + guard + builders (exported for downstream
   // narrowing via `isEnsProvenance` — SC-005 — without pulling in the service).
   isEnsProvenance,

@@ -12,6 +12,7 @@ import {
 } from '@openzeppelin/adapter-runtime-utils';
 import type {
   CapabilityFactoryMap,
+  CreateRuntimeOptions,
   EcosystemRuntime,
   ExecutionConfig,
   NetworkConfig,
@@ -88,6 +89,29 @@ function ensL1Client(config: TypedEvmNetworkConfig) {
   return createEvmPublicClient(resolveMainnetRpcUrl(config), mainnet);
 }
 
+/**
+ * Shared `createNameResolution` options for profile factories (003 SF-1).
+ *
+ * Static {@link capabilityFactories} omit runtime options — miss-fallback stays OFF (INV-12).
+ * {@link createRuntime} threads `CreateRuntimeOptions.nameResolution.enableMainnetL1MissFallback`
+ * when strictly `=== true` (INV-2).
+ */
+function buildNameResolutionCreateOptions(
+  config: TypedEvmNetworkConfig,
+  runtimeOptions?: CreateRuntimeOptions
+) {
+  const enableMainnetL1MissFallback = runtimeOptions?.nameResolution?.enableMainnetL1MissFallback;
+
+  return {
+    publicClient: ensClient(config),
+    // ensL1Client is only useful for L2→L1 cross-chain; on mainnet-bound the bound client already
+    // has the Universal Resolver, so building a second mainnet client is waste-only.
+    // Obs: hand-rolled chainId:1 whose viemChain lacks ensUniversalResolver now → UNSUPPORTED_NETWORK (was L1 path); unreachable for shipped configs (viem `mainnet` defines the UR).
+    ...(config.chainId === mainnet.id ? {} : { ensL1Client: ensL1Client(config) }), // SF-5 / D-V1
+    ...(enableMainnetL1MissFallback === true ? { enableMainnetL1MissFallback } : {}),
+  };
+}
+
 function bridgeSignAndBroadcast(
   execution: ReturnType<typeof createExecution>
 ): (
@@ -121,14 +145,8 @@ export const capabilityFactories: CapabilityFactoryMap = {
   uiKit: (config: NetworkConfig) => createUiKit(toTypedEvmNetworkConfig(config)),
   relayer: (config: NetworkConfig) => createRelayer(toTypedEvmNetworkConfig(config)),
   nameResolution: (config: NetworkConfig) => {
-    const typed = toTypedEvmNetworkConfig(config);
-    // ensL1Client is only useful for L2→L1 cross-chain; on mainnet-bound the bound client already
-    // has the Universal Resolver, so building a second mainnet client is waste-only.
-    // Obs: hand-rolled chainId:1 whose viemChain lacks ensUniversalResolver now → UNSUPPORTED_NETWORK (was L1 path); unreachable for shipped configs (viem `mainnet` defines the UR).
-    return createNameResolution(typed, {
-      publicClient: ensClient(typed),
-      ...(typed.chainId === mainnet.id ? {} : { ensL1Client: ensL1Client(typed) }), // SF-5 / D-V1
-    });
+    const typedConfig = toTypedEvmNetworkConfig(config);
+    return createNameResolution(typedConfig, buildNameResolutionCreateOptions(typedConfig));
   },
   accessControl: (config: NetworkConfig) => {
     const typedConfig = toTypedEvmNetworkConfig(config);
@@ -143,7 +161,10 @@ export const capabilityFactories: CapabilityFactoryMap = {
   },
 };
 
-function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): CapabilityFactoryMap {
+function createRuntimeCapabilityFactories(
+  config: TypedEvmNetworkConfig,
+  runtimeOptions?: CreateRuntimeOptions
+): CapabilityFactoryMap {
   return createLazyRuntimeCapabilityFactories(config, {
     addressing: () => createAddressing(),
     explorer: () => createExplorer(config),
@@ -161,12 +182,7 @@ function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): Capabi
     uiKit: () => createUiKit(config),
     relayer: () => createRelayer(config),
     nameResolution: () =>
-      createNameResolution(config, {
-        publicClient: ensClient(config),
-        // ensL1Client is only useful for L2→L1 cross-chain; skip on mainnet-bound (waste-only).
-        // Obs: hand-rolled chainId:1 whose viemChain lacks ensUniversalResolver now → UNSUPPORTED_NETWORK (was L1 path); unreachable for shipped configs (viem `mainnet` defines the UR).
-        ...(config.chainId === mainnet.id ? {} : { ensL1Client: ensL1Client(config) }), // SF-5 / D-V1
-      }),
+      createNameResolution(config, buildNameResolutionCreateOptions(config, runtimeOptions)),
     accessControl: (_runtimeConfig, getCapability) =>
       createAccessControl(config, {
         signAndBroadcast: bridgeSignAndBroadcast(
@@ -179,7 +195,12 @@ function createRuntimeCapabilityFactories(config: TypedEvmNetworkConfig): Capabi
 export function createRuntime(
   profile: ProfileName,
   config: TypedEvmNetworkConfig,
-  options?: { uiKit?: string }
+  options?: CreateRuntimeOptions
 ): EcosystemRuntime {
-  return createCoreRuntime(profile, config, createRuntimeCapabilityFactories(config), options);
+  return createCoreRuntime(
+    profile,
+    config,
+    createRuntimeCapabilityFactories(config, options),
+    options
+  );
 }
