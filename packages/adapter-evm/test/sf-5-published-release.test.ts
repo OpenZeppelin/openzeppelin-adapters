@@ -7,7 +7,7 @@
  * (covered by SF-1–SF-4 suites).
  */
 import { execFileSync, execSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -87,36 +87,44 @@ function assertUiTypesFloor(manifest: PackageManifest, packageLabel: string): vo
 }
 
 describe('SF-5 published release correctness', () => {
-  describe('INV-R1 · RELEASE-TRAP GUARD — dual-package changeset', () => {
-    it('lists @openzeppelin/adapter-evm with a semver bump (public npm target)', () => {
-      const content = readFileSync(CHANGESET_PATH, 'utf8');
-      const frontmatter = parseChangesetFrontmatter(content);
-      expect(
-        frontmatter['@openzeppelin/adapter-evm'],
-        'INV-R1: adapter-evm must be bumped — core-only changeset leaves npm consumers on stale 2.2.0 (002 trap)'
-      ).toBeTruthy();
-    });
+  // The release-trap guard is a pre-merge check on the pending changeset. On the
+  // changeset-release branch `changeset version` has already consumed (deleted) the
+  // changeset and applied the version bumps, so the file is absent — skip here (the
+  // release is the proof). The floor + bundled-tarball probes below still validate the
+  // shipped delta on both feature and release branches.
+  describe.skipIf(!existsSync(CHANGESET_PATH))(
+    'INV-R1 · RELEASE-TRAP GUARD — dual-package changeset',
+    () => {
+      it('lists @openzeppelin/adapter-evm with a semver bump (public npm target)', () => {
+        const content = readFileSync(CHANGESET_PATH, 'utf8');
+        const frontmatter = parseChangesetFrontmatter(content);
+        expect(
+          frontmatter['@openzeppelin/adapter-evm'],
+          'INV-R1: adapter-evm must be bumped — core-only changeset leaves npm consumers on stale 2.2.0 (002 trap)'
+        ).toBeTruthy();
+      });
 
-    it('lists @openzeppelin/adapter-evm-core with a semver bump (private bundled source)', () => {
-      const content = readFileSync(CHANGESET_PATH, 'utf8');
-      const frontmatter = parseChangesetFrontmatter(content);
-      expect(
-        frontmatter['@openzeppelin/adapter-evm-core'],
-        'INV-R1: adapter-evm-core must be bumped in lockstep — workspace truth must match bundled bits'
-      ).toBeTruthy();
-    });
+      it('lists @openzeppelin/adapter-evm-core with a semver bump (private bundled source)', () => {
+        const content = readFileSync(CHANGESET_PATH, 'utf8');
+        const frontmatter = parseChangesetFrontmatter(content);
+        expect(
+          frontmatter['@openzeppelin/adapter-evm-core'],
+          'INV-R1: adapter-evm-core must be bumped in lockstep — workspace truth must match bundled bits'
+        ).toBeTruthy();
+      });
 
-    it('does not ship a core-only changeset (adapter-evm absent)', () => {
-      const content = readFileSync(CHANGESET_PATH, 'utf8');
-      const frontmatter = parseChangesetFrontmatter(content);
-      const publicBump = frontmatter['@openzeppelin/adapter-evm'];
-      const coreBump = frontmatter['@openzeppelin/adapter-evm-core'];
-      expect(
-        publicBump && coreBump,
-        `INV-R1: both packages required; got adapter-evm=${publicBump ?? 'MISSING'}, adapter-evm-core=${coreBump ?? 'MISSING'}`
-      ).toBeTruthy();
-    });
-  });
+      it('does not ship a core-only changeset (adapter-evm absent)', () => {
+        const content = readFileSync(CHANGESET_PATH, 'utf8');
+        const frontmatter = parseChangesetFrontmatter(content);
+        const publicBump = frontmatter['@openzeppelin/adapter-evm'];
+        const coreBump = frontmatter['@openzeppelin/adapter-evm-core'];
+        expect(
+          publicBump && coreBump,
+          `INV-R1: both packages required; got adapter-evm=${publicBump ?? 'MISSING'}, adapter-evm-core=${coreBump ?? 'MISSING'}`
+        ).toBeTruthy();
+      });
+    }
+  );
 
   describe('FLOOR CORRECTNESS — @openzeppelin/ui-types ^3.3.0', () => {
     it('adapter-evm declares ui-types ^3.3.0 in peerDependencies and devDependencies', () => {
