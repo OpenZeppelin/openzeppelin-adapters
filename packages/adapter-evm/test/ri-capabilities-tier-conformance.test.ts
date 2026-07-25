@@ -56,7 +56,7 @@ describe('RI capability tier-isolation conformance (FR-020)', () => {
 
         const specifiers = extractSpecifiers(readFileSync(entry, 'utf8'));
         const externalOnly = specifiers.filter((spec) => !spec.startsWith('.'));
-        expect(externalOnly).toEqual(['@openzeppelin/adapter-evm-core']);
+        expect(externalOnly).toEqual(['@openzeppelin/adapter-evm-core/' + name]);
 
         const uiOffenders = findMatchingSpecifiers(specifiers, FORBIDDEN_UI_PATTERNS);
         expect(uiOffenders).toEqual([]);

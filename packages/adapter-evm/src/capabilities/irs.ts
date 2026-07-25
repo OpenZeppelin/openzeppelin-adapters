@@ -2,4 +2,4 @@ export {
   createIRS,
   type CreateIRSOptions,
   type EvmIRSAddresses,
-} from '@openzeppelin/adapter-evm-core';
+} from '@openzeppelin/adapter-evm-core/irs';

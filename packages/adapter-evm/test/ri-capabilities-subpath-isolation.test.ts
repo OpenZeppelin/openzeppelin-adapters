@@ -52,7 +52,9 @@ describe('RI capability sub-path isolation (no React/Wagmi)', () => {
       const specifiers = extractSpecifiers(readFileSync(entry, 'utf8'));
       assertNoForbidden(specifiers, `${name} re-export`);
       const externalOnly = specifiers.filter((spec) => !spec.startsWith('.'));
-      expect(externalOnly).toEqual(externalOnly.map(() => '@openzeppelin/adapter-evm-core'));
+      expect(externalOnly).toEqual(
+        externalOnly.map(() => `@openzeppelin/adapter-evm-core/${name}`)
+      );
     });
   }
 });
