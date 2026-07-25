@@ -1,8 +1,8 @@
+import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
 import {
   createAccessControl as createCoreAccessControl,
   type CreateAccessControlOptions,
-  type TypedEvmNetworkConfig,
-} from '@openzeppelin/adapter-evm-core';
+} from '@openzeppelin/adapter-evm-core/access-control';
 
 export function createAccessControl(
   config: TypedEvmNetworkConfig,

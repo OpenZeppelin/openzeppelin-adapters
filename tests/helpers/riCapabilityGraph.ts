@@ -121,3 +121,78 @@ export function riCoreCapabilityEntry(name: (typeof RI_CAPABILITY_NAMES)[number]
 export function riAdapterReexportEntry(name: (typeof RI_CAPABILITY_NAMES)[number]): string {
   return resolve(ADAPTER_EVM_ROOT, `src/capabilities/${name}.ts`);
 }
+
+// ============================================================================
+// Built-artifact traversal (SC-003)
+// ============================================================================
+//
+// The source-graph helpers above cannot see chunking. A capability whose source
+// imports nothing browser-only can still ship a built entry that re-exports from
+// a chunk shared with the wallet graph, because chunk assignment happens at build
+// time and operates on whole modules. That gap shipped once already: the headless
+// capability entries re-exported through the `@openzeppelin/adapter-evm-core`
+// barrel, so rolldown merged the barrel facade and the wallet chunk into a single
+// ~356 kB chunk that every entry imported. The source graphs stayed clean; the
+// built `dist/erc3643.mjs` reached React, wagmi, RainbowKit and a `.css` import,
+// which made the sub-path impossible to bundle for `platform: 'node'`.
+//
+// SC-003 asks for import-graph analysis of the *built* sub-path entries; these
+// helpers provide it.
+
+/**
+ * Specifiers that must never appear in a headless capability's built graph.
+ *
+ * Narrower than {@link FORBIDDEN_UI_PATTERNS} on purpose: this set is the
+ * node-bundling contract (a Node consumer such as the Relayer plugin loader
+ * cannot resolve a `.css` import and must not be handed a React/wagmi runtime),
+ * not the broader source-tier policy.
+ */
+export const FORBIDDEN_DIST_RUNTIME_PATTERNS: RegExp[] = [
+  /^react$/,
+  /^react\//,
+  /^react-dom(\/|$)/,
+  /^wagmi(\/|$)/,
+  /^@wagmi\//,
+  /^@rainbow-me\//,
+  /^@tanstack\/react-query(\/|$)/,
+  /^@openzeppelin\/ui-react(\/|$)/,
+  /^@openzeppelin\/ui-components(\/|$)/,
+  /^lucide-react(\/|$)/,
+  /\.css(\?|$)/,
+];
+
+/** Built ESM entry backing the `@openzeppelin/adapter-evm/<subPath>` export. */
+export function adapterDistEntry(subPath: string): string {
+  return resolve(ADAPTER_EVM_ROOT, `dist/${subPath}.mjs`);
+}
+
+/**
+ * Walk relative imports across built ESM chunks starting at `entryFile`.
+ *
+ * Mirrors {@link walkImportGraph}, but resolves against emitted `.mjs` chunks
+ * rather than TypeScript sources, so it observes the chunk graph a bundler sees.
+ */
+export function walkDistGraph(entryFile: string): {
+  files: string[];
+  bareSpecifiers: Set<string>;
+} {
+  const bareSpecifiers = new Set<string>();
+  const visited = new Set<string>();
+  const queue = [entryFile];
+
+  while (queue.length > 0) {
+    const file = queue.pop() as string;
+    if (visited.has(file) || !existsSync(file)) continue;
+    visited.add(file);
+
+    for (const spec of extractSpecifiers(readFileSync(file, 'utf8'))) {
+      if (spec.startsWith('.')) {
+        queue.push(resolve(dirname(file), spec));
+      } else {
+        bareSpecifiers.add(spec);
+      }
+    }
+  }
+
+  return { files: [...visited], bareSpecifiers };
+}

@@ -1,1 +1,1 @@
-export { createQuery } from '@openzeppelin/adapter-evm-core';
+export { createQuery } from '@openzeppelin/adapter-evm-core/query';
