@@ -30,6 +30,7 @@ import { logger } from '@openzeppelin/ui-utils';
 import { resolveRpcUrl } from '../configuration/rpc';
 import { runCapabilityWrite } from '../shared/executor';
 import type { EvmCompatibleNetworkConfig, WriteContractParameters } from '../types';
+import { createEvmPublicClient } from '../utils/public-client';
 import {
   assembleAddTrustedIssuerAction,
   assembleAttachClaimAction,
@@ -43,7 +44,9 @@ import {
   getOnchainId,
   isTrustedIssuer,
   isVerified,
+  type FactoryIdentityLookup,
 } from './onchain-reader';
+import { parseIdentityFromDeployReceipt } from './receipt-identity';
 import type { EvmIRSAddresses, EvmIRSExecutor, EvmIRSServiceOptions } from './types';
 
 const LOG_SYSTEM = 'EvmIrsService';
@@ -77,6 +80,14 @@ export class EvmIRSService {
     return getOnchainId(this.rpcUrl(), this.addresses.identityRegistry, holder);
   }
 
+  /**
+   * Factory linkage probe — distinct from registry `getOnchainId`.
+   * Used by resume/idempotency paths that must detect deployed-but-unregistered holders.
+   */
+  getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup> {
+    return getIdentityFromFactory(this.rpcUrl(), this.addresses.identityFactory, holder);
+  }
+
   isVerified(holder: string): Promise<boolean> {
     return isVerified(this.rpcUrl(), this.addresses.identityRegistry, holder);
   }
@@ -99,12 +110,11 @@ export class EvmIRSService {
   // ---- Writes ----
 
   /**
-   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the factory.
+   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the confirmed receipt.
    *
-   * Precondition: the injected execution strategy MUST resolve `signAndBroadcast`
-   * only after on-chain confirmation (submit-then-poll, per FR-018). The factory is
-   * read immediately after `execute` resolves; a broadcast-only (unconfirmed) strategy
-   * can surface `IdentityOperationFailed` even though the transaction later succeeds.
+   * Identity resolution parses `WalletLinked` (and falls back to `Deployed`) from the
+   * transaction receipt — a receipt only exists once mined, so this is the confirmation
+   * gate the prior eth_call follow-up could not enforce.
    */
   async deployOnchainId(
     input: { holder: string },
@@ -123,15 +133,47 @@ export class EvmIRSService {
       runtimeApiKey
     );
 
-    const onchainId = await getIdentityFromFactory(
-      this.rpcUrl(),
+    const rpcUrl = this.rpcUrl();
+    logger.info(LOG_SYSTEM, 'deployOnchainId: fetching receipt for identity resolution', {
+      txHash: result.id,
+      readRpcHost: safeRpcHost(rpcUrl),
+      factory: this.addresses.identityFactory,
+      holder,
+    });
+
+    const client = createEvmPublicClient(rpcUrl);
+    let receipt;
+    try {
+      receipt = await client.getTransactionReceipt({ hash: result.id as `0x${string}` });
+    } catch (error) {
+      const cause = error instanceof Error ? error : new Error(String(error));
+      logger.error(LOG_SYSTEM, 'deployOnchainId: receipt fetch failed', {
+        txHash: result.id,
+        cause,
+      });
+      throw new IdentityOperationFailed(
+        `ONCHAINID deployment for ${holder} submitted (${result.id}) but the receipt could not be fetched: ${cause.message}`,
+        'deployOnchainId',
+        cause,
+        this.addresses.identityFactory
+      );
+    }
+
+    const onchainId = parseIdentityFromDeployReceipt(
+      receipt,
       this.addresses.identityFactory,
       holder
     );
 
+    logger.info(LOG_SYSTEM, 'deployOnchainId: receipt identity resolution', {
+      txHash: result.id,
+      receiptStatus: receipt.status,
+      resolvedOnchainId: onchainId ?? null,
+    });
+
     if (!onchainId) {
       throw new IdentityOperationFailed(
-        `ONCHAINID deployment for ${holder} submitted (${result.id}) but no identity was resolvable from the factory.`,
+        `ONCHAINID deployment for ${holder} submitted (${result.id}) but no identity was resolvable from the factory receipt.`,
         'deployOnchainId',
         undefined,
         this.addresses.identityFactory
@@ -274,4 +316,12 @@ export function createEvmIRSService(
   options: EvmIRSServiceOptions
 ): EvmIRSService {
   return new EvmIRSService(networkConfig, executeTransaction, options);
+}
+
+function safeRpcHost(rpcUrl: string): string {
+  try {
+    return new URL(rpcUrl).host;
+  } catch {
+    return '(invalid-url)';
+  }
 }

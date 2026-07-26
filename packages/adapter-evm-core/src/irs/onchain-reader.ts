@@ -151,16 +151,20 @@ export async function isTrustedIssuer(
 
 /**
  * Resolve the ONCHAINID deployed for a wallet via the identity factory.
- * Used after `deployOnchainId` to surface the new identity address.
  *
- * @returns The deployed identity address, or `undefined` when none/zero.
+ * @returns Explicit lookup — `not_found` (zero address) is distinct from `read_failed`.
  */
+export type FactoryIdentityLookup =
+  | { readonly status: 'found'; readonly onchainId: string }
+  | { readonly status: 'not_found' }
+  | { readonly status: 'read_failed'; readonly cause: Error };
+
 export async function getIdentityFromFactory(
   rpcUrl: string,
   factoryAddress: string,
   wallet: string,
   viemChain?: Chain
-): Promise<string | undefined> {
+): Promise<FactoryIdentityLookup> {
   const client = createEvmPublicClient(rpcUrl, viemChain);
 
   try {
@@ -171,9 +175,12 @@ export async function getIdentityFromFactory(
       args: [wallet as `0x${string}`],
     })) as string;
 
-    return isZeroAddress(identity) ? undefined : identity;
+    return isZeroAddress(identity)
+      ? { status: 'not_found' }
+      : { status: 'found', onchainId: identity };
   } catch (error) {
-    logger.debug(LOG_SYSTEM, `getIdentityFromFactory failed for ${wallet}:`, error);
-    return undefined;
+    const cause = error instanceof Error ? error : new Error(String(error));
+    logger.error(LOG_SYSTEM, `getIdentityFromFactory failed for ${wallet}:`, cause);
+    return { status: 'read_failed', cause };
   }
 }
