@@ -1,7 +1,7 @@
 import type { IRSCapability, NetworkConfig } from '@openzeppelin/ui-types';
 
 import { createEvmIRSService } from '../irs';
-import type { EvmIRSAddresses } from '../irs';
+import type { DeployReceiptWaitOptions, EvmIRSAddresses } from '../irs';
 import {
   adaptSignAndBroadcast,
   assertValidAddress,
@@ -22,6 +22,13 @@ export interface CreateIRSOptions {
   signAndBroadcast: SignAndBroadcast;
   addresses: EvmIRSAddresses;
   trustedIssuer?: string;
+  /**
+   * Bounds on the `deployOnchainId` confirmation wait (confirmations + timeout).
+   *
+   * Validated eagerly here, so an out-of-range bound throws at capability construction rather than
+   * on a holder's first deploy. See `DeployReceiptWaitOptions`.
+   */
+  deployReceiptWait?: DeployReceiptWaitOptions;
 }
 
 export type { EvmIRSAddresses } from '../irs';
@@ -47,6 +54,7 @@ export function createIRS(config: NetworkConfig, options: CreateIRSOptions): IRS
     {
       addresses: options.addresses,
       trustedIssuer: options.trustedIssuer,
+      deployReceiptWait: options.deployReceiptWait,
     }
   );
 

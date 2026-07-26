@@ -104,22 +104,74 @@ export const DEFAULT_DEPLOY_RECEIPT_TIMEOUT_MS = 120_000;
 
 /** Tunables for the deploy confirmation wait. */
 export interface DeployReceiptWaitOptions {
-  /** Confirmations to require. Defaults to {@link DEFAULT_DEPLOY_CONFIRMATIONS}. */
+  /**
+   * Confirmations to require. Must be an integer >= 1. Defaults to
+   * {@link DEFAULT_DEPLOY_CONFIRMATIONS}.
+   */
   confirmations?: number;
-  /** Milliseconds before giving up. Defaults to {@link DEFAULT_DEPLOY_RECEIPT_TIMEOUT_MS}. */
+  /**
+   * Milliseconds before giving up. Must be a finite integer > 0. Defaults to
+   * {@link DEFAULT_DEPLOY_RECEIPT_TIMEOUT_MS}.
+   */
   timeoutMs?: number;
 }
 
+/** Thrown for a `deployReceiptWait` that cannot uphold the bounded-wait guarantee. */
+export class InvalidDeployReceiptWaitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidDeployReceiptWaitError';
+  }
+}
+
 /**
- * Resolve the effective wait bounds, so the call, the log line, and the timeout message all quote
- * the same numbers.
+ * Resolve AND VALIDATE the effective wait bounds, so the call, the log line, and the timeout
+ * message all quote the same numbers.
+ *
+ * ## Why this throws rather than clamping
+ *
+ * `??` only substitutes for `null` / `undefined`, so a bare `?? default` lets `0`, `NaN`,
+ * `Infinity` and negatives through to viem — and each is actively harmful, verified against
+ * viem 2.44.4 `actions/public/waitForTransactionReceipt.ts`:
+ *
+ * - `timeout: 0` — `const timer = timeout ? setTimeout(...) : undefined` (L175). A falsy timeout
+ *   disables the timer entirely, producing exactly the UNBOUNDED wait this module's own docstring
+ *   forbids: an outage inside a server-side route, not a slow response.
+ * - `timeout: Infinity` / `NaN` — passed to `setTimeout`, which Node coerces to 1 ms. Every deploy
+ *   would then time out almost immediately and report INDETERMINATE — the "may still land, do not
+ *   retry blind" path — so every holder looks stuck.
+ * - `confirmations: 0` — viem short-circuits on `confirmations <= 1` (L193), so 0 is
+ *   behaviourally IDENTICAL to 1. Rejecting it removes no capability; it only removes ambiguity.
+ *
+ * Clamping was the alternative, and was rejected: silently rewriting a caller's safety bound would
+ * hide a misconfiguration whose consequences are money-adjacent, and the only channel for saying
+ * so would be a warning log — a channel this codebase has already been bitten by treating as
+ * reliable. A throw is loud, and because {@link EvmIRSService} resolves these options in its
+ * CONSTRUCTOR, it fires at boot rather than at the first deploy.
+ *
+ * @throws {InvalidDeployReceiptWaitError} for any value that cannot uphold a bounded wait.
  */
 export function resolveDeployReceiptWait(options?: DeployReceiptWaitOptions): {
   confirmations: number;
   timeoutMs: number;
 } {
-  return {
-    confirmations: options?.confirmations ?? DEFAULT_DEPLOY_CONFIRMATIONS,
-    timeoutMs: options?.timeoutMs ?? DEFAULT_DEPLOY_RECEIPT_TIMEOUT_MS,
-  };
+  const confirmations = options?.confirmations ?? DEFAULT_DEPLOY_CONFIRMATIONS;
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_DEPLOY_RECEIPT_TIMEOUT_MS;
+
+  if (!Number.isInteger(confirmations) || confirmations < 1) {
+    throw new InvalidDeployReceiptWaitError(
+      `deployReceiptWait.confirmations must be an integer >= 1, received ${String(confirmations)}. ` +
+        `viem treats confirmations <= 1 identically, so use 1 for the fastest safe setting.`
+    );
+  }
+
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new InvalidDeployReceiptWaitError(
+      `deployReceiptWait.timeoutMs must be a finite integer > 0 (milliseconds), received ` +
+        `${String(timeoutMs)}. The deploy wait must stay bounded: viem disables its timeout timer ` +
+        `for a falsy value, and Node coerces Infinity/NaN to 1 ms, so neither yields a usable bound.`
+    );
+  }
+
+  return { confirmations, timeoutMs };
 }

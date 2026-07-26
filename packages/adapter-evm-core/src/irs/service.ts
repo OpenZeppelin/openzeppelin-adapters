@@ -46,11 +46,7 @@ import {
   isVerified,
   type FactoryIdentityLookup,
 } from './onchain-reader';
-import {
-  parseIdentityFromDeployReceipt,
-  resolveDeployReceiptWait,
-  type DeployReceiptWaitOptions,
-} from './receipt-identity';
+import { parseIdentityFromDeployReceipt, resolveDeployReceiptWait } from './receipt-identity';
 import type { EvmIRSAddresses, EvmIRSExecutor, EvmIRSServiceOptions } from './types';
 
 const LOG_SYSTEM = 'EvmIrsService';
@@ -68,7 +64,11 @@ export const TRUSTED_ISSUER_NOOP_ID = 'noop:trusted-issuer-already-registered';
 export class EvmIRSService {
   private readonly addresses: EvmIRSAddresses;
   private readonly trustedIssuer?: string;
-  private readonly deployReceiptWait?: DeployReceiptWaitOptions;
+  /**
+   * Wait bounds, resolved AND VALIDATED at construction so a misconfiguration fails at boot
+   * rather than at the first deploy — where the failure would land on a real holder.
+   */
+  private readonly deployReceiptWait: { confirmations: number; timeoutMs: number };
 
   constructor(
     private readonly networkConfig: EvmCompatibleNetworkConfig,
@@ -77,7 +77,7 @@ export class EvmIRSService {
   ) {
     this.addresses = options.addresses;
     this.trustedIssuer = options.trustedIssuer;
-    this.deployReceiptWait = options.deployReceiptWait;
+    this.deployReceiptWait = resolveDeployReceiptWait(options.deployReceiptWait);
   }
 
   // ---- Reads ----
@@ -150,7 +150,7 @@ export class EvmIRSService {
     );
 
     const rpcUrl = this.rpcUrl();
-    const { confirmations, timeoutMs } = resolveDeployReceiptWait(this.deployReceiptWait);
+    const { confirmations, timeoutMs } = this.deployReceiptWait;
     logger.info(LOG_SYSTEM, 'deployOnchainId: awaiting receipt for identity resolution', {
       txHash: result.id,
       readRpcHost: safeRpcHost(rpcUrl),
