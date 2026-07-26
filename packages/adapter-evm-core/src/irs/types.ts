@@ -12,6 +12,7 @@ import type {
 } from '@openzeppelin/ui-types';
 
 import type { WriteContractParameters } from '../types';
+import type { DeployReceiptWaitOptions } from './receipt-identity';
 
 /**
  * Deployment-specific IRS / ONCHAINID contract addresses the capability operates against.
@@ -50,4 +51,12 @@ export interface EvmIRSServiceOptions {
    * The capability never holds the issuer signing key — only this address.
    */
   trustedIssuer?: string;
+  /**
+   * Bounds on the `deployOnchainId` confirmation wait (confirmations + timeout).
+   *
+   * The wait is always bounded; this only tunes it. Raise the timeout on slow chains, but never
+   * remove the bound: an unbounded wait inside a server-side route is an outage. On timeout the
+   * deploy is reported as INDETERMINATE rather than failed, because the transaction may still land.
+   */
+  deployReceiptWait?: DeployReceiptWaitOptions;
 }

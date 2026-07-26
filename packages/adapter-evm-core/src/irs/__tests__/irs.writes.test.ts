@@ -17,7 +17,11 @@ import { ID_FACTORY_EVENTS_ABI } from '../abis';
 import { TRUSTED_ISSUER_NOOP_ID } from '../service';
 
 const mockReadContract = vi.fn();
-const mockGetTransactionReceipt = vi.fn();
+// Point-in-time read: rejects as viem does for a pending tx, so a regression to it fails here too.
+const mockGetTransactionReceipt = vi.fn(() =>
+  Promise.reject(new Error('TransactionReceiptNotFoundError: not mined yet'))
+);
+const mockWaitForTransactionReceipt = vi.fn();
 
 vi.mock('viem', async () => {
   const actual = await vi.importActual<typeof import('viem')>('viem');
@@ -26,6 +30,7 @@ vi.mock('viem', async () => {
     createPublicClient: vi.fn(() => ({
       readContract: mockReadContract,
       getTransactionReceipt: mockGetTransactionReceipt,
+      waitForTransactionReceipt: mockWaitForTransactionReceipt,
     })),
     http: vi.fn((url: string) => ({ url, type: 'http' })),
   };
@@ -99,7 +104,7 @@ describe('IRS writes', () => {
 
   describe('deployOnchainId', () => {
     it('submits createIdentity and resolves the deployed ONCHAINID from the receipt', async () => {
-      mockGetTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+      mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
       const { capability, signAndBroadcast } = makeCapability();
 
       const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -109,7 +114,10 @@ describe('IRS writes', () => {
       expect(action.functionName).toBe('createIdentity');
       expect(action.address.toLowerCase()).toBe(ADDRESSES.identityFactory);
       expect(action.args[0]).toBe(HOLDER);
-      expect(mockGetTransactionReceipt).toHaveBeenCalledWith({ hash: TX_HASH });
+      // The deploy path must WAIT for confirmation, never point-in-time check.
+      expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
+      expect(mockWaitForTransactionReceipt.mock.calls[0]?.[0]).toMatchObject({ hash: TX_HASH });
+      expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
       expect(mockReadContract).not.toHaveBeenCalled();
     });
   });

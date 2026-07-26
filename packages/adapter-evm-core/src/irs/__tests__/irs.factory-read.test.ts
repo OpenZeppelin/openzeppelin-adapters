@@ -3,8 +3,9 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { IdentityOperationFailed } from '@openzeppelin/ui-types';
+import type { IRSCapability } from '@openzeppelin/ui-types';
 
+import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
 import { getIdentityFromFactory } from '../onchain-reader';
 
 const mockReadContract = vi.fn();
@@ -23,6 +24,35 @@ const FACTORY = '0x2222222222222222222222222222222222222222';
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const ZERO = '0x0000000000000000000000000000000000000000';
+const REGISTRY = '0x1111111111111111111111111111111111111111';
+const TRUSTED_ISSUERS = '0x3333333333333333333333333333333333333333';
+
+function makeCapability(): { capability: IRSCapability } {
+  const options: CreateIRSOptions = {
+    signAndBroadcast: vi.fn(),
+    addresses: {
+      identityRegistry: REGISTRY,
+      identityFactory: FACTORY,
+      trustedIssuersRegistry: TRUSTED_ISSUERS,
+    },
+  };
+  const capability = createIRS(
+    {
+      id: 'evm-testnet',
+      exportConstName: 'evmTestnet',
+      name: 'EVM Testnet',
+      ecosystem: 'evm',
+      network: 'ethereum',
+      type: 'testnet',
+      isTestnet: true,
+      chainId: 11155111,
+      rpcUrl: RPC,
+      nativeCurrency: { name: 'Test Ether', symbol: 'TETH', decimals: 18 },
+    } as never,
+    options
+  );
+  return { capability };
+}
 
 describe('getIdentityFromFactory', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -53,22 +83,44 @@ describe('getIdentityFromFactory', () => {
     }
   });
 
-  it('throws IdentityOperationFailed when callers use getFactoryIdentity on the service', async () => {
-    // Documented at service layer — reader itself returns read_failed for explicit handling.
-    mockReadContract.mockRejectedValueOnce(new Error('rpc down'));
-    const lookup = await getIdentityFromFactory(RPC, FACTORY, HOLDER);
-    expect(lookup.status).toBe('read_failed');
-    expect(lookup).not.toEqual({ status: 'not_found' });
-    // Guard: swallowing into undefined would have made this indistinguishable from not_found.
-    expect(() => {
+  describe('through the capability surface — service.getFactoryIdentity', () => {
+    // Comment-3 coverage: the previous version of this block asserted nothing about the service.
+    // It called the reader and then threw IdentityOperationFailed by hand, so it passed no matter
+    // what getFactoryIdentity did. The method our consumers actually call was untested. Renaming
+    // it would have hidden that; these exercise the real method instead.
+
+    it('returns { status: "found", onchainId } for a linked wallet', async () => {
+      mockReadContract.mockResolvedValueOnce(ONCHAINID);
+      const { capability } = makeCapability();
+      await expect(capability.getFactoryIdentity(HOLDER)).resolves.toEqual({
+        status: 'found',
+        onchainId: ONCHAINID,
+      });
+    });
+
+    it('returns { status: "not_found" } for an unlinked wallet', async () => {
+      mockReadContract.mockResolvedValueOnce(ZERO);
+      const { capability } = makeCapability();
+      await expect(capability.getFactoryIdentity(HOLDER)).resolves.toEqual({
+        status: 'not_found',
+      });
+    });
+
+    it('returns { status: "read_failed", cause } on RPC error — and does NOT throw', async () => {
+      // The load-bearing assertion. read_failed must stay a VALUE so the caller can distinguish
+      // "the read broke" from "no identity exists"; those have opposite safety consequences for a
+      // deploy decision. Collapsing either into the other is the defect this PR removes.
+      const rpcError = new Error('rpc down');
+      mockReadContract.mockRejectedValueOnce(rpcError);
+      const { capability } = makeCapability();
+
+      const lookup = await capability.getFactoryIdentity(HOLDER);
+
+      expect(lookup.status).toBe('read_failed');
       if (lookup.status === 'read_failed') {
-        throw new IdentityOperationFailed(
-          `Failed to read factory identity for ${HOLDER}: ${lookup.cause.message}`,
-          'getFactoryIdentity',
-          lookup.cause,
-          FACTORY
-        );
+        expect(lookup.cause).toBe(rpcError);
       }
-    }).toThrow(IdentityOperationFailed);
+      expect(lookup).not.toEqual({ status: 'not_found' });
+    });
   });
 });

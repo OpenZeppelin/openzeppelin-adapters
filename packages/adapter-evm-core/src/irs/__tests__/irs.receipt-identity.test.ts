@@ -1,9 +1,15 @@
 /**
  * Receipt-sourced identity resolution for `deployOnchainId` (regression guard).
  *
- * MUST fail when `deployOnchainId` falls back to a post-submit `getIdentity` eth_call:
- * the eth_call mock is configured to return zero / throw even though the receipt carries
- * `WalletLinked`.
+ * Two defects are pinned here, and each test is built to FAIL if the implementation regresses:
+ *
+ * 1. Falling back to a post-submit `getIdentity` eth_call — the `readContract` mock is poisoned
+ *    (returns zero) so it would win if it were consulted at all.
+ * 2. Using a POINT-IN-TIME `getTransactionReceipt` instead of WAITING. `getTransactionReceipt` is
+ *    mocked to REJECT exactly as it does while a tx is pending, while `waitForTransactionReceipt`
+ *    resolves. An implementation that checks instead of waits therefore fails these tests, which
+ *    is the whole point: "a receipt only exists once mined" is only a confirmation gate if you
+ *    actually wait for it.
  */
 import { encodeEventTopics } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,7 +21,14 @@ import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
 import { ID_FACTORY_EVENTS_ABI } from '../abis';
 
 const mockReadContract = vi.fn();
-const mockGetTransactionReceipt = vi.fn();
+/**
+ * Rejects the way viem does for a pending tx. If `deployOnchainId` ever calls this instead of
+ * waiting, every test in this file fails — that is the regression guard for the point-in-time bug.
+ */
+const mockGetTransactionReceipt = vi.fn(() =>
+  Promise.reject(new Error('TransactionReceiptNotFoundError: not mined yet'))
+);
+const mockWaitForTransactionReceipt = vi.fn();
 
 vi.mock('viem', async () => {
   const actual = await vi.importActual<typeof import('viem')>('viem');
@@ -24,6 +37,7 @@ vi.mock('viem', async () => {
     createPublicClient: vi.fn(() => ({
       readContract: mockReadContract,
       getTransactionReceipt: mockGetTransactionReceipt,
+      waitForTransactionReceipt: mockWaitForTransactionReceipt,
     })),
     http: vi.fn((url: string) => ({ url, type: 'http' })),
   };
@@ -95,7 +109,7 @@ describe('deployOnchainId receipt resolution', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('resolves onchainId from WalletLinked in the receipt — NOT from getIdentity eth_call', async () => {
-    mockGetTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+    mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
     // If deployOnchainId still eth_calls getIdentity, this poisoned return would win.
     mockReadContract.mockResolvedValueOnce('0x0000000000000000000000000000000000000000');
 
@@ -105,18 +119,90 @@ describe('deployOnchainId receipt resolution', () => {
 
     expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
     expect(signAndBroadcast).toHaveBeenCalledOnce();
-    expect(mockGetTransactionReceipt).toHaveBeenCalledWith({ hash: TX_HASH });
     expect(mockReadContract).not.toHaveBeenCalled();
   });
 
-  it('throws when the receipt is successful but carries no WalletLinked for the holder', async () => {
-    mockGetTransactionReceipt.mockResolvedValueOnce({ status: 'success', logs: [] });
+  it('WAITS for confirmation — never a point-in-time getTransactionReceipt', async () => {
+    // getTransactionReceipt rejects (pending), waitForTransactionReceipt resolves. A
+    // check-instead-of-wait implementation cannot pass this.
+    mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
 
     const { capability } = makeCapability();
+    const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
-    await expect(
-      capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG)
-    ).rejects.toBeInstanceOf(IdentityOperationFailed);
+    expect(result.onchainId).toBe(ONCHAINID);
+    expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
+    expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
+  });
+
+  it('bounds the wait — passes a confirmations count AND a finite timeout', async () => {
+    mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+
+    const { capability } = makeCapability();
+    await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
+
+    const args = mockWaitForTransactionReceipt.mock.calls[0]?.[0];
+    expect(args).toMatchObject({ hash: TX_HASH });
+    expect(args.confirmations).toBeGreaterThanOrEqual(1);
+    // An unbounded wait inside a server-side route is an outage, not a slow response.
+    expect(args.timeout).toBeGreaterThan(0);
+    expect(Number.isFinite(args.timeout)).toBe(true);
+  });
+
+  it('reports a wait TIMEOUT as INDETERMINATE — never as a plain failure', async () => {
+    mockWaitForTransactionReceipt.mockRejectedValueOnce(
+      new Error('WaitForTransactionReceiptTimeoutError: timed out')
+    );
+
+    const { capability } = makeCapability();
+    const error = await capability
+      .deployOnchainId({ holder: HOLDER }, EXEC_CONFIG)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(IdentityOperationFailed);
+    const message = (error as Error).message;
+    // The tx may still land, so the message must say so and must warn against a blind retry.
+    expect(message).toContain('INDETERMINATE');
+    expect(message).toContain('MAY STILL LAND');
+    expect(message).toMatch(/do NOT retry blind/i);
+    expect(message).toContain('wallet already linked to an identity');
+    expect(message).toContain(TX_HASH);
+  });
+
+  it('reports a REVERT explicitly — not as "no identity was resolvable"', async () => {
+    mockWaitForTransactionReceipt.mockResolvedValueOnce({ status: 'reverted', logs: [] });
+
+    const { capability } = makeCapability();
+    const error = await capability
+      .deployOnchainId({ holder: HOLDER }, EXEC_CONFIG)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(IdentityOperationFailed);
+    const message = (error as Error).message;
+    expect(message).toContain('REVERTED');
+    // Reverted means nothing was created, so a retry is safe — the OPPOSITE of the
+    // landed-but-unresolvable case. Conflating them tells the caller to do the dangerous thing.
+    expect(message).toMatch(/retry is\s+safe/i);
+    expect(message).not.toContain('no identity was resolvable');
+    expect(mockReadContract).not.toHaveBeenCalled();
+  });
+
+  it('a SUCCESSFUL receipt with no WalletLinked warns that a retry is NOT safe', async () => {
+    mockWaitForTransactionReceipt.mockResolvedValueOnce({ status: 'success', logs: [] });
+
+    const { capability } = makeCapability();
+    const error = await capability
+      .deployOnchainId({ holder: HOLDER }, EXEC_CONFIG)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(IdentityOperationFailed);
+    const message = (error as Error).message;
+    expect(message).toContain('SUCCEEDED');
+    expect(message).toContain('LIKELY EXISTS');
+    expect(message).toMatch(/do NOT retry blind/i);
     expect(mockReadContract).not.toHaveBeenCalled();
   });
 });
