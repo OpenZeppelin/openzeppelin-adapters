@@ -1,5 +1,12 @@
 # @openzeppelin/adapters-vite
 
+## 7.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`465b865`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/465b86513ad18abea53946c5d4faf3a50f2f7060)]:
+  - @openzeppelin/adapter-evm@2.5.0
+
 ## 6.0.0
 
 ### Patch Changes
