@@ -163,3 +163,20 @@ export const CREATE_IDENTITY_ABI: Abi = [
     stateMutability: 'nonpayable',
   },
 ] as const;
+
+/** IdFactory events used to resolve a freshly deployed ONCHAINID from a receipt. */
+export const ID_FACTORY_EVENTS_ABI: Abi = [
+  {
+    type: 'event',
+    name: 'WalletLinked',
+    inputs: [
+      { name: 'wallet', type: 'address', indexed: true },
+      { name: 'identity', type: 'address', indexed: true },
+    ],
+  },
+  {
+    type: 'event',
+    name: 'Deployed',
+    inputs: [{ name: 'identity', type: 'address', indexed: true }],
+  },
+] as const;

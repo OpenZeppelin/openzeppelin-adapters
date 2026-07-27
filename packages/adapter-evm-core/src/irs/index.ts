@@ -12,5 +12,6 @@ export * from './abis';
 export * from './actions';
 export * from './claim-payload';
 export * from './onchain-reader';
+export * from './receipt-identity';
 export { createEvmIRSService, EvmIRSService } from './service';
 export type { EvmIRSAddresses, EvmIRSExecutor, EvmIRSServiceOptions } from './types';

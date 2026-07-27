@@ -30,6 +30,7 @@ import { logger } from '@openzeppelin/ui-utils';
 import { resolveRpcUrl } from '../configuration/rpc';
 import { runCapabilityWrite } from '../shared/executor';
 import type { EvmCompatibleNetworkConfig, WriteContractParameters } from '../types';
+import { createEvmPublicClient } from '../utils/public-client';
 import {
   assembleAddTrustedIssuerAction,
   assembleAttachClaimAction,
@@ -43,7 +44,9 @@ import {
   getOnchainId,
   isTrustedIssuer,
   isVerified,
+  type FactoryIdentityLookup,
 } from './onchain-reader';
+import { parseIdentityFromDeployReceipt, resolveDeployReceiptWait } from './receipt-identity';
 import type { EvmIRSAddresses, EvmIRSExecutor, EvmIRSServiceOptions } from './types';
 
 const LOG_SYSTEM = 'EvmIrsService';
@@ -61,6 +64,11 @@ export const TRUSTED_ISSUER_NOOP_ID = 'noop:trusted-issuer-already-registered';
 export class EvmIRSService {
   private readonly addresses: EvmIRSAddresses;
   private readonly trustedIssuer?: string;
+  /**
+   * Wait bounds, resolved AND VALIDATED at construction so a misconfiguration fails at boot
+   * rather than at the first deploy — where the failure would land on a real holder.
+   */
+  private readonly deployReceiptWait: { confirmations: number; timeoutMs: number };
 
   constructor(
     private readonly networkConfig: EvmCompatibleNetworkConfig,
@@ -69,12 +77,21 @@ export class EvmIRSService {
   ) {
     this.addresses = options.addresses;
     this.trustedIssuer = options.trustedIssuer;
+    this.deployReceiptWait = resolveDeployReceiptWait(options.deployReceiptWait);
   }
 
   // ---- Reads ----
 
   getOnchainId(holder: string): Promise<OnchainIdLookup> {
     return getOnchainId(this.rpcUrl(), this.addresses.identityRegistry, holder);
+  }
+
+  /**
+   * Factory linkage probe — distinct from registry `getOnchainId`.
+   * Used by resume/idempotency paths that must detect deployed-but-unregistered holders.
+   */
+  getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup> {
+    return getIdentityFromFactory(this.rpcUrl(), this.addresses.identityFactory, holder);
   }
 
   isVerified(holder: string): Promise<boolean> {
@@ -99,12 +116,21 @@ export class EvmIRSService {
   // ---- Writes ----
 
   /**
-   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the factory.
+   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the confirmed receipt.
    *
-   * Precondition: the injected execution strategy MUST resolve `signAndBroadcast`
-   * only after on-chain confirmation (submit-then-poll, per FR-018). The factory is
-   * read immediately after `execute` resolves; a broadcast-only (unconfirmed) strategy
-   * can surface `IdentityOperationFailed` even though the transaction later succeeds.
+   * Identity resolution parses `WalletLinked` (falling back to `Deployed`) out of the receipt
+   * obtained by **waiting** for confirmation — `waitForTransactionReceipt`, bounded by
+   * `deployReceiptWait`. The wait is the gate: a point-in-time `getTransactionReceipt` merely
+   * CHECKS and throws while the tx is pending, which is how the original defect turned a deploy
+   * that later landed into a reported failure.
+   *
+   * Three terminal outcomes, with deliberately different retry semantics:
+   *  - confirmed + identity parsed  -> success
+   *  - confirmed + reverted         -> nothing created, retry is SAFE
+   *  - wait timed out               -> INDETERMINATE, may still land, DO NOT retry blind
+   *
+   * This method makes no assumption about whether the injected executor awaits confirmation; it
+   * establishes confirmation itself.
    */
   async deployOnchainId(
     input: { holder: string },
@@ -123,15 +149,92 @@ export class EvmIRSService {
       runtimeApiKey
     );
 
-    const onchainId = await getIdentityFromFactory(
-      this.rpcUrl(),
+    const rpcUrl = this.rpcUrl();
+    const { confirmations, timeoutMs } = this.deployReceiptWait;
+    logger.info(LOG_SYSTEM, 'deployOnchainId: awaiting receipt for identity resolution', {
+      txHash: result.id,
+      readRpcHost: safeRpcHost(rpcUrl),
+      factory: this.addresses.identityFactory,
+      holder,
+      confirmations,
+      timeoutMs,
+    });
+
+    const client = createEvmPublicClient(rpcUrl);
+    let receipt;
+    try {
+      // Bounded WAIT, never a point-in-time read: `getTransactionReceipt` throws while the tx is
+      // still pending, which would resurrect the very failure mode this method was rewritten to
+      // remove. See ReceiptFetchClient in ./receipt-identity.
+      receipt = await client.waitForTransactionReceipt({
+        hash: result.id as `0x${string}`,
+        confirmations,
+        timeout: timeoutMs,
+      });
+    } catch (error) {
+      const cause = error instanceof Error ? error : new Error(String(error));
+      logger.error(LOG_SYSTEM, 'deployOnchainId: receipt wait failed or timed out', {
+        txHash: result.id,
+        confirmations,
+        timeoutMs,
+        cause,
+      });
+      // INDETERMINATE, NOT FAILED. The transaction was submitted; a timeout means confirmation
+      // was not OBSERVED, not that it did not happen. A caller that reads this as failure and
+      // retries will either create a second orphan or hit `wallet already linked to an identity`.
+      throw new IdentityOperationFailed(
+        `ONCHAINID deployment for ${holder} was submitted (tx ${result.id}) but confirmation was ` +
+          `not observed within ${timeoutMs}ms (${confirmations} confirmation(s) required): ` +
+          `${cause.message}. INDETERMINATE — the transaction MAY STILL LAND. Do NOT treat this as ` +
+          `a failed deployment and do NOT retry blind: check the factory for an identity already ` +
+          `linked to ${holder} first, because a re-attempted createIdentity reverts with ` +
+          `"wallet already linked to an identity" and leaves the holder permanently orphaned.`,
+        'deployOnchainId',
+        cause,
+        this.addresses.identityFactory
+      );
+    }
+
+    // Revert check BEFORE log parsing. A reverted tx has no WalletLinked event, so falling through
+    // would report "no identity was resolvable" — which describes the OPPOSITE retry semantics.
+    // Reverted: nothing was created, retrying is SAFE.
+    // Landed-but-unresolvable: an identity may exist, retrying is DANGEROUS.
+    // Conflating them tells the caller to do the dangerous thing.
+    if (receipt.status !== 'success') {
+      logger.error(LOG_SYSTEM, 'deployOnchainId: transaction reverted', {
+        txHash: result.id,
+        receiptStatus: receipt.status,
+      });
+      throw new IdentityOperationFailed(
+        `ONCHAINID deployment for ${holder} REVERTED on-chain (tx ${result.id}, receipt status ` +
+          `"${receipt.status}"). No identity was created, so nothing is orphaned and a retry is ` +
+          `safe once the revert cause is addressed.`,
+        'deployOnchainId',
+        undefined,
+        this.addresses.identityFactory
+      );
+    }
+
+    const onchainId = parseIdentityFromDeployReceipt(
+      receipt,
       this.addresses.identityFactory,
       holder
     );
 
+    logger.info(LOG_SYSTEM, 'deployOnchainId: receipt identity resolution', {
+      txHash: result.id,
+      receiptStatus: receipt.status,
+      resolvedOnchainId: onchainId ?? null,
+    });
+
     if (!onchainId) {
+      // Distinct from the revert arm above: the tx SUCCEEDED, so an identity probably exists but
+      // could not be read out of the logs. Retrying is NOT safe here.
       throw new IdentityOperationFailed(
-        `ONCHAINID deployment for ${holder} submitted (${result.id}) but no identity was resolvable from the factory.`,
+        `ONCHAINID deployment for ${holder} SUCCEEDED on-chain (tx ${result.id}) but no identity ` +
+          `was resolvable from the factory receipt logs. An identity LIKELY EXISTS for this ` +
+          `holder — do NOT retry blind: probe the factory first, because a re-attempted ` +
+          `createIdentity reverts with "wallet already linked to an identity".`,
         'deployOnchainId',
         undefined,
         this.addresses.identityFactory
@@ -274,4 +377,12 @@ export function createEvmIRSService(
   options: EvmIRSServiceOptions
 ): EvmIRSService {
   return new EvmIRSService(networkConfig, executeTransaction, options);
+}
+
+function safeRpcHost(rpcUrl: string): string {
+  try {
+    return new URL(rpcUrl).host;
+  } catch {
+    return '(invalid-url)';
+  }
 }

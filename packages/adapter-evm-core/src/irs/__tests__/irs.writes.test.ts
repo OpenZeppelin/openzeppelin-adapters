@@ -6,21 +6,32 @@
  * maps to `IdentityAlreadyRegistered`, and that `buildClaimPayload` is pure/deterministic.
  * No live chain (SC-002/SC-004).
  */
+import { encodeEventTopics } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ExecutionConfig, IRSCapability, OnboardingClaim } from '@openzeppelin/ui-types';
 import { IdentityAlreadyRegistered, IdentityOperationFailed } from '@openzeppelin/ui-types';
 
 import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
+import { ID_FACTORY_EVENTS_ABI } from '../abis';
 import { TRUSTED_ISSUER_NOOP_ID } from '../service';
 
 const mockReadContract = vi.fn();
+// Point-in-time read: rejects as viem does for a pending tx, so a regression to it fails here too.
+const mockGetTransactionReceipt = vi.fn(() =>
+  Promise.reject(new Error('TransactionReceiptNotFoundError: not mined yet'))
+);
+const mockWaitForTransactionReceipt = vi.fn();
 
 vi.mock('viem', async () => {
   const actual = await vi.importActual<typeof import('viem')>('viem');
   return {
     ...actual,
-    createPublicClient: vi.fn(() => ({ readContract: mockReadContract })),
+    createPublicClient: vi.fn(() => ({
+      readContract: mockReadContract,
+      getTransactionReceipt: mockGetTransactionReceipt,
+      waitForTransactionReceipt: mockWaitForTransactionReceipt,
+    })),
     http: vi.fn((url: string) => ({ url, type: 'http' })),
   };
 });
@@ -37,6 +48,31 @@ const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const ISSUER = '0xcCcCccCcCcCccCcccCccCccCccCccCccCccCccccC';
 const ZERO = '0x0000000000000000000000000000000000000000';
+const TX_HASH = '0xtx';
+
+function walletLinkedReceipt() {
+  const topics = encodeEventTopics({
+    abi: ID_FACTORY_EVENTS_ABI,
+    eventName: 'WalletLinked',
+    args: { wallet: HOLDER, identity: ONCHAINID },
+  });
+  return {
+    status: 'success' as const,
+    logs: [
+      {
+        address: ADDRESSES.identityFactory,
+        topics,
+        data: '0x' as const,
+        blockHash: '0x0',
+        blockNumber: 1n,
+        logIndex: 0,
+        transactionHash: TX_HASH,
+        transactionIndex: 0,
+        removed: false,
+      },
+    ],
+  };
+}
 
 function makeCapability(): {
   capability: IRSCapability;
@@ -67,17 +103,22 @@ describe('IRS writes', () => {
   afterEach(() => vi.restoreAllMocks());
 
   describe('deployOnchainId', () => {
-    it('submits createIdentity and resolves the deployed ONCHAINID', async () => {
-      mockReadContract.mockResolvedValueOnce(ONCHAINID); // getIdentityFromFactory
+    it('submits createIdentity and resolves the deployed ONCHAINID from the receipt', async () => {
+      mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
       const { capability, signAndBroadcast } = makeCapability();
 
       const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
-      expect(result).toEqual({ id: '0xtx', onchainId: ONCHAINID });
+      expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
       const action = signAndBroadcast.mock.calls[0][0];
       expect(action.functionName).toBe('createIdentity');
       expect(action.address.toLowerCase()).toBe(ADDRESSES.identityFactory);
       expect(action.args[0]).toBe(HOLDER);
+      // The deploy path must WAIT for confirmation, never point-in-time check.
+      expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
+      expect(mockWaitForTransactionReceipt.mock.calls[0]?.[0]).toMatchObject({ hash: TX_HASH });
+      expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
+      expect(mockReadContract).not.toHaveBeenCalled();
     });
   });
 
