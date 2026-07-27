@@ -9,6 +9,7 @@ import type {
 
 import { createEvmIRSService } from '../irs';
 import type { DeployReceiptWaitOptions, EvmIRSAddresses } from '../irs';
+import type { IdentityKeyPurposeLookup } from '../irs/identity-keys';
 import { assertValidOperatorManagementKey } from '../irs/management-key';
 import type { FactoryIdentityLookup } from '../irs/onchain-reader';
 import {
@@ -48,6 +49,7 @@ export interface CreateIRSOptions {
 }
 
 export type { EvmIRSAddresses } from '../irs';
+export type { IdentityKeyPurposeLookup } from '../irs/identity-keys';
 
 /**
  * EVM IRS capability surface, including adapter extensions not yet on the shared
@@ -55,6 +57,11 @@ export type { EvmIRSAddresses } from '../irs';
  */
 export interface EvmIRSCapability extends IRSCapability {
   getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup>;
+  hasIdentityKeyPurpose(input: {
+    onchainId: string;
+    address: string;
+    purpose: number;
+  }): Promise<IdentityKeyPurposeLookup>;
   grantHolderManagementKey(
     input: { onchainId: string; holder: string },
     executionConfig: ExecutionConfig,

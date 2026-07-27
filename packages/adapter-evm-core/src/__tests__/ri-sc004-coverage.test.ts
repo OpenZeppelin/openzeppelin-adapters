@@ -9,7 +9,7 @@
  * - ERC-3643: balanceOf, isVerified, isFrozen, getJurisdiction, simulateTransfer;
  *   mint, burn, transfer, freeze, unfreeze
  * - ERC-4626: convertToAssets, convertToShares, totalAssets; deposit, withdraw
- * - IRS: getOnchainId, isVerified, getJurisdiction;
+ * - IRS: getOnchainId, isVerified, getJurisdiction, hasIdentityKeyPurpose;
  *   deployOnchainId, grantHolderManagementKey, registerTrustedIssuer, attachClaim, registerIdentity
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -39,7 +39,7 @@ const SC004_COVERAGE: Record<string, CapabilityCoverage> = {
     testDirs: ['src/erc4626/__tests__'],
   },
   irs: {
-    reads: ['getOnchainId', 'isVerified', 'getJurisdiction'],
+    reads: ['getOnchainId', 'isVerified', 'getJurisdiction', 'hasIdentityKeyPurpose'],
     writes: [
       'deployOnchainId',
       'grantHolderManagementKey',
