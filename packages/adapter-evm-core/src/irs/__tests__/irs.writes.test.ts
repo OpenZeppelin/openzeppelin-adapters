@@ -45,6 +45,7 @@ const ADDRESSES = {
 } as const;
 
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const ISSUER = '0xcCcCccCcCcCccCcccCccCccCccCccCccCccCccccC';
 const ZERO = '0x0000000000000000000000000000000000000000';
@@ -79,7 +80,11 @@ function makeCapability(): {
   signAndBroadcast: ReturnType<typeof vi.fn>;
 } {
   const signAndBroadcast = vi.fn().mockResolvedValue({ txHash: '0xtx' });
-  const options: CreateIRSOptions = { signAndBroadcast, addresses: { ...ADDRESSES } };
+  const options: CreateIRSOptions = {
+    signAndBroadcast,
+    addresses: { ...ADDRESSES },
+    operatorManagementKey: OPERATOR,
+  };
   const capability = createIRS(
     {
       id: 'evm-testnet',
@@ -103,22 +108,27 @@ describe('IRS writes', () => {
   afterEach(() => vi.restoreAllMocks());
 
   describe('deployOnchainId', () => {
-    it('submits createIdentity and resolves the deployed ONCHAINID from the receipt', async () => {
+    it('submits createIdentityWithManagementKeys and resolves the deployed ONCHAINID from the receipt', async () => {
       mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+      mockReadContract.mockResolvedValueOnce(true); // operator MANAGEMENT probe
       const { capability, signAndBroadcast } = makeCapability();
 
       const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
       expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
       const action = signAndBroadcast.mock.calls[0][0];
-      expect(action.functionName).toBe('createIdentity');
+      expect(action.functionName).toBe('createIdentityWithManagementKeys');
       expect(action.address.toLowerCase()).toBe(ADDRESSES.identityFactory);
       expect(action.args[0]).toBe(HOLDER);
       // The deploy path must WAIT for confirmation, never point-in-time check.
       expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
       expect(mockWaitForTransactionReceipt.mock.calls[0]?.[0]).toMatchObject({ hash: TX_HASH });
       expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
-      expect(mockReadContract).not.toHaveBeenCalled();
+      expect(mockReadContract).toHaveBeenCalledOnce();
+      expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({
+        functionName: 'keyHasPurpose',
+        address: ONCHAINID,
+      });
     });
   });
 

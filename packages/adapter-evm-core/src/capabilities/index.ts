@@ -5,7 +5,7 @@ export { createERC3643, type CreateERC3643Options } from './erc3643';
 export { createERC4626, type CreateERC4626Options } from './erc4626';
 export { createExecution } from './execution';
 export { createExplorer } from './explorer';
-export { createIRS, type CreateIRSOptions } from './irs';
+export { createIRS, type CreateIRSOptions, type EvmIRSCapability } from './irs';
 export { createNameResolution, type CreateNameResolutionOptions } from './name-resolution';
 export { createNetworkCatalog } from './network-catalog';
 export { createQuery } from './query';

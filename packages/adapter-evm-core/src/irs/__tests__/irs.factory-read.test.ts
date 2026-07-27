@@ -27,6 +27,8 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 const REGISTRY = '0x1111111111111111111111111111111111111111';
 const TRUSTED_ISSUERS = '0x3333333333333333333333333333333333333333';
 
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
+
 function makeCapability(): { capability: IRSCapability } {
   const options: CreateIRSOptions = {
     signAndBroadcast: vi.fn(),
@@ -35,6 +37,7 @@ function makeCapability(): { capability: IRSCapability } {
       identityFactory: FACTORY,
       trustedIssuersRegistry: TRUSTED_ISSUERS,
     },
+    operatorManagementKey: OPERATOR,
   };
   const capability = createIRS(
     {

@@ -52,6 +52,13 @@ export interface EvmIRSServiceOptions {
    */
   trustedIssuer?: string;
   /**
+   * Address that receives MANAGEMENT on deploy and executes `attachClaim` in the onboarding saga.
+   *
+   * Must be explicit — never inferred from the transaction signer, because the IdFactory
+   * `onlyOwner` caller may be a relayer contract distinct from the operator EOA.
+   */
+  operatorManagementKey: string;
+  /**
    * Bounds on the `deployOnchainId` confirmation wait (confirmations + timeout).
    *
    * The wait is always bounded; this only tunes it. Raise the timeout on slow chains, but never

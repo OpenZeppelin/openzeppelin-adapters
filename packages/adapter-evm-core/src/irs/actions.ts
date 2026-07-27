@@ -15,22 +15,51 @@ import type { OnboardingClaim } from '@openzeppelin/ui-types';
 import type { WriteContractParameters } from '../types';
 import {
   ADD_CLAIM_ABI,
+  ADD_KEY_ABI,
   ADD_TRUSTED_ISSUER_ABI,
-  CREATE_IDENTITY_ABI,
+  CREATE_IDENTITY_WITH_MANAGEMENT_KEYS_ABI,
   REGISTER_IDENTITY_ABI,
 } from './abis';
+import {
+  addressToIdentityKeyHash,
+  IDENTITY_KEY_PURPOSE_MANAGEMENT,
+  IDENTITY_KEY_TYPE_ECDSA,
+} from './identity-keys';
 
-/** Assembles `createIdentity(address _wallet, string _salt)` on the identity factory. */
+/**
+ * Assembles `createIdentityWithManagementKeys` on the identity factory.
+ *
+ * Grants MANAGEMENT to `operatorManagementKey` only; the holder is linked as a wallet but
+ * cannot manage the identity until {@link assembleGrantHolderManagementKeyAction} runs.
+ */
 export function assembleDeployOnchainIdAction(
   factoryAddress: string,
   holder: string,
-  salt: string
+  salt: string,
+  operatorManagementKey: string
 ): WriteContractParameters {
   return {
     address: factoryAddress as Hex,
-    abi: CREATE_IDENTITY_ABI,
-    functionName: 'createIdentity',
-    args: [holder as Hex, salt],
+    abi: CREATE_IDENTITY_WITH_MANAGEMENT_KEYS_ABI,
+    functionName: 'createIdentityWithManagementKeys',
+    args: [holder as Hex, salt, [addressToIdentityKeyHash(operatorManagementKey)]],
+  };
+}
+
+/** Assembles `addKey(holderKey, MANAGEMENT, ECDSA)` on an ONCHAINID identity. */
+export function assembleGrantHolderManagementKeyAction(
+  onchainId: string,
+  holder: string
+): WriteContractParameters {
+  return {
+    address: onchainId as Hex,
+    abi: ADD_KEY_ABI,
+    functionName: 'addKey',
+    args: [
+      addressToIdentityKeyHash(holder),
+      BigInt(IDENTITY_KEY_PURPOSE_MANAGEMENT),
+      BigInt(IDENTITY_KEY_TYPE_ECDSA),
+    ],
   };
 }
 

@@ -164,6 +164,53 @@ export const CREATE_IDENTITY_ABI: Abi = [
   },
 ] as const;
 
+/**
+ * `createIdentityWithManagementKeys(address _wallet, string _salt, bytes32[] _managementKeys) → address`
+ * — deploys an ONCHAINID whose MANAGEMENT keys are the listed hashes (holder wallet excluded).
+ */
+export const CREATE_IDENTITY_WITH_MANAGEMENT_KEYS_ABI: Abi = [
+  {
+    type: 'function',
+    name: 'createIdentityWithManagementKeys',
+    inputs: [
+      { name: '_wallet', type: 'address' },
+      { name: '_salt', type: 'string' },
+      { name: '_managementKeys', type: 'bytes32[]' },
+    ],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+] as const;
+
+/** `addKey(bytes32 _key, uint256 _purpose, uint256 _type) → bool` — ERC-734 key registration. */
+export const ADD_KEY_ABI: Abi = [
+  {
+    type: 'function',
+    name: 'addKey',
+    inputs: [
+      { name: '_key', type: 'bytes32' },
+      { name: '_purpose', type: 'uint256' },
+      { name: '_type', type: 'uint256' },
+    ],
+    outputs: [{ name: 'success', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+] as const;
+
+/** `keyHasPurpose(bytes32 _key, uint256 _purpose) → bool` — ERC-734 key probe. */
+export const KEY_HAS_PURPOSE_ABI: Abi = [
+  {
+    type: 'function',
+    name: 'keyHasPurpose',
+    inputs: [
+      { name: '_key', type: 'bytes32' },
+      { name: '_purpose', type: 'uint256' },
+    ],
+    outputs: [{ name: 'result', type: 'bool' }],
+    stateMutability: 'view',
+  },
+] as const;
+
 /** IdFactory events used to resolve a freshly deployed ONCHAINID from a receipt. */
 export const ID_FACTORY_EVENTS_ABI: Abi = [
   {

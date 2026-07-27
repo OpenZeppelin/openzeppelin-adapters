@@ -52,6 +52,7 @@ const ADDRESSES = {
 } as const;
 
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const TX_HASH = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 
@@ -85,7 +86,11 @@ function makeCapability(): {
   signAndBroadcast: ReturnType<typeof vi.fn>;
 } {
   const signAndBroadcast = vi.fn().mockResolvedValue({ txHash: TX_HASH });
-  const options: CreateIRSOptions = { signAndBroadcast, addresses: { ...ADDRESSES } };
+  const options: CreateIRSOptions = {
+    signAndBroadcast,
+    addresses: { ...ADDRESSES },
+    operatorManagementKey: OPERATOR,
+  };
   const capability = createIRS(
     {
       id: 'evm-testnet',
@@ -108,10 +113,9 @@ describe('deployOnchainId receipt resolution', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.restoreAllMocks());
 
-  it('resolves onchainId from WalletLinked in the receipt — NOT from getIdentity eth_call', async () => {
+  it('resolves onchainId from WalletLinked in the receipt — NOT from factory getIdentity eth_call', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    // If deployOnchainId still eth_calls getIdentity, this poisoned return would win.
-    mockReadContract.mockResolvedValueOnce('0x0000000000000000000000000000000000000000');
+    mockReadContract.mockResolvedValueOnce(true); // operator MANAGEMENT probe on identity
 
     const { capability, signAndBroadcast } = makeCapability();
 
@@ -119,13 +123,18 @@ describe('deployOnchainId receipt resolution', () => {
 
     expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
     expect(signAndBroadcast).toHaveBeenCalledOnce();
-    expect(mockReadContract).not.toHaveBeenCalled();
+    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({
+      functionName: 'keyHasPurpose',
+      address: ONCHAINID,
+    });
   });
 
   it('WAITS for confirmation — never a point-in-time getTransactionReceipt', async () => {
     // getTransactionReceipt rejects (pending), waitForTransactionReceipt resolves. A
     // check-instead-of-wait implementation cannot pass this.
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+    mockReadContract.mockResolvedValueOnce(true);
 
     const { capability } = makeCapability();
     const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -137,6 +146,7 @@ describe('deployOnchainId receipt resolution', () => {
 
   it('bounds the wait — passes a confirmations count AND a finite timeout', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+    mockReadContract.mockResolvedValueOnce(true);
 
     const { capability } = makeCapability();
     await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
