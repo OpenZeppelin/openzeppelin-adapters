@@ -39,7 +39,8 @@ import {
   assembleRegisterIdentityAction,
 } from './actions';
 import { buildClaimPayload } from './claim-payload';
-import { IDENTITY_KEY_PURPOSE_MANAGEMENT, identityKeyHasPurpose } from './identity-keys';
+import { IDENTITY_KEY_PURPOSE_MANAGEMENT, lookupIdentityKeyPurpose } from './identity-keys';
+import type { IdentityKeyPurposeLookup } from './identity-keys';
 import {
   getIdentityFromFactory,
   getJurisdiction,
@@ -96,6 +97,21 @@ export class EvmIRSService {
    */
   getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup> {
     return getIdentityFromFactory(this.rpcUrl(), this.addresses.identityFactory, holder);
+  }
+
+  /**
+   * Probe whether `address` holds `purpose` on an ONCHAINID identity.
+   *
+   * Used by resume/idempotency paths that must detect whether `grantHolderManagementKey`
+   * already ran — `read_failed` must not be treated as `lacks`.
+   */
+  hasIdentityKeyPurpose(input: {
+    onchainId: string;
+    address: string;
+    purpose: number;
+  }): Promise<IdentityKeyPurposeLookup> {
+    const { onchainId, address, purpose } = input;
+    return lookupIdentityKeyPurpose(this.rpcUrl(), onchainId, address, purpose);
   }
 
   isVerified(holder: string): Promise<boolean> {
@@ -422,19 +438,11 @@ export class EvmIRSService {
     const { operation, onchainId, address, purpose, missingPurposeMessage, rpcFailureMessage } =
       input;
 
-    let hasPurpose: boolean;
-    try {
-      hasPurpose = await identityKeyHasPurpose(this.rpcUrl(), onchainId, address, purpose);
-    } catch (error) {
-      throw new IdentityOperationFailed(
-        rpcFailureMessage,
-        operation,
-        error instanceof Error ? error : new Error(String(error)),
-        onchainId
-      );
+    const lookup = await lookupIdentityKeyPurpose(this.rpcUrl(), onchainId, address, purpose);
+    if (lookup.status === 'read_failed') {
+      throw new IdentityOperationFailed(rpcFailureMessage, operation, lookup.cause, onchainId);
     }
-
-    if (!hasPurpose) {
+    if (lookup.status === 'lacks') {
       throw new IdentityOperationFailed(missingPurposeMessage, operation, undefined, onchainId);
     }
   }
