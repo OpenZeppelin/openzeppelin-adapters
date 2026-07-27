@@ -6,10 +6,10 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
-import type { IRSCapability } from '@openzeppelin/ui-types';
 import { RuntimeDisposedError } from '@openzeppelin/ui-types';
 
-import { createIRS, type CreateIRSOptions } from '../../capabilities/irs';
+import { createIRS, type CreateIRSOptions, type EvmIRSCapability } from '../../capabilities/irs';
+import { InvalidOperatorManagementKeyError } from '../management-key';
 
 const mockNetworkConfig = {
   id: 'evm-testnet',
@@ -24,6 +24,8 @@ const mockNetworkConfig = {
   nativeCurrency: { name: 'Test Ether', symbol: 'TETH', decimals: 18 },
 } as const;
 
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
+
 function makeOptions(overrides: Partial<CreateIRSOptions> = {}): CreateIRSOptions {
   return {
     signAndBroadcast: vi.fn().mockResolvedValue({ txHash: '0xtx' }),
@@ -32,19 +34,21 @@ function makeOptions(overrides: Partial<CreateIRSOptions> = {}): CreateIRSOption
       identityFactory: '0x2222222222222222222222222222222222222222',
       trustedIssuersRegistry: '0x3333333333333333333333333333333333333333',
     },
+    operatorManagementKey: OPERATOR,
     ...overrides,
   };
 }
 
 describe('createIRS', () => {
   it('creates an IRS capability with the expected method surface', () => {
-    const capability: IRSCapability = createIRS(mockNetworkConfig, makeOptions());
+    const capability: EvmIRSCapability = createIRS(mockNetworkConfig, makeOptions());
 
     expect(typeof capability.getOnchainId).toBe('function');
     expect(typeof capability.isVerified).toBe('function');
     expect(typeof capability.getJurisdiction).toBe('function');
     expect(typeof capability.buildClaimPayload).toBe('function');
     expect(typeof capability.deployOnchainId).toBe('function');
+    expect(typeof capability.grantHolderManagementKey).toBe('function');
     expect(typeof capability.registerTrustedIssuer).toBe('function');
     expect(typeof capability.attachClaim).toBe('function');
     expect(typeof capability.registerIdentity).toBe('function');
@@ -71,6 +75,19 @@ describe('createIRS', () => {
     expect(() =>
       createIRS(mockNetworkConfig, makeOptions({ trustedIssuer: 'not-an-address' }))
     ).toThrow(/Invalid trustedIssuer/i);
+  });
+
+  it('throws for a missing operatorManagementKey', () => {
+    const { operatorManagementKey: _removed, ...rest } = makeOptions();
+    expect(() => createIRS(mockNetworkConfig, rest as CreateIRSOptions)).toThrow(
+      InvalidOperatorManagementKeyError
+    );
+  });
+
+  it('throws for an invalid operatorManagementKey', () => {
+    expect(() =>
+      createIRS(mockNetworkConfig, makeOptions({ operatorManagementKey: 'not-an-address' }))
+    ).toThrow(InvalidOperatorManagementKeyError);
   });
 
   it('disposes idempotently and guards access afterwards', () => {

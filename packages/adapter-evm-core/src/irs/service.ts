@@ -35,9 +35,11 @@ import {
   assembleAddTrustedIssuerAction,
   assembleAttachClaimAction,
   assembleDeployOnchainIdAction,
+  assembleGrantHolderManagementKeyAction,
   assembleRegisterIdentityAction,
 } from './actions';
 import { buildClaimPayload } from './claim-payload';
+import { IDENTITY_KEY_PURPOSE_MANAGEMENT, identityKeyHasPurpose } from './identity-keys';
 import {
   getIdentityFromFactory,
   getJurisdiction,
@@ -64,6 +66,7 @@ export const TRUSTED_ISSUER_NOOP_ID = 'noop:trusted-issuer-already-registered';
 export class EvmIRSService {
   private readonly addresses: EvmIRSAddresses;
   private readonly trustedIssuer?: string;
+  private readonly operatorManagementKey: string;
   /**
    * Wait bounds, resolved AND VALIDATED at construction so a misconfiguration fails at boot
    * rather than at the first deploy — where the failure would land on a real holder.
@@ -77,6 +80,7 @@ export class EvmIRSService {
   ) {
     this.addresses = options.addresses;
     this.trustedIssuer = options.trustedIssuer;
+    this.operatorManagementKey = options.operatorManagementKey;
     this.deployReceiptWait = resolveDeployReceiptWait(options.deployReceiptWait);
   }
 
@@ -118,6 +122,11 @@ export class EvmIRSService {
   /**
    * Deploy a fresh ONCHAINID for `holder` and resolve its address from the confirmed receipt.
    *
+   * Uses `createIdentityWithManagementKeys` so the configured {@link operatorManagementKey}
+   * receives MANAGEMENT and can execute the subsequent saga steps (`attachClaim`, etc.).
+   * The holder is wallet-linked but does **not** receive MANAGEMENT until
+   * {@link grantHolderManagementKey} runs — that ordering is deliberate (see that method).
+   *
    * Identity resolution parses `WalletLinked` (falling back to `Deployed`) out of the receipt
    * obtained by **waiting** for confirmation — `waitForTransactionReceipt`, bounded by
    * `deployReceiptWait`. The wait is the gate: a point-in-time `getTransactionReceipt` merely
@@ -139,7 +148,12 @@ export class EvmIRSService {
     runtimeApiKey?: string
   ): Promise<DeployOnchainIdResult> {
     const { holder } = input;
-    const action = assembleDeployOnchainIdAction(this.addresses.identityFactory, holder, holder);
+    const action = assembleDeployOnchainIdAction(
+      this.addresses.identityFactory,
+      holder,
+      holder,
+      this.operatorManagementKey
+    );
 
     const result = await this.execute(
       'deployOnchainId',
@@ -241,7 +255,64 @@ export class EvmIRSService {
       );
     }
 
+    await this.assertIdentityKeyHasPurpose({
+      operation: 'deployOnchainId',
+      onchainId,
+      address: this.operatorManagementKey,
+      purpose: IDENTITY_KEY_PURPOSE_MANAGEMENT,
+      missingPurposeMessage:
+        `ONCHAINID deployment for ${holder} succeeded (identity ${onchainId}) but ` +
+        `operatorManagementKey ${this.operatorManagementKey} does not hold MANAGEMENT on the ` +
+        `identity. The configured key must be the address that will execute attachClaim.`,
+      rpcFailureMessage:
+        `ONCHAINID deployment for ${holder} succeeded (identity ${onchainId}, tx ${result.id}) but ` +
+        `could not verify operatorManagementKey ${this.operatorManagementKey} MANAGEMENT via RPC. ` +
+        `The identity LIKELY EXISTS — resume the saga using onchainId ${onchainId}.`,
+    });
+
     return { ...result, onchainId };
+  }
+
+  /**
+   * Grant the holder a MANAGEMENT key on their ONCHAINID.
+   *
+   * **Saga ordering is load-bearing:** consumers MUST call this after `deployOnchainId` and
+   * **before** `attachClaim`. If attach-claim or register fails partway through onboarding, the
+   * holder already holds MANAGEMENT and can rescue their own identity. Running this after
+   * attach-claim would leave a partial failure with an identity only the operator can touch —
+   * a fresh orphan trap. Do not reorder for convenience.
+   */
+  async grantHolderManagementKey(
+    input: { onchainId: string; holder: string },
+    executionConfig: ExecutionConfig,
+    onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
+    runtimeApiKey?: string
+  ): Promise<OperationResult> {
+    const { onchainId, holder } = input;
+    const action = assembleGrantHolderManagementKeyAction(onchainId, holder);
+
+    const result = await this.execute(
+      'grantHolderManagementKey',
+      action,
+      executionConfig,
+      onStatusChange,
+      runtimeApiKey
+    );
+
+    await this.assertIdentityKeyHasPurpose({
+      operation: 'grantHolderManagementKey',
+      onchainId,
+      address: holder,
+      purpose: IDENTITY_KEY_PURPOSE_MANAGEMENT,
+      missingPurposeMessage:
+        `grantHolderManagementKey for ${holder} on ${onchainId} was submitted (tx ${result.id}) ` +
+        `but the holder does not hold MANAGEMENT on the identity.`,
+      rpcFailureMessage:
+        `grantHolderManagementKey for ${holder} on ${onchainId} was submitted (tx ${result.id}) but ` +
+        `could not verify holder MANAGEMENT via RPC. Resume the saga using onchainId ${onchainId}.`,
+    });
+
+    return result;
   }
 
   async registerTrustedIssuer(
@@ -338,6 +409,34 @@ export class EvmIRSService {
 
   private rpcUrl(): string {
     return resolveRpcUrl(this.networkConfig);
+  }
+
+  private async assertIdentityKeyHasPurpose(input: {
+    operation: string;
+    onchainId: string;
+    address: string;
+    purpose: number;
+    missingPurposeMessage: string;
+    rpcFailureMessage: string;
+  }): Promise<void> {
+    const { operation, onchainId, address, purpose, missingPurposeMessage, rpcFailureMessage } =
+      input;
+
+    let hasPurpose: boolean;
+    try {
+      hasPurpose = await identityKeyHasPurpose(this.rpcUrl(), onchainId, address, purpose);
+    } catch (error) {
+      throw new IdentityOperationFailed(
+        rpcFailureMessage,
+        operation,
+        error instanceof Error ? error : new Error(String(error)),
+        onchainId
+      );
+    }
+
+    if (!hasPurpose) {
+      throw new IdentityOperationFailed(missingPurposeMessage, operation, undefined, onchainId);
+    }
   }
 
   private execute(

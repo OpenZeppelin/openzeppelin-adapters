@@ -47,6 +47,7 @@ const TOKEN = '0x1111111111111111111111111111111111111111';
 const IDENTITY_REGISTRY = '0x2222222222222222222222222222222222222222';
 const IDENTITY_FACTORY = '0x3333333333333333333333333333333333333333';
 const TRUSTED_ISSUERS_REGISTRY = '0x4444444444444444444444444444444444444444';
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const ONCHAIN_ID_ADDR = '0xcccccccccccccccccccccccccccccccccccccccc';
 const ISSUER = '0xdddddddddddddddddddddddddddddddddddddddd';
@@ -126,6 +127,7 @@ describe('RI capability sub-paths (server-side runtime)', () => {
       const signAndBroadcast = createStrategySignAndBroadcast();
       const irs = createIRS(TEST_NETWORK_CONFIG, {
         signAndBroadcast,
+        operatorManagementKey: OPERATOR,
         addresses: {
           identityRegistry: IDENTITY_REGISTRY,
           identityFactory: IDENTITY_FACTORY,

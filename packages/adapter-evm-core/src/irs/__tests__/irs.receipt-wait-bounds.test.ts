@@ -32,6 +32,8 @@ import {
   resolveDeployReceiptWait,
 } from '../receipt-identity';
 
+const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
+
 const ADDRESSES = {
   identityRegistry: '0x1111111111111111111111111111111111111111',
   identityFactory: '0x2222222222222222222222222222222222222222',
@@ -46,6 +48,7 @@ function construct(deployReceiptWait?: {
   const options: CreateIRSOptions = {
     signAndBroadcast: vi.fn(),
     addresses: { ...ADDRESSES },
+    operatorManagementKey: OPERATOR,
     deployReceiptWait,
   };
 

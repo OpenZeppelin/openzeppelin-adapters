@@ -10,7 +10,7 @@
  *   mint, burn, transfer, freeze, unfreeze
  * - ERC-4626: convertToAssets, convertToShares, totalAssets; deposit, withdraw
  * - IRS: getOnchainId, isVerified, getJurisdiction;
- *   deployOnchainId, registerTrustedIssuer, attachClaim, registerIdentity
+ *   deployOnchainId, grantHolderManagementKey, registerTrustedIssuer, attachClaim, registerIdentity
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -40,7 +40,13 @@ const SC004_COVERAGE: Record<string, CapabilityCoverage> = {
   },
   irs: {
     reads: ['getOnchainId', 'isVerified', 'getJurisdiction'],
-    writes: ['deployOnchainId', 'registerTrustedIssuer', 'attachClaim', 'registerIdentity'],
+    writes: [
+      'deployOnchainId',
+      'grantHolderManagementKey',
+      'registerTrustedIssuer',
+      'attachClaim',
+      'registerIdentity',
+    ],
     testDirs: ['src/irs/__tests__'],
   },
 };
