@@ -255,22 +255,20 @@ export class EvmIRSService {
       );
     }
 
-    const operatorHasManagement = await identityKeyHasPurpose(
-      rpcUrl,
+    await this.assertIdentityKeyHasPurpose({
+      operation: 'deployOnchainId',
       onchainId,
-      this.operatorManagementKey,
-      IDENTITY_KEY_PURPOSE_MANAGEMENT
-    );
-    if (!operatorHasManagement) {
-      throw new IdentityOperationFailed(
+      address: this.operatorManagementKey,
+      purpose: IDENTITY_KEY_PURPOSE_MANAGEMENT,
+      missingPurposeMessage:
         `ONCHAINID deployment for ${holder} succeeded (identity ${onchainId}) but ` +
-          `operatorManagementKey ${this.operatorManagementKey} does not hold MANAGEMENT on the ` +
-          `identity. The configured key must be the address that will execute attachClaim.`,
-        'deployOnchainId',
-        undefined,
-        onchainId
-      );
-    }
+        `operatorManagementKey ${this.operatorManagementKey} does not hold MANAGEMENT on the ` +
+        `identity. The configured key must be the address that will execute attachClaim.`,
+      rpcFailureMessage:
+        `ONCHAINID deployment for ${holder} succeeded (identity ${onchainId}, tx ${result.id}) but ` +
+        `could not verify operatorManagementKey ${this.operatorManagementKey} MANAGEMENT via RPC. ` +
+        `The identity LIKELY EXISTS — resume the saga using onchainId ${onchainId}.`,
+    });
 
     return { ...result, onchainId };
   }
@@ -301,21 +299,18 @@ export class EvmIRSService {
       runtimeApiKey
     );
 
-    const holderHasManagement = await identityKeyHasPurpose(
-      this.rpcUrl(),
+    await this.assertIdentityKeyHasPurpose({
+      operation: 'grantHolderManagementKey',
       onchainId,
-      holder,
-      IDENTITY_KEY_PURPOSE_MANAGEMENT
-    );
-    if (!holderHasManagement) {
-      throw new IdentityOperationFailed(
+      address: holder,
+      purpose: IDENTITY_KEY_PURPOSE_MANAGEMENT,
+      missingPurposeMessage:
         `grantHolderManagementKey for ${holder} on ${onchainId} was submitted (tx ${result.id}) ` +
-          `but the holder does not hold MANAGEMENT on the identity.`,
-        'grantHolderManagementKey',
-        undefined,
-        onchainId
-      );
-    }
+        `but the holder does not hold MANAGEMENT on the identity.`,
+      rpcFailureMessage:
+        `grantHolderManagementKey for ${holder} on ${onchainId} was submitted (tx ${result.id}) but ` +
+        `could not verify holder MANAGEMENT via RPC. Resume the saga using onchainId ${onchainId}.`,
+    });
 
     return result;
   }
@@ -414,6 +409,34 @@ export class EvmIRSService {
 
   private rpcUrl(): string {
     return resolveRpcUrl(this.networkConfig);
+  }
+
+  private async assertIdentityKeyHasPurpose(input: {
+    operation: string;
+    onchainId: string;
+    address: string;
+    purpose: number;
+    missingPurposeMessage: string;
+    rpcFailureMessage: string;
+  }): Promise<void> {
+    const { operation, onchainId, address, purpose, missingPurposeMessage, rpcFailureMessage } =
+      input;
+
+    let hasPurpose: boolean;
+    try {
+      hasPurpose = await identityKeyHasPurpose(this.rpcUrl(), onchainId, address, purpose);
+    } catch (error) {
+      throw new IdentityOperationFailed(
+        rpcFailureMessage,
+        operation,
+        error instanceof Error ? error : new Error(String(error)),
+        onchainId
+      );
+    }
+
+    if (!hasPurpose) {
+      throw new IdentityOperationFailed(missingPurposeMessage, operation, undefined, onchainId);
+    }
   }
 
   private execute(

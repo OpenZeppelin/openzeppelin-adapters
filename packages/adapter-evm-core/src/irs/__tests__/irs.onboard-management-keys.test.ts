@@ -8,6 +8,7 @@ import { encodeAbiParameters, encodeEventTopics, keccak256 } from 'viem';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ExecutionConfig } from '@openzeppelin/ui-types';
+import { IdentityOperationFailed } from '@openzeppelin/ui-types';
 
 import { createIRS, type CreateIRSOptions, type EvmIRSCapability } from '../../capabilities/irs';
 import { ID_FACTORY_EVENTS_ABI } from '../abis';
@@ -184,6 +185,21 @@ describe('deployOnchainId management keys', () => {
       })
     );
   });
+
+  it('maps post-deploy keyHasPurpose RPC failure to IdentityOperationFailed with onchainId', async () => {
+    mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+    mockReadContract.mockRejectedValueOnce(new Error('rpc down'));
+    const { capability } = makeCapability();
+
+    const error = await capability
+      .deployOnchainId({ holder: HOLDER }, EXEC_CONFIG)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(IdentityOperationFailed);
+    expect((error as IdentityOperationFailed).message).toContain(ONCHAINID);
+    expect((error as IdentityOperationFailed).message).toMatch(/could not verify/i);
+  });
 });
 
 describe('grantHolderManagementKey', () => {
@@ -225,5 +241,19 @@ describe('grantHolderManagementKey', () => {
         args: [addressKeyHash(HOLDER), BigInt(IDENTITY_KEY_PURPOSE_MANAGEMENT)],
       })
     );
+  });
+
+  it('maps post-grant keyHasPurpose RPC failure to IdentityOperationFailed with onchainId', async () => {
+    mockReadContract.mockRejectedValueOnce(new Error('rpc down'));
+    const { capability } = makeCapability();
+
+    const error = await capability
+      .grantHolderManagementKey({ onchainId: ONCHAINID, holder: HOLDER }, EXEC_CONFIG)
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(IdentityOperationFailed);
+    expect((error as IdentityOperationFailed).message).toContain(ONCHAINID);
+    expect((error as IdentityOperationFailed).message).toMatch(/could not verify/i);
   });
 });
