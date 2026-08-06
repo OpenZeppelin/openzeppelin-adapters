@@ -48,6 +48,10 @@ const { id } = await irs.grantHolderManagementKey(
 - Does **not** re-fire `onSubmitted` (**CONVENTION**).
 - Does **not** own deploy submit-only (SF-2) or the full write-matrix
   (**[SF-4](../irs-write-completion-matrix/)**).
+- Does **not** document already-complete error fidelity — that is
+  **[SF-5](../irs-identity-write-error-fidelity/)** (pre-submit
+  `IdentityAlreadyRegistered` on key-purpose `has`; `read_failed` stays
+  ambiguous). Submit-only still skips **post-submit** assert only.
 - Does **not** publish adapters or ui-types as part of this docs stage.
 
 ## Quick Start

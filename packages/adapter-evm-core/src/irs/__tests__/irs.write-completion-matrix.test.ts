@@ -436,12 +436,20 @@ describe('SF-4 IRS write-completion matrix', () => {
       }
 
       // ---- GREEN: real service method ----
-      if (op === 'deployOnchainId' && mode !== 'submitted') {
-        mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-        mockReadContract.mockResolvedValueOnce(true);
+      if (op === 'deployOnchainId') {
+        // SF-5: factory getIdentity not_found before execute (both modes)
+        mockReadContract.mockResolvedValueOnce(ZERO);
+        if (mode !== 'submitted') {
+          mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
+          mockReadContract.mockResolvedValueOnce(true); // operator MANAGEMENT assert
+        }
       }
-      if (op === 'grantHolderManagementKey' && mode !== 'submitted') {
-        mockReadContract.mockResolvedValueOnce(true);
+      if (op === 'grantHolderManagementKey') {
+        // SF-5: pre-submit keyHasPurpose lacks before execute (both modes)
+        mockReadContract.mockResolvedValueOnce(false);
+        if (mode !== 'submitted') {
+          mockReadContract.mockResolvedValueOnce(true); // post-submit assert
+        }
       }
       if (op === 'registerIdentity') {
         mockReadContract.mockResolvedValueOnce(ZERO); // getOnchainId pre-check
@@ -463,17 +471,19 @@ describe('SF-4 IRS write-completion matrix', () => {
         if (mode === 'submitted') {
           expect(mockWaitForTransactionReceipt).not.toHaveBeenCalled();
           expect(signAndBroadcast).toHaveBeenCalledOnce();
+          expect(mockReadContract).toHaveBeenCalledOnce(); // SF-5 factory probe only
         } else {
           expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
           expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
+          expect(mockReadContract).toHaveBeenCalledTimes(2); // factory + assert
         }
       }
 
       if (op === 'grantHolderManagementKey') {
         if (mode === 'submitted') {
-          expect(mockReadContract).not.toHaveBeenCalled();
+          expect(mockReadContract).toHaveBeenCalledOnce(); // SF-5 pre-submit only
         } else {
-          expect(mockReadContract).toHaveBeenCalledOnce();
+          expect(mockReadContract).toHaveBeenCalledTimes(2); // pre + post
         }
         expect(signAndBroadcast).toHaveBeenCalledOnce();
       }
@@ -501,7 +511,8 @@ describe('SF-4 IRS write-completion matrix', () => {
   });
 
   it('INV-8: grant confirmed still throws IdentityOperationFailed when holder lacks MANAGEMENT', async () => {
-    mockReadContract.mockResolvedValueOnce(false);
+    // SF-5: pre-submit lacks proceeds; post-submit assert still lacks
+    mockReadContract.mockResolvedValueOnce(false).mockResolvedValueOnce(false);
     const { capability } = makeCapability();
     await expect(
       capability.grantHolderManagementKey({ holder: HOLDER, onchainId: ONCHAINID }, EXEC_CONFIG)

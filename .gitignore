@@ -65,3 +65,6 @@ Thumbs.db
 
 # Local working directory
 /artifacts/
+
+# Maestri agent workspace (role terminals, per-checkout and machine-local)
+.maestri/

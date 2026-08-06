@@ -54,6 +54,7 @@ const ADDRESSES = {
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
+const ZERO = '0x0000000000000000000000000000000000000000';
 const TX_HASH = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 
 function walletLinkedReceipt() {
@@ -113,9 +114,10 @@ describe('deployOnchainId receipt resolution', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.restoreAllMocks());
 
-  it('resolves onchainId from WalletLinked in the receipt — NOT from factory getIdentity eth_call', async () => {
+  it('resolves onchainId from WalletLinked in the receipt — NOT from factory getIdentity as identity source', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    mockReadContract.mockResolvedValueOnce(true); // operator MANAGEMENT probe on identity
+    // SF-5: factory pre-submit not_found (ZERO); post-submit operator MANAGEMENT assert
+    mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
 
     const { capability, signAndBroadcast } = makeCapability();
 
@@ -123,8 +125,13 @@ describe('deployOnchainId receipt resolution', () => {
 
     expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID, completion: 'confirmed' });
     expect(signAndBroadcast).toHaveBeenCalledOnce();
-    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract).toHaveBeenCalledTimes(2);
     expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({
+      functionName: 'getIdentity',
+      address: ADDRESSES.identityFactory,
+    });
+    // Identity address comes from receipt WalletLinked — not from factory getIdentity value.
+    expect(mockReadContract.mock.calls[1]?.[0]).toMatchObject({
       functionName: 'keyHasPurpose',
       address: ONCHAINID,
     });
@@ -134,7 +141,7 @@ describe('deployOnchainId receipt resolution', () => {
     // getTransactionReceipt rejects (pending), waitForTransactionReceipt resolves. A
     // check-instead-of-wait implementation cannot pass this.
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    mockReadContract.mockResolvedValueOnce(true);
+    mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
 
     const { capability } = makeCapability();
     const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -149,7 +156,7 @@ describe('deployOnchainId receipt resolution', () => {
 
   it('bounds the wait — passes a confirmations count AND a finite timeout', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    mockReadContract.mockResolvedValueOnce(true);
+    mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
 
     const { capability } = makeCapability();
     await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -163,6 +170,7 @@ describe('deployOnchainId receipt resolution', () => {
   });
 
   it('reports a wait TIMEOUT as INDETERMINATE — never as a plain failure', async () => {
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → proceed
     mockWaitForTransactionReceipt.mockRejectedValueOnce(
       new Error('WaitForTransactionReceiptTimeoutError: timed out')
     );
@@ -184,6 +192,7 @@ describe('deployOnchainId receipt resolution', () => {
   });
 
   it('reports a REVERT explicitly — not as "no identity was resolvable"', async () => {
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → proceed
     mockWaitForTransactionReceipt.mockResolvedValueOnce({ status: 'reverted', logs: [] });
 
     const { capability } = makeCapability();
@@ -199,10 +208,13 @@ describe('deployOnchainId receipt resolution', () => {
     // landed-but-unresolvable case. Conflating them tells the caller to do the dangerous thing.
     expect(message).toMatch(/retry is\s+safe/i);
     expect(message).not.toContain('no identity was resolvable');
-    expect(mockReadContract).not.toHaveBeenCalled();
+    // Only SF-5 factory pre-submit read — no post-submit keyHasPurpose on revert
+    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({ functionName: 'getIdentity' });
   });
 
   it('a SUCCESSFUL receipt with no WalletLinked warns that a retry is NOT safe', async () => {
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → proceed
     mockWaitForTransactionReceipt.mockResolvedValueOnce({ status: 'success', logs: [] });
 
     const { capability } = makeCapability();
@@ -216,6 +228,7 @@ describe('deployOnchainId receipt resolution', () => {
     expect(message).toContain('SUCCEEDED');
     expect(message).toContain('LIKELY EXISTS');
     expect(message).toMatch(/do NOT retry blind/i);
-    expect(mockReadContract).not.toHaveBeenCalled();
+    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({ functionName: 'getIdentity' });
   });
 });

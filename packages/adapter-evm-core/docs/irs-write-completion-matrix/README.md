@@ -51,6 +51,9 @@ import { createIRS } from '@openzeppelin/adapter-evm';
 - Does **not** close Residual Risk (confirmed-path timeout indistinguishability).
 - Does **not** publish adapters or ui-types as part of this docs stage.
 - Does **not** edit `reference-implementations`.
+- Does **not** own already-complete error fidelity —
+  **[SF-5](../irs-identity-write-error-fidelity/)** (grant/deploy pre-submit
+  `ALREADY_ONBOARDED`; matrix mocks may expect pre-submit probes).
 
 ## Quick Start
 

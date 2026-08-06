@@ -30,6 +30,10 @@ placeholder-hash receipt waits after deploy. SF-2 adds one early-return after `e
 - Does **not** change `grantHolderManagementKey` early-return — that is **SF-3**.
 - Does **not** prove the full write matrix / `npm pack --dry-run` —
   **[SF-4](../irs-write-completion-matrix/)**.
+- Does **not** document already-linked factory error fidelity — that is
+  **[SF-5](../irs-identity-write-error-fidelity/)** (pre-submit
+  `IdentityAlreadyRegistered` on factory `found`; `read_failed` / timeout
+  stay generic). Submit-only still skips wait/parse/assert only.
 - Does **not** publish adapters or ui-types.
 
 ## Quick Start
