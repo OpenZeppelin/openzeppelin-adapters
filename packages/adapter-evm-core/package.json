@@ -26,7 +26,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:adapters": "node ../../lint-adapters.cjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && pnpm typecheck:tests",
+    "typecheck:tests": "tsc -p tsconfig.tests.json --noEmit",
     "test": "vitest run --exclude '**/indexer-integration.test.ts'",
     "test:integration": "vitest run test/access-control/indexer-integration.test.ts",
     "test:watch": "vitest"
@@ -42,7 +43,7 @@
   "peerDependencies": {
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.1",
-    "@openzeppelin/ui-types": "^3.3.0",
+    "@openzeppelin/ui-types": "^3.5.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.0",
     "lucide-react": "^0.468.0",
@@ -66,7 +67,7 @@
   "devDependencies": {
     "@openzeppelin/ui-components": "^2.0.0",
     "@openzeppelin/ui-react": "^2.0.1",
-    "@openzeppelin/ui-types": "^3.3.0",
+    "@openzeppelin/ui-types": "^3.5.0",
     "@openzeppelin/ui-utils": "^2.0.0",
     "@rainbow-me/rainbowkit": "^2.0.0",
     "@types/lodash-es": "^4.17.12",
