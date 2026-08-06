@@ -9,6 +9,22 @@
  * Mirrors {@link EvmIRSService}; the only structural difference is the capability-specific
  * revert mapper threaded into the shared {@link runCapabilityWrite} skeleton.
  *
+ * ## Write-completion scope (SF-1 / F4)
+ *
+ * `runCapabilityWrite` returns a `WriteExecutionResult`, which carries a `completion`
+ * discriminant (`'submitted' | 'confirmed'`) for the submit-only relayer flow. That signal is
+ * **intentionally not surfaced by this capability**: ERC-3643 writes resolve to the plain
+ * `OperationResult` declared by `ERC3643Capability` in `@openzeppelin/ui-types`, so
+ * {@link EvmErc3643Service.execute} narrows the executor result back to `{ id }`.
+ *
+ * Rationale: submit-only completion was specified for the IRS onboarding saga, where a caller
+ * must distinguish a relayer submission id from a mined tx hash to resume. ERC-3643 has no
+ * resume semantics, and widening its public result would add product surface no consumer asked
+ * for while breaking `toEqual({ id })` expectations across the ecosystem. The shared executor
+ * still applies the same id-preference rule internally (INV-5), so a submit-only relayer write
+ * yields the relayer submission id in `.id` — the id semantics are inherited, the discriminant
+ * is not re-exported. Locked by `erc3643.completion-boundary.test.ts`.
+ *
  * @module erc3643/service
  */
 
@@ -164,7 +180,7 @@ export class EvmErc3643Service {
     return resolveRpcUrl(this.networkConfig);
   }
 
-  private execute(
+  private async execute(
     operation: string,
     action: WriteContractParameters,
     executionConfig: ExecutionConfig,
@@ -172,7 +188,7 @@ export class EvmErc3643Service {
     runtimeApiKey: string | undefined,
     errorContext: Erc3643ErrorContext
   ): Promise<OperationResult> {
-    return runCapabilityWrite(
+    const result = await runCapabilityWrite(
       {
         operation,
         action,
@@ -183,6 +199,9 @@ export class EvmErc3643Service {
       },
       (error, op, contractAddress) => mapErc3643Error(error, op, contractAddress, errorContext)
     );
+    // ERC-3643 keeps the plain `OperationResult` contract: the shared executor's
+    // `completion` signal is deliberately not re-exported here (see module docs).
+    return { id: result.id };
   }
 }
 

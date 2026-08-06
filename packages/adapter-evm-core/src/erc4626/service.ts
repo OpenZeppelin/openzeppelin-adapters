@@ -15,6 +15,22 @@
  * are omitted here (contract VC-3: "where the receipt exposes them"). A consumer that needs
  * them reads `convertToShares` / `convertToAssets` around the write.
  *
+ * ## Write-completion scope (SF-1 / F4)
+ *
+ * `runCapabilityWrite` returns a `WriteExecutionResult`, which carries a `completion`
+ * discriminant (`'submitted' | 'confirmed'`) for the submit-only relayer flow. That signal is
+ * **intentionally not surfaced by this capability**: ERC-4626 writes resolve to the
+ * `VaultDepositResult` / `VaultWithdrawResult` shapes declared in `@openzeppelin/ui-types`, so
+ * {@link EvmErc4626Service.execute} narrows the executor result back to `{ id }`.
+ *
+ * Rationale: submit-only completion was specified for the IRS onboarding saga, where a caller
+ * must distinguish a relayer submission id from a mined tx hash to resume. Vault writes have no
+ * resume semantics, and widening the public result would add product surface no consumer asked
+ * for while breaking `toEqual({ id })` expectations across the ecosystem. The shared executor
+ * still applies the same id-preference rule internally (INV-5), so a submit-only relayer write
+ * yields the relayer submission id in `.id` — the id semantics are inherited, the discriminant
+ * is not re-exported. Locked by `erc4626.completion-boundary.test.ts`.
+ *
  * @module erc4626/service
  */
 
@@ -109,7 +125,7 @@ export class EvmErc4626Service {
     return resolveRpcUrl(this.networkConfig);
   }
 
-  private execute(
+  private async execute(
     operation: Erc4626Operation,
     action: WriteContractParameters,
     executionConfig: ExecutionConfig,
@@ -117,7 +133,7 @@ export class EvmErc4626Service {
     runtimeApiKey: string | undefined,
     errorContext: Erc4626ErrorContext
   ): Promise<VaultDepositResult & VaultWithdrawResult> {
-    return runCapabilityWrite(
+    const result = await runCapabilityWrite(
       {
         operation,
         action,
@@ -129,6 +145,9 @@ export class EvmErc4626Service {
       (error, _op, contractAddress) =>
         mapErc4626Error(error, operation, contractAddress, errorContext)
     );
+    // ERC-4626 keeps the plain vault-result contract: the shared executor's
+    // `completion` signal is deliberately not re-exported here (see module docs).
+    return { id: result.id };
   }
 }
 

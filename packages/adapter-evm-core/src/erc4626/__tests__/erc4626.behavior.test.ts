@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ERC4626Capability, ExecutionConfig } from '@openzeppelin/ui-types';
 
 import { createERC4626, type CreateERC4626Options } from '../../capabilities/erc4626';
+import type { SignAndBroadcast } from '../../capabilities/helpers';
 
 const mockReadContract = vi.fn();
 
@@ -31,7 +32,11 @@ const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 function makeCapability(
   signImpl: ReturnType<typeof vi.fn> = vi.fn().mockResolvedValue({ txHash: '0xtx' })
 ): { capability: ERC4626Capability; signAndBroadcast: ReturnType<typeof vi.fn> } {
-  const options: CreateERC4626Options = { signAndBroadcast: signImpl, vaultAddress: VAULT };
+  const options: CreateERC4626Options = {
+    // Test double: `vi.fn()` is intentionally loosely typed so `.mock.calls` stay inspectable.
+    signAndBroadcast: signImpl as unknown as SignAndBroadcast,
+    vaultAddress: VAULT,
+  };
   const capability = createERC4626(
     {
       id: 'evm-testnet',

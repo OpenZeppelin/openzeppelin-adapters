@@ -4,14 +4,7 @@
  * @module irs/types
  */
 
-import type {
-  ExecutionConfig,
-  OperationResult,
-  TransactionStatusUpdate,
-  TxStatus,
-} from '@openzeppelin/ui-types';
-
-import type { WriteContractParameters } from '../types';
+import type { CapabilityExecutor } from '../shared/executor';
 import type { DeployReceiptWaitOptions } from './receipt-identity';
 
 /**
@@ -31,14 +24,9 @@ export interface EvmIRSAddresses {
 
 /**
  * Transaction executor callback — decouples the IRS service from wallet/signing.
- * Mirrors {@link EvmTransactionExecutor} from the access-control module.
+ * Same shape as {@link CapabilityExecutor} (returns {@link WriteExecutionResult}).
  */
-export type EvmIRSExecutor = (
-  txData: WriteContractParameters,
-  executionConfig: ExecutionConfig,
-  onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
-  runtimeApiKey?: string
-) => Promise<OperationResult>;
+export type EvmIRSExecutor = CapabilityExecutor;
 
 /**
  * Construction options for {@link EvmIRSService}.

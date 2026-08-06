@@ -3,8 +3,13 @@
  * SF-5 · Published release via `@openzeppelin/adapter-evm` — release-correctness probes.
  *
  * Verifies the 003 terminal release contract (INV-R1, SC-005, V-1–V-7): dual-package changeset,
- * ui-types ^3.3.0 floor, and 003 delta bundled into the npm tarball — not runtime behavior
+ * the ui-types floor, and 003 delta bundled into the npm tarball — not runtime behavior
  * (covered by SF-1–SF-4 suites).
+ *
+ * The floor moved to `^3.5.0` with initiative 004: `adapter-evm` / `adapter-evm-core` re-export
+ * the `WriteCompletion` vocabulary and the `DeployOnchainIdOutcome` union, both of which are
+ * owned by `@openzeppelin/ui-types` >= 3.5.0. Declaring a lower floor would let a consumer
+ * install ui-types 3.3.0 and hit missing-type errors.
  */
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -18,7 +23,7 @@ const ADAPTER_EVM_CORE_ROOT = resolve(ADAPTER_EVM_ROOT, '../adapter-evm-core');
 const REPO_ROOT = resolve(ADAPTER_EVM_ROOT, '../..');
 const CHANGESET_PATH = resolve(REPO_ROOT, '.changeset/ens-mainnet-l1-opt-in-fallback.md');
 
-const UI_TYPES_FLOOR = '^3.3.0';
+const UI_TYPES_FLOOR = '^3.5.0';
 
 /** Design V-1–V-7 markers that must appear in shipped adapter-evm dist JS. */
 const BUNDLED_DELTA_MARKERS = [
@@ -58,6 +63,11 @@ function parseChangesetFrontmatter(content: string): Record<string, string> {
 }
 
 function collectBundledJs(distDir: string): string {
+  if (!existsSync(distDir)) {
+    throw new Error(
+      `BUNDLED-DELTA: ${distDir} is missing — run \`pnpm build\` before this suite (CI builds first).`
+    );
+  }
   const bundleFiles = readdirSync(distDir).filter(
     (name) => name.endsWith('.mjs') || name.endsWith('.cjs')
   );
@@ -65,6 +75,26 @@ function collectBundledJs(distDir: string): string {
     throw new Error(`BUNDLED-DELTA: no .mjs/.cjs files under ${distDir}`);
   }
   return bundleFiles.map((name) => readFileSync(join(distDir, name), 'utf8')).join('\n');
+}
+
+/**
+ * Fail loudly when the workspace `dist/` is absent, instead of rebuilding it here.
+ *
+ * This suite consumes the `dist/` produced by the build that runs before the test step
+ * (`ci.yml`, `publish.yml`). It must never invoke `pnpm run build` itself: `tsdown` cleans
+ * `dist/` before emitting, so a mid-suite rebuild races every other file in the shared vitest
+ * run — notably `ri-capabilities-dist-isolation.test.ts`, which asserts those same
+ * `dist/<capability>.mjs` entries and sees them disappear.
+ *
+ * Same contract and failure class as that suite: missing `dist/` fails loudly, never skips.
+ */
+function assertWorkspaceDistPresent(distDir: string, context: string): void {
+  expect(
+    existsSync(distDir),
+    `${distDir} is missing — run \`pnpm build\` before this suite (CI builds first). ` +
+      `${context} must consume the pre-built workspace dist; it must not rebuild during the ` +
+      `shared vitest run (that wipes dist for concurrent suites).`
+  ).toBe(true);
 }
 
 function assertMarkersPresent(bundle: string, context: string): void {
@@ -126,13 +156,13 @@ describe('SF-5 published release correctness', () => {
     }
   );
 
-  describe('FLOOR CORRECTNESS — @openzeppelin/ui-types ^3.3.0', () => {
-    it('adapter-evm declares ui-types ^3.3.0 in peerDependencies and devDependencies', () => {
+  describe('FLOOR CORRECTNESS — @openzeppelin/ui-types ^3.5.0', () => {
+    it('adapter-evm declares ui-types ^3.5.0 in peerDependencies and devDependencies', () => {
       const manifest = readJson<PackageManifest>(resolve(ADAPTER_EVM_ROOT, 'package.json'));
       assertUiTypesFloor(manifest, '@openzeppelin/adapter-evm');
     });
 
-    it('adapter-evm-core declares ui-types ^3.3.0 in peerDependencies and devDependencies', () => {
+    it('adapter-evm-core declares ui-types ^3.5.0 in peerDependencies and devDependencies', () => {
       const manifest = readJson<PackageManifest>(resolve(ADAPTER_EVM_CORE_ROOT, 'package.json'));
       assertUiTypesFloor(manifest, '@openzeppelin/adapter-evm-core');
     });
@@ -143,9 +173,15 @@ describe('SF-5 published release correctness', () => {
     let workspaceDistBundle: string;
 
     beforeAll(() => {
-      execSync('pnpm run build', { cwd: ADAPTER_EVM_ROOT, stdio: 'pipe', encoding: 'utf8' });
+      // Consume the dist from the pre-test build step — never rebuild here. `tsdown` cleans
+      // `dist/` first, so a mid-suite `pnpm run build` races concurrent vitest files that read
+      // those same entries (`ri-capabilities-dist-isolation.test.ts`). See
+      // `assertWorkspaceDistPresent`. `npm pack` below is safe: this package defines no
+      // `prepack`/`prepare`, and `prepublishOnly` only fires on publish.
+      const workspaceDist = resolve(ADAPTER_EVM_ROOT, 'dist');
+      assertWorkspaceDistPresent(workspaceDist, 'SC-005 BUNDLED-DELTA');
 
-      workspaceDistBundle = collectBundledJs(resolve(ADAPTER_EVM_ROOT, 'dist'));
+      workspaceDistBundle = collectBundledJs(workspaceDist);
 
       const extractRoot = mkdtempSync(join(tmpdir(), 'sf5-adapter-evm-pack-'));
       let tarballPath = '';

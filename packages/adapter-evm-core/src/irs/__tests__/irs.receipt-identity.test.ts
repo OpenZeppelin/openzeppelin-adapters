@@ -12,7 +12,7 @@
  *    actually wait for it.
  */
 import { encodeEventTopics } from 'viem';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ExecutionConfig, IRSCapability } from '@openzeppelin/ui-types';
 import { IdentityOperationFailed } from '@openzeppelin/ui-types';
@@ -121,7 +121,7 @@ describe('deployOnchainId receipt resolution', () => {
 
     const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
-    expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
+    expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID, completion: 'confirmed' });
     expect(signAndBroadcast).toHaveBeenCalledOnce();
     expect(mockReadContract).toHaveBeenCalledOnce();
     expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({
@@ -139,6 +139,9 @@ describe('deployOnchainId receipt resolution', () => {
     const { capability } = makeCapability();
     const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
+    // EXEC_CONFIG is eoa, so this is the confirmed arm — narrow before reading `onchainId`,
+    // which only exists there (the submit-only arm has no such property).
+    assert(result.completion === 'confirmed', 'expected the confirmed deploy arm');
     expect(result.onchainId).toBe(ONCHAINID);
     expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
     expect(mockGetTransactionReceipt).not.toHaveBeenCalled();

@@ -1,0 +1,34 @@
+{
+  // Type gate for test files (SF-1 / F3).
+  //
+  // The main `tsconfig.json` excludes `src/**/*.test.ts` so the package build never emits test
+  // types. That exclusion also meant `tsc` never saw the `expectTypeOf` / `satisfies` guards in
+  // the test suites, so a type-level assertion could be wrong (or a union could be read without
+  // narrowing) and still ship green. This config closes that blind spot: `pnpm typecheck:tests`
+  // runs tsc over the test files themselves.
+  //
+  // `exclude` below lists pre-existing legacy suites that do not yet typecheck (mostly loosely
+  // typed `vi.fn()` mocks predating this gate). They are debt, not policy — the list is meant to
+  // shrink to empty. Anything NOT listed is gated, so every new or touched test file is checked
+  // by default. See docs/write-completion/README.md for the follow-up.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false
+  },
+  "include": ["src/**/*", "src/**/*.json", "test/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    // --- Legacy debt: pre-existing type errors, unrelated to write-completion. ---
+    "src/abi/__tests__/etherscan-v2.test.ts",
+    "src/capabilities/__tests__/factories.test.ts",
+    "src/configuration/__tests__/rpc.test.ts",
+    "src/name-resolution/__tests__/service.ens-v2.test.ts",
+    "src/name-resolution/__tests__/service.forward-l1.test.ts",
+    "src/profiles/__tests__/runtime.test.ts"
+  ]
+}

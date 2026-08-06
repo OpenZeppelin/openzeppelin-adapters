@@ -14,11 +14,27 @@ import type {
   TxStatus,
 } from '@openzeppelin/ui-types';
 
+import {
+  parseSignAndBroadcastResult,
+  preferSubmissionId,
+  readOptionsCompletion,
+  resolveWriteCompletion,
+} from '../shared/completion';
 import type { CapabilityExecutor } from '../shared/executor';
 import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
 import { isValidEvmAddress } from '../utils/validation';
 
 export type { CapabilityExecutor } from '../shared/executor';
+export {
+  WriteCompletionDisagreementError,
+  parseSignAndBroadcastResult,
+  preferSubmissionId,
+  readOptionsCompletion,
+  resolveWriteCompletion,
+  type SignAndBroadcastResultMeta,
+  type WriteCompletionDisagreementIds,
+  type WriteExecutionResult,
+} from '../shared/completion';
 
 /**
  * Fail fast at the capability boundary on a malformed deployment address.
@@ -63,21 +79,44 @@ export type SignAndBroadcast = (
 
 /**
  * Adapt an injected {@link SignAndBroadcast} into the {@link CapabilityExecutor} that
- * services delegate to, normalizing the result to `{ id: txHash }`.
+ * services delegate to.
  *
- * Extracted so write-capable factories share one submission adapter instead of each
- * re-implementing the same closure.
+ * Preserves strategy `result`, resolves dual-source completion (options ∪ result),
+ * and prefers `relayerTxId` for submit-only `{ id }`. Does **not** invoke
+ * `transactionOptions.onSubmitted` (strategy owns that hook — CONVENTION).
+ *
+ * Confirmed / default path returns `{ id: txHash, completion: 'confirmed' }`
+ * (id matches today's `{ id: txHash }` when no submit-only signal).
+ *
+ * @throws {WriteCompletionDisagreementError} when options and result disagree
  */
 export function adaptSignAndBroadcast(signAndBroadcast: SignAndBroadcast): CapabilityExecutor {
   return async (txData, executionConfig, onStatusChange, runtimeApiKey) => {
-    const result = await signAndBroadcast(
+    const sab = await signAndBroadcast(
       txData,
       executionConfig,
       onStatusChange ?? (() => {}),
       runtimeApiKey
     );
 
-    return { id: result.txHash };
+    // INV-7: preserve sab.result through the choke point (no { id: txHash }-only strip)
+    const optionsCompletion = readOptionsCompletion(executionConfig);
+    const meta = parseSignAndBroadcastResult(sab.result);
+    const completion = resolveWriteCompletion({
+      optionsCompletion,
+      resultCompletion: meta.completion,
+      // Diagnostics only: lets a fail-closed disagreement name the submitted transaction.
+      txHash: sab.txHash,
+      ...(meta.relayerTxId !== undefined ? { relayerTxId: meta.relayerTxId } : {}),
+    });
+    const id = preferSubmissionId({
+      completion,
+      txHash: sab.txHash,
+      relayerTxId: meta.relayerTxId,
+    });
+
+    // INV-3 / INV-15: return enriched result; never call onSubmitted
+    return { id, completion };
   };
 }
 

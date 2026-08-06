@@ -15,7 +15,6 @@
 
 import type {
   ClaimPayload,
-  DeployOnchainIdResult,
   ExecutionConfig,
   IdentityRegistration,
   OnboardingClaim,
@@ -28,6 +27,7 @@ import { IdentityAlreadyRegistered, IdentityOperationFailed } from '@openzeppeli
 import { logger } from '@openzeppelin/ui-utils';
 
 import { resolveRpcUrl } from '../configuration/rpc';
+import type { WriteExecutionResult } from '../shared/completion';
 import { runCapabilityWrite } from '../shared/executor';
 import type { EvmCompatibleNetworkConfig, WriteContractParameters } from '../types';
 import { createEvmPublicClient } from '../utils/public-client';
@@ -39,6 +39,7 @@ import {
   assembleRegisterIdentityAction,
 } from './actions';
 import { buildClaimPayload } from './claim-payload';
+import type { DeployOnchainIdOutcome } from './deploy-result';
 import { IDENTITY_KEY_PURPOSE_MANAGEMENT, lookupIdentityKeyPurpose } from './identity-keys';
 import type { IdentityKeyPurposeLookup } from './identity-keys';
 import {
@@ -136,33 +137,37 @@ export class EvmIRSService {
   // ---- Writes ----
 
   /**
-   * Deploy a fresh ONCHAINID for `holder` and resolve its address from the confirmed receipt.
+   * Deploy a fresh ONCHAINID for `holder`.
    *
    * Uses `createIdentityWithManagementKeys` so the configured {@link operatorManagementKey}
    * receives MANAGEMENT and can execute the subsequent saga steps (`attachClaim`, etc.).
    * The holder is wallet-linked but does **not** receive MANAGEMENT until
    * {@link grantHolderManagementKey} runs — that ordering is deliberate (see that method).
    *
-   * Identity resolution parses `WalletLinked` (falling back to `Deployed`) out of the receipt
-   * obtained by **waiting** for confirmation — `waitForTransactionReceipt`, bounded by
-   * `deployReceiptWait`. The wait is the gate: a point-in-time `getTransactionReceipt` merely
-   * CHECKS and throws while the tx is pending, which is how the original defect turned a deploy
-   * that later landed into a reported failure.
+   * **Completion (SF-2):** trusts SF-1 `WriteExecutionResult.completion` from {@link execute}.
+   * - `completion === 'submitted'`: return `{ id, completion: 'submitted' }` with **no**
+   *   `onchainId`. Skips receipt wait, log parse, and operator MANAGEMENT assert. Caller owns
+   *   Relayer poll + {@link getFactoryIdentity} resume — submit-only `{ id }` is not proof the
+   *   identity deployed.
+   * - absent / `'confirmed'`: wait → parse → assert (byte-identical). Identity resolution parses
+   *   `WalletLinked` (falling back to `Deployed`) out of the receipt obtained by **waiting** for
+   *   confirmation — `waitForTransactionReceipt`, bounded by `deployReceiptWait`. Returns
+   *   `{ id, onchainId, completion: 'confirmed' }` with required `onchainId`.
    *
-   * Three terminal outcomes, with deliberately different retry semantics:
+   * Confirmed-path terminal outcomes (unchanged retry semantics):
    *  - confirmed + identity parsed  -> success
    *  - confirmed + reverted         -> nothing created, retry is SAFE
    *  - wait timed out               -> INDETERMINATE, may still land, DO NOT retry blind
    *
-   * This method makes no assumption about whether the injected executor awaits confirmation; it
-   * establishes confirmation itself.
+   * On the confirmed arm this method makes no assumption about whether the injected executor
+   * awaits confirmation; it establishes confirmation itself.
    */
   async deployOnchainId(
     input: { holder: string },
     executionConfig: ExecutionConfig,
     onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
     runtimeApiKey?: string
-  ): Promise<DeployOnchainIdResult> {
+  ): Promise<DeployOnchainIdOutcome> {
     const { holder } = input;
     const action = assembleDeployOnchainIdAction(
       this.addresses.identityFactory,
@@ -178,6 +183,19 @@ export class EvmIRSService {
       onStatusChange,
       runtimeApiKey
     );
+
+    // INV-1 / INV-13 / INV-15: single predicate after execute; skip wait/parse/assert only.
+    // Do not re-read transactionOptions or strategy result here (SF-1 choke point owns merge).
+    if (result.completion === 'submitted') {
+      // INV-2 / INV-5 / INV-7 / INV-17 / INV-19: literal arm; no onchainId; no finality claim.
+      logger.info(LOG_SYSTEM, 'deployOnchainId: submit-only early return', {
+        operation: 'deployOnchainId',
+        completion: 'submitted',
+        id: result.id,
+        holder,
+      });
+      return { id: result.id, completion: 'submitted' };
+    }
 
     const rpcUrl = this.rpcUrl();
     const { confirmations, timeoutMs } = this.deployReceiptWait;
@@ -286,7 +304,8 @@ export class EvmIRSService {
         `The identity LIKELY EXISTS — resume the saga using onchainId ${onchainId}.`,
     });
 
-    return { ...result, onchainId };
+    // INV-3 / INV-4: explicit confirmed arm — required onchainId + discriminant (no WriteExecutionResult spread).
+    return { id: result.id, onchainId, completion: 'confirmed' };
   }
 
   /**
@@ -297,6 +316,13 @@ export class EvmIRSService {
    * holder already holds MANAGEMENT and can rescue their own identity. Running this after
    * attach-claim would leave a partial failure with an identity only the operator can touch —
    * a fresh orphan trap. Do not reorder for convenience.
+   *
+   * **Completion (SF-3):** trusts SF-1 `WriteExecutionResult.completion` from {@link execute}.
+   * - `completion === 'submitted'`: return `{ id }` without post-submit key-purpose assert.
+   *   Submit-only `{ id }` is **not** proof that MANAGEMENT landed — confirm via
+   *   {@link hasIdentityKeyPurpose} (or Relayer/WAL).
+   * - absent / `'confirmed'`: assert holder MANAGEMENT via `keyHasPurpose`; throw
+   *   {@link IdentityOperationFailed} on lacks / RPC fail (unchanged).
    */
   async grantHolderManagementKey(
     input: { onchainId: string; holder: string },
@@ -315,6 +341,14 @@ export class EvmIRSService {
       runtimeApiKey
     );
 
+    // INV-1 / INV-5 / INV-6 / INV-14: single predicate after execute; skip assert only.
+    // Do not re-read transactionOptions or strategy result here (SF-1 choke point owns merge).
+    if (result.completion === 'submitted') {
+      // INV-2 / INV-10 / INV-20: literal { id }; no completion leak; no MANAGEMENT fabricate.
+      return { id: result.id };
+    }
+
+    // INV-7 / INV-8: confirmed / absent (SF-1 default) — byte-identical assert + errors.
     await this.assertIdentityKeyHasPurpose({
       operation: 'grantHolderManagementKey',
       onchainId,
@@ -328,7 +362,8 @@ export class EvmIRSService {
         `could not verify holder MANAGEMENT via RPC. Resume the saga using onchainId ${onchainId}.`,
     });
 
-    return result;
+    // INV-3: fresh { id } — do not spread WriteExecutionResult onto the public wire.
+    return { id: result.id };
   }
 
   async registerTrustedIssuer(
@@ -357,16 +392,19 @@ export class EvmIRSService {
       issuer,
       topics
     );
-    return this.execute(
+    const result = await this.execute(
       'registerTrustedIssuer',
       action,
       executionConfig,
       onStatusChange,
       runtimeApiKey
     );
+    // SF-4 INV-4: public OperationResult — strip SF-1 excess fields (completion, etc.).
+    // No invented submit-only branch; audit/passthrough only.
+    return { id: result.id };
   }
 
-  attachClaim(
+  async attachClaim(
     input: { onchainId: string; claim: OnboardingClaim },
     executionConfig: ExecutionConfig,
     onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
@@ -377,17 +415,23 @@ export class EvmIRSService {
     // Fail clearly at the capability boundary rather than assembling calldata with an
     // empty issuer address (which would produce an invalid arg / opaque downstream revert).
     if (!issuerAddress) {
-      return Promise.reject(
-        new IdentityOperationFailed(
-          'attachClaim requires an issuer address: provide claim.issuer or configure a trustedIssuer.',
-          'attachClaim',
-          undefined,
-          onchainId
-        )
+      throw new IdentityOperationFailed(
+        'attachClaim requires an issuer address: provide claim.issuer or configure a trustedIssuer.',
+        'attachClaim',
+        undefined,
+        onchainId
       );
     }
     const action = assembleAttachClaimAction(onchainId, claim, issuerAddress);
-    return this.execute('attachClaim', action, executionConfig, onStatusChange, runtimeApiKey);
+    const result = await this.execute(
+      'attachClaim',
+      action,
+      executionConfig,
+      onStatusChange,
+      runtimeApiKey
+    );
+    // SF-4 INV-3 / INV-6: grant-style strip — exact `{ id }`; no completion-keyed early-return.
+    return { id: result.id };
   }
 
   async registerIdentity(
@@ -414,7 +458,15 @@ export class EvmIRSService {
       onchainId,
       country
     );
-    return this.execute('registerIdentity', action, executionConfig, onStatusChange, runtimeApiKey);
+    const result = await this.execute(
+      'registerIdentity',
+      action,
+      executionConfig,
+      onStatusChange,
+      runtimeApiKey
+    );
+    // SF-4 INV-3 / INV-15: strip after execute; pre-read getOnchainId guard unchanged.
+    return { id: result.id };
   }
 
   dispose(): void {
@@ -447,13 +499,18 @@ export class EvmIRSService {
     }
   }
 
+  /**
+   * Typing hygiene (INV-22): `runCapabilityWrite` already returns {@link WriteExecutionResult}.
+   * Widening the annotation lets grant (and future SF-2 deploy) read `.completion` without casts.
+   * Runtime passthrough — no wrapper that could strip `completion`.
+   */
   private execute(
     operation: string,
     action: WriteContractParameters,
     executionConfig: ExecutionConfig,
     onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
     runtimeApiKey?: string
-  ): Promise<OperationResult> {
+  ): Promise<WriteExecutionResult> {
     return runCapabilityWrite(
       {
         operation,
@@ -464,6 +521,8 @@ export class EvmIRSService {
         runtimeApiKey,
       },
       // All IRS write failures map to a single typed error.
+      // WriteCompletionDisagreementError is rethrown inside runCapabilityWrite (SF-1 INV-11)
+      // before this mapper runs — must not wrap disagreement as IdentityOperationFailed (INV-9).
       (error, op, contractAddress) =>
         new IdentityOperationFailed(
           `IRS ${op} failed: ${error.message}`,

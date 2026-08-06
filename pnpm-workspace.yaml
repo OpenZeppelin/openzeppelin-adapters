@@ -11,6 +11,18 @@ overrides:
   # adapter packages (^7.62.0) resolve a different 7.x under local UI link and TS2322 Control-type
   # errors surface (adapter-stellar 7.71.2 vs ui-react 7.80.0). See chore commit a3ba40a.
   react-hook-form: 7.80.0
+  # Dedupe / peer-align @openzeppelin/ui-types to ONE copy across the workspace. adapter-evm-core
+  # and adapter-evm require ^3.5.0 (write-completion vocabulary, DeployOnchainIdOutcome) while
+  # adapter-runtime-utils still declares ^3.2.0. Both ranges are independently satisfiable, so
+  # pnpm keeps two copies and the structurally identical EcosystemRuntime / CapabilityFactoryMap
+  # become nominally distinct — TS2322/TS2345 in profiles/shared-state.ts. Same class as the
+  # react-hook-form pin above. Consumers are unaffected (ui-types is a peer, resolved once in the
+  # host app); this only constrains workspace dev/CI resolution.
+  '@openzeppelin/ui-types': ^3.5.0
+  # Dedupe @types/node so vite@8 resolves once. Without this, 25.9.1 vs 26.1.1
+  # yields two vite instances and adapters-vite typecheck fails (TS2345 on
+  # MidnightAdapterPluginFactories). Same class as the ui-types pin above.
+  '@types/node': 25.9.1
   '@wagmi/core': ^2.20.3
   glob: ^11.1.0
   zod: ^3.25.76

@@ -41,7 +41,9 @@ const NETWORK_CONFIG = {
  * intermediate submit id, awaits a (simulated) confirmation poll, then resolves the confirmed
  * hash. `events` records the ordered control flow so the test can assert the two-step sequence.
  */
-function createSubmitThenPollCallback(events: string[]): SignAndBroadcast {
+// Return type is inferred (not annotated `SignAndBroadcast`) so the `submit` /
+// `pollForConfirmation` spies attached below stay visible to callers asserting on them.
+function createSubmitThenPollCallback(events: string[]) {
   const submit = vi.fn(async () => {
     events.push('submit');
     return { transactionId: SUBMIT_ID };

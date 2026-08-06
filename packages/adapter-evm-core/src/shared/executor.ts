@@ -13,28 +13,24 @@
  * @module shared/executor
  */
 
-import type {
-  ExecutionConfig,
-  OperationResult,
-  TransactionStatusUpdate,
-  TxStatus,
-} from '@openzeppelin/ui-types';
+import type { ExecutionConfig, TransactionStatusUpdate, TxStatus } from '@openzeppelin/ui-types';
 import { logger } from '@openzeppelin/ui-utils';
 
 import type { WriteContractParameters } from '../types';
+import { WriteCompletionDisagreementError, type WriteExecutionResult } from './completion';
 
 const LOG_SYSTEM = 'CapabilityWrite';
 
 /**
- * Executor shape consumed by capability services: assembled calldata in, an
- * {@link OperationResult} out. Implemented by adapting the injected `signAndBroadcast`.
+ * Executor shape consumed by capability services: assembled calldata in, a
+ * {@link WriteExecutionResult} out. Implemented by adapting the injected `signAndBroadcast`.
  */
 export type CapabilityExecutor = (
   txData: WriteContractParameters,
   executionConfig: ExecutionConfig,
   onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
   runtimeApiKey?: string
-) => Promise<OperationResult>;
+) => Promise<WriteExecutionResult>;
 
 /**
  * Maps a raw execution failure to the typed error a capability should throw.
@@ -46,7 +42,10 @@ export type WriteErrorMapper = (error: Error, operation: string, contractAddress
 
 /**
  * Run a capability write: submit `action` via `executor`, returning its
- * {@link OperationResult}; on failure, log and rethrow the result of `mapError`.
+ * {@link WriteExecutionResult}; on failure, log and rethrow the result of `mapError`.
+ *
+ * {@link WriteCompletionDisagreementError} is rethrown unchanged (INV-11) so IRS
+ * (and other) mappers never wrap a wiring bug as an identity-domain failure.
  *
  * Centralizes the shared control flow so each capability only supplies its
  * error-mapping policy.
@@ -61,12 +60,16 @@ export async function runCapabilityWrite(
     runtimeApiKey?: string;
   },
   mapError: WriteErrorMapper
-): Promise<OperationResult> {
+): Promise<WriteExecutionResult> {
   const { operation, action, executor, executionConfig, onStatusChange, runtimeApiKey } = params;
 
   try {
     return await executor(action, executionConfig, onStatusChange, runtimeApiKey);
   } catch (error) {
+    // INV-11: disagreement is a cross-capability wiring bug — never map to IdentityOperationFailed
+    if (error instanceof WriteCompletionDisagreementError) {
+      throw error;
+    }
     logger.error(LOG_SYSTEM, `${operation} failed:`, error);
     throw mapError(error as Error, operation, action.address);
   }

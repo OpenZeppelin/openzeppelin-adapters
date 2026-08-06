@@ -11,6 +11,11 @@
 export * from './abis';
 export * from './actions';
 export * from './claim-payload';
+export type {
+  DeployOnchainIdConfirmedResult,
+  DeployOnchainIdOutcome,
+  DeployOnchainIdSubmittedResult,
+} from './deploy-result';
 export * from './identity-keys';
 export * from './management-key';
 export * from './onchain-reader';
