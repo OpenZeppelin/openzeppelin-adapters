@@ -110,7 +110,8 @@ describe('IRS writes', () => {
   describe('deployOnchainId', () => {
     it('submits createIdentityWithManagementKeys and resolves the deployed ONCHAINID from the receipt', async () => {
       mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-      mockReadContract.mockResolvedValueOnce(true); // operator MANAGEMENT probe
+      // SF-5: factory getIdentity (not_found) then operator MANAGEMENT assert
+      mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
       const { capability, signAndBroadcast } = makeCapability();
 
       const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -124,8 +125,12 @@ describe('IRS writes', () => {
       expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
       expect(mockWaitForTransactionReceipt.mock.calls[0]?.[0]).toMatchObject({ hash: TX_HASH });
       expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
-      expect(mockReadContract).toHaveBeenCalledOnce();
+      expect(mockReadContract).toHaveBeenCalledTimes(2);
       expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({
+        functionName: 'getIdentity',
+        address: ADDRESSES.identityFactory,
+      });
+      expect(mockReadContract.mock.calls[1]?.[0]).toMatchObject({
         functionName: 'keyHasPurpose',
         address: ONCHAINID,
       });

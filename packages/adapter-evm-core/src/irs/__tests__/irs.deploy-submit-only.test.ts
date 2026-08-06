@@ -63,6 +63,7 @@ const ADDRESSES = {
 const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
+const ZERO = '0x0000000000000000000000000000000000000000';
 const TX_HASH = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
 const PLACEHOLDER_TX = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const RELAYER_TX_ID = 'relayer-deploy-sub-42';
@@ -179,7 +180,8 @@ describe('deployOnchainId — confirmed path non-regression (SF-2)', () => {
 
   it('INV-3 / INV-4 / INV-14: confirmed return has required onchainId + completion discriminant', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    mockReadContract.mockResolvedValueOnce(true);
+    // SF-5: factory not_found, then operator MANAGEMENT assert
+    mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
     const { capability } = makeCapability();
 
     const outcome = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -191,10 +193,11 @@ describe('deployOnchainId — confirmed path non-regression (SF-2)', () => {
     });
     expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
     expect(mockGetTransactionReceipt).not.toHaveBeenCalled();
-    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract).toHaveBeenCalledTimes(2);
   });
 
   it('INV-8 / INV-20: wait timeout still INDETERMINATE — no guessed onchainId', async () => {
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → proceed
     mockWaitForTransactionReceipt.mockRejectedValueOnce(
       new Error('WaitForTransactionReceiptTimeoutError: timed out')
     );
@@ -215,7 +218,7 @@ describe('deployOnchainId — confirmed path non-regression (SF-2)', () => {
 
   it('INV-1 / INV-10: explicit completion confirmed still waits + asserts', async () => {
     mockWaitForTransactionReceipt.mockResolvedValueOnce(walletLinkedReceipt());
-    mockReadContract.mockResolvedValueOnce(true);
+    mockReadContract.mockResolvedValueOnce(ZERO).mockResolvedValueOnce(true);
     const { capability, signAndBroadcast } = makeCapability();
 
     const outcome = await capability.deployOnchainId(
@@ -229,12 +232,17 @@ describe('deployOnchainId — confirmed path non-regression (SF-2)', () => {
     }
     expect(signAndBroadcast).toHaveBeenCalledOnce();
     expect(mockWaitForTransactionReceipt).toHaveBeenCalledOnce();
-    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract).toHaveBeenCalledTimes(2);
   });
 
   it('INV-10: two confirmed deploys both wait (no outcome cache / flapping)', async () => {
     mockWaitForTransactionReceipt.mockResolvedValue(walletLinkedReceipt());
-    mockReadContract.mockResolvedValue(true);
+    // Each deploy: factory not_found + operator assert
+    mockReadContract
+      .mockResolvedValueOnce(ZERO)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(ZERO)
+      .mockResolvedValueOnce(true);
     const { capability, signAndBroadcast } = makeCapability();
 
     await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
@@ -242,7 +250,7 @@ describe('deployOnchainId — confirmed path non-regression (SF-2)', () => {
 
     expect(signAndBroadcast).toHaveBeenCalledTimes(2);
     expect(mockWaitForTransactionReceipt).toHaveBeenCalledTimes(2);
-    expect(mockReadContract).toHaveBeenCalledTimes(2);
+    expect(mockReadContract).toHaveBeenCalledTimes(4);
   });
 });
 
@@ -273,6 +281,7 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     mockWaitForTransactionReceipt.mockRejectedValue(
       new Error('NON-VACUITY: hang — wait must not run on submit-only')
     );
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → proceed to wait
     mockReadContract.mockRejectedValue(
       new Error('NON-VACUITY: hang — assert must not run on submit-only')
     );
@@ -285,14 +294,15 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
       'NON-VACUITY RED: confirmed path must invoke waitForTransactionReceipt'
     ).toBeGreaterThan(0);
 
-    // GREEN: real submit-only must not enter wait/parse/assert.
+    // GREEN: real submit-only must not enter wait/parse/assert (SF-5 factory probe may run).
     mockWaitForTransactionReceipt.mockClear();
     mockReadContract.mockClear();
     mockWaitForTransactionReceipt.mockRejectedValue(
       new Error('NON-VACUITY: hang — wait must not run on submit-only')
     );
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 pre-submit factory not_found
     mockReadContract.mockRejectedValue(
-      new Error('NON-VACUITY: hang — assert must not run on submit-only')
+      new Error('NON-VACUITY: hang — post-submit assert must not run on submit-only')
     );
 
     const { capability, signAndBroadcast } = makeCapability(submitOnlySignAndBroadcast());
@@ -317,13 +327,15 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     ).not.toHaveBeenCalled();
     expect(
       mockReadContract,
-      'INV-12 / INV-13 NON-VACUITY GREEN: keyHasPurpose / factory probe must not run'
-    ).not.toHaveBeenCalled();
+      'SF-5 + SF-2: factory pre-submit once; post-submit keyHasPurpose skipped'
+    ).toHaveBeenCalledOnce();
+    expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({ functionName: 'getIdentity' });
   });
 
   it('INV-1 / INV-13: options-only submitted (result absent) also skips wait/assert', async () => {
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
-    mockReadContract.mockRejectedValue(new Error('must not probe'));
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found
+    mockReadContract.mockRejectedValue(new Error('must not post-assert'));
     const { capability, signAndBroadcast } = makeCapability(
       vi.fn().mockResolvedValue({ txHash: TX_HASH })
     );
@@ -336,11 +348,12 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     expect(outcome).toEqual({ id: TX_HASH, completion: 'submitted' });
     expect(signAndBroadcast).toHaveBeenCalledOnce();
     expect(mockWaitForTransactionReceipt).not.toHaveBeenCalled();
-    expect(mockReadContract).not.toHaveBeenCalled();
+    expect(mockReadContract).toHaveBeenCalledOnce();
   });
 
   it('INV-2 / INV-4 / INV-7: narrowing submitted arm excludes onchainId; resolves (not rejects)', async () => {
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
+    mockReadContract.mockResolvedValueOnce(ZERO);
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     const outcome: DeployOnchainIdOutcome = await capability.deployOnchainId(
@@ -356,19 +369,24 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
   });
 
   it('INV-5: submit-only id is SF-1 preferred relayerTxId, not placeholder hash', async () => {
+    mockReadContract.mockResolvedValueOnce(ZERO);
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
     const outcome = await capability.deployOnchainId({ holder: HOLDER }, relayerConfig());
     expect(outcome.id).toBe(RELAYER_TX_ID);
     expect(outcome.id).not.toBe(PLACEHOLDER_TX);
   });
 
-  it('INV-14: confirmed ordering is wait → assert (never reverse); submit-only is execute only', async () => {
+  it('INV-14 (SF-5 drift): confirmed is factory-probe → execute → wait → assert; submit-only skips wait/assert', async () => {
     const order: string[] = [];
     mockWaitForTransactionReceipt.mockImplementation(async () => {
       order.push('wait');
       return walletLinkedReceipt();
     });
-    mockReadContract.mockImplementation(async () => {
+    mockReadContract.mockImplementation(async (args: { functionName?: string }) => {
+      if (args.functionName === 'getIdentity') {
+        order.push('factory');
+        return ZERO;
+      }
       order.push('assert');
       return true;
     });
@@ -379,11 +397,19 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     const { capability } = makeCapability(sab);
 
     await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
-    expect(order).toEqual(['execute', 'wait', 'assert']);
+    expect(order).toEqual(['factory', 'execute', 'wait', 'assert']);
 
     order.length = 0;
     mockWaitForTransactionReceipt.mockClear();
     mockReadContract.mockClear();
+    mockReadContract.mockImplementation(async (args: { functionName?: string }) => {
+      if (args.functionName === 'getIdentity') {
+        order.push('factory');
+        return ZERO;
+      }
+      order.push('assert');
+      return true;
+    });
     const submitSab = vi.fn().mockImplementation(async () => {
       order.push('execute');
       return {
@@ -393,13 +419,13 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     });
     const { capability: submitCap } = makeCapability(submitSab);
     await submitCap.deployOnchainId({ holder: HOLDER }, relayerConfig());
-    expect(order).toEqual(['execute']);
+    expect(order).toEqual(['factory', 'execute']);
     expect(mockWaitForTransactionReceipt).not.toHaveBeenCalled();
   });
 
   it('INV-9: disagreement through deploy → WriteCompletionDisagreementError, not IdentityOperationFailed', async () => {
     mockWaitForTransactionReceipt.mockResolvedValue(walletLinkedReceipt());
-    mockReadContract.mockResolvedValue(true);
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 factory not_found → reach execute
     const { capability } = makeCapability(
       vi.fn().mockResolvedValue({
         txHash: TX_HASH,
@@ -425,7 +451,8 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     // Result-only submitted (options absent) selects submit-only via SF-1; deploy must not
     // re-read options. Covered by early return with wait poisoned.
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
-    mockReadContract.mockRejectedValue(new Error('must not probe'));
+    mockReadContract.mockResolvedValueOnce(ZERO);
+    mockReadContract.mockRejectedValue(new Error('must not post-assert'));
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     const outcome = await capability.deployOnchainId(
@@ -439,6 +466,7 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
   it('INV-16: adapter does not re-fire onSubmitted during deploy submit-only', async () => {
     const onSubmitted = vi.fn();
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
+    mockReadContract.mockResolvedValueOnce(ZERO);
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     await capability.deployOnchainId(
@@ -452,14 +480,16 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('INV-11 / INV-19: submit-only does not call getFactoryIdentity; resume API remains available', async () => {
+  it('INV-11 / INV-19 (SF-5 drift): submit-only runs factory pre-submit; resume API remains available', async () => {
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
-    mockReadContract.mockRejectedValue(new Error('must not probe during deploy'));
+    mockReadContract.mockResolvedValueOnce(ZERO); // SF-5 pre-submit factory not_found
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     await capability.deployOnchainId({ holder: HOLDER }, relayerConfig());
-    expect(mockReadContract).not.toHaveBeenCalled();
+    expect(mockReadContract).toHaveBeenCalledOnce();
+    expect(mockReadContract.mock.calls[0]?.[0]).toMatchObject({ functionName: 'getIdentity' });
 
+    mockReadContract.mockClear();
     mockReadContract.mockResolvedValueOnce(ONCHAINID);
     await expect(capability.getFactoryIdentity(HOLDER)).resolves.toEqual({
       status: 'found',
@@ -471,6 +501,7 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
   it('INV-17: submit-only info log has no onchainId / deployed / verify-success claims', async () => {
     const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {});
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
+    mockReadContract.mockResolvedValueOnce(ZERO);
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     await capability.deployOnchainId({ holder: HOLDER }, relayerConfig());
@@ -499,6 +530,7 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
       mockWaitForTransactionReceipt.mockImplementation(
         () => new Promise(() => {}) // hang forever if entered
       );
+      mockReadContract.mockResolvedValueOnce(ZERO);
       const { capability } = makeCapability(submitOnlySignAndBroadcast());
       const pending = capability.deployOnchainId({ holder: HOLDER }, relayerConfig());
       await expect(pending).resolves.toEqual({
@@ -514,6 +546,7 @@ describe('deployOnchainId — submit-only (SF-2)', () => {
 
   it('INV-19: submit-only success does not embed runtimeApiKey', async () => {
     mockWaitForTransactionReceipt.mockRejectedValue(new Error('must not wait'));
+    mockReadContract.mockResolvedValueOnce(ZERO);
     const { capability } = makeCapability(submitOnlySignAndBroadcast());
 
     const outcome = await capability.deployOnchainId(

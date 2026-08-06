@@ -144,6 +144,11 @@ export class EvmIRSService {
    * The holder is wallet-linked but does **not** receive MANAGEMENT until
    * {@link grantHolderManagementKey} runs — that ordering is deliberate (see that method).
    *
+   * **Pre-submit fidelity (SF-5):** probes {@link getFactoryIdentity} **before** execute
+   * (both completion modes). `found` → {@link IdentityAlreadyRegistered} (no submit);
+   * `read_failed` → {@link IdentityOperationFailed} ambiguous (no submit; never already-onboarded);
+   * `not_found` → today's path below.
+   *
    * **Completion (SF-2):** trusts SF-1 `WriteExecutionResult.completion` from {@link execute}.
    * - `completion === 'submitted'`: return `{ id, completion: 'submitted' }` with **no**
    *   `onchainId`. Skips receipt wait, log parse, and operator MANAGEMENT assert. Caller owns
@@ -158,6 +163,7 @@ export class EvmIRSService {
    *  - confirmed + identity parsed  -> success
    *  - confirmed + reverted         -> nothing created, retry is SAFE
    *  - wait timed out               -> INDETERMINATE, may still land, DO NOT retry blind
+   *    (never mapped to already-onboarded — typed indeterminate OUT of SF-5)
    *
    * On the confirmed arm this method makes no assumption about whether the injected executor
    * awaits confirmation; it establishes confirmation itself.
@@ -169,6 +175,36 @@ export class EvmIRSService {
     runtimeApiKey?: string
   ): Promise<DeployOnchainIdOutcome> {
     const { holder } = input;
+
+    // SF-5 INV-8 / INV-9 / INV-17 / INV-18: factory probe before assemble/execute (both modes).
+    const factory = await this.getFactoryIdentity(holder);
+    if (factory.status === 'found') {
+      logger.info(LOG_SYSTEM, 'deployOnchainId: already-linked factory pre-submit', {
+        holder,
+        onchainId: factory.onchainId,
+      });
+      throw new IdentityAlreadyRegistered(
+        `Holder ${holder} already has a factory-linked identity ${factory.onchainId}.`,
+        holder,
+        factory.onchainId,
+        this.addresses.identityFactory
+      );
+    }
+    if (factory.status === 'read_failed') {
+      logger.info(LOG_SYSTEM, 'deployOnchainId: pre-submit factory read_failed', {
+        holder,
+        cause: factory.cause,
+      });
+      throw new IdentityOperationFailed(
+        `deployOnchainId for ${holder}: factory identity probe failed via RPC before submit ` +
+          `(ambiguous — not already-linked, not not_found). Do not retry blind.`,
+        'deployOnchainId',
+        factory.cause,
+        this.addresses.identityFactory
+      );
+    }
+    // INV-10: not_found → today's SF-2 path
+
     const action = assembleDeployOnchainIdAction(
       this.addresses.identityFactory,
       holder,
@@ -317,6 +353,13 @@ export class EvmIRSService {
    * attach-claim would leave a partial failure with an identity only the operator can touch —
    * a fresh orphan trap. Do not reorder for convenience.
    *
+   * **Pre-submit fidelity (SF-5):** probes {@link lookupIdentityKeyPurpose} for MANAGEMENT
+   * **before** execute (both completion modes). Mirrors {@link registerIdentity} pre-read→throw:
+   * - `has` → {@link IdentityAlreadyRegistered} (`ALREADY_ONBOARDED`); no submit
+   * - `read_failed` → {@link IdentityOperationFailed} ambiguous; no submit
+   *   (never invent already-onboarded or lacks)
+   * - `lacks` → today's path below
+   *
    * **Completion (SF-3):** trusts SF-1 `WriteExecutionResult.completion` from {@link execute}.
    * - `completion === 'submitted'`: return `{ id }` without post-submit key-purpose assert.
    *   Submit-only `{ id }` is **not** proof that MANAGEMENT landed — confirm via
@@ -331,6 +374,43 @@ export class EvmIRSService {
     runtimeApiKey?: string
   ): Promise<OperationResult> {
     const { onchainId, holder } = input;
+
+    // SF-5 INV-5 / INV-6 / INV-16 / INV-17 / INV-18: key-purpose probe before assemble/execute.
+    const probe = await lookupIdentityKeyPurpose(
+      this.rpcUrl(),
+      onchainId,
+      holder,
+      IDENTITY_KEY_PURPOSE_MANAGEMENT
+    );
+    if (probe.status === 'has') {
+      logger.info(LOG_SYSTEM, 'grantHolderManagementKey: already-onboarded pre-submit', {
+        holder,
+        onchainId,
+      });
+      throw new IdentityAlreadyRegistered(
+        `Holder ${holder} already holds MANAGEMENT on identity ${onchainId}.`,
+        holder,
+        onchainId,
+        onchainId
+      );
+    }
+    if (probe.status === 'read_failed') {
+      logger.info(LOG_SYSTEM, 'grantHolderManagementKey: pre-submit key-purpose read_failed', {
+        holder,
+        onchainId,
+        cause: probe.cause,
+      });
+      throw new IdentityOperationFailed(
+        `grantHolderManagementKey for ${holder} on ${onchainId}: could not verify MANAGEMENT ` +
+          `via RPC before submit (ambiguous — not already-onboarded, not lacks). Do not guess; ` +
+          `retry the probe or resume after RPC recovers.`,
+        'grantHolderManagementKey',
+        probe.cause,
+        onchainId
+      );
+    }
+    // INV-7: lacks → today's execute + SF-3 completion branch
+
     const action = assembleGrantHolderManagementKeyAction(onchainId, holder);
 
     const result = await this.execute(
