@@ -3,13 +3,24 @@
  *
  * RED-FIRST: these tests fail against `createIdentity` deploy calldata and against the
  * absence of `grantHolderManagementKey` until the management-key layout is implemented.
+ *
+ * SF-3: grant submit-only skips post-submit keyHasPurpose (NON-VACUITY); confirmed path
+ * remains byte-identical. INV ids below refer to SF-3 invariants unless noted.
  */
 import { encodeAbiParameters, encodeEventTopics, keccak256 } from 'viem';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import type { ExecutionConfig } from '@openzeppelin/ui-types';
+import type {
+  ExecutionConfig,
+  OperationResult,
+  RelayerExecutionConfig,
+} from '@openzeppelin/ui-types';
 import { IdentityOperationFailed } from '@openzeppelin/ui-types';
 
+import {
+  WriteCompletionDisagreementError,
+  type SignAndBroadcast,
+} from '../../capabilities/helpers';
 import { createIRS, type CreateIRSOptions, type EvmIRSCapability } from '../../capabilities/irs';
 import { ID_FACTORY_EVENTS_ABI } from '../abis';
 import { IDENTITY_KEY_PURPOSE_MANAGEMENT } from '../identity-keys';
@@ -46,6 +57,26 @@ const HOLDER = '0xaAaAaAaaAaAaAaaAaAAAAAAAAaaaAaAaAaaAaaAa';
 const OPERATOR = '0xDD601cb1dDb4471e88C51A5f64A9d54294179142';
 const ONCHAINID = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 const TX_HASH = '0xtx';
+const PLACEHOLDER_TX = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const RELAYER_TX_ID = 'relayer-grant-sub-99';
+const RUNTIME_API_KEY = 'super-secret-runtime-api-key-grant';
+
+function relayerConfig(
+  transactionOptions?: RelayerExecutionConfig['transactionOptions']
+): RelayerExecutionConfig {
+  return {
+    method: 'relayer',
+    serviceUrl: 'https://relayer.example',
+    relayer: {
+      relayerId: 'r1',
+      name: 'test-relayer',
+      address: '0x1111111111111111111111111111111111111111',
+      network: 'sepolia',
+      paused: false,
+    },
+    ...(transactionOptions !== undefined ? { transactionOptions } : {}),
+  };
+}
 
 function addressKeyHash(address: string): `0x${string}` {
   return keccak256(encodeAbiParameters([{ type: 'address' }], [address as `0x${string}`]));
@@ -75,13 +106,14 @@ function walletLinkedReceipt() {
   };
 }
 
-function makeCapability(): {
+function makeCapability(signAndBroadcastImpl?: ReturnType<typeof vi.fn>): {
   capability: EvmIRSCapability;
   signAndBroadcast: ReturnType<typeof vi.fn>;
 } {
-  const signAndBroadcast = vi.fn().mockResolvedValue({ txHash: TX_HASH });
+  const signAndBroadcast = signAndBroadcastImpl ?? vi.fn().mockResolvedValue({ txHash: TX_HASH });
   const options: CreateIRSOptions = {
-    signAndBroadcast,
+    // Test double: `vi.fn()` is intentionally loosely typed so `.mock.calls` stay inspectable.
+    signAndBroadcast: signAndBroadcast as unknown as SignAndBroadcast,
     addresses: { ...ADDRESSES },
     operatorManagementKey: OPERATOR,
   };
@@ -103,6 +135,14 @@ function makeCapability(): {
   return { capability, signAndBroadcast };
 }
 
+/** Submit-early strategy: result carries completion + preferred relayer id (SF-1 path). */
+function submitOnlySignAndBroadcast(): ReturnType<typeof vi.fn> {
+  return vi.fn().mockResolvedValue({
+    txHash: PLACEHOLDER_TX,
+    result: { completion: 'submitted', relayerTxId: RELAYER_TX_ID },
+  });
+}
+
 describe('operatorManagementKey construction', () => {
   it('rejects a missing operatorManagementKey at construction', () => {
     expect(() =>
@@ -119,10 +159,12 @@ describe('operatorManagementKey construction', () => {
           rpcUrl: 'https://rpc.example.com',
           nativeCurrency: { name: 'Test Ether', symbol: 'TETH', decimals: 18 },
         } as never,
+        // `operatorManagementKey` is deliberately omitted — that is what this test asserts on,
+        // so the cast goes through `unknown` to model the malformed consumer call.
         {
           signAndBroadcast: vi.fn(),
           addresses: { ...ADDRESSES },
-        } as CreateIRSOptions
+        } as unknown as CreateIRSOptions
       )
     ).toThrow(InvalidOperatorManagementKeyError);
   });
@@ -225,15 +267,20 @@ describe('grantHolderManagementKey', () => {
     ]);
   });
 
-  it('gives the holder MANAGEMENT on the identity after grant (keyHasPurpose)', async () => {
+  it('INV-7: gives the holder MANAGEMENT on the identity after grant (keyHasPurpose)', async () => {
     mockReadContract.mockResolvedValueOnce(true);
     const { capability } = makeCapability();
 
-    await capability.grantHolderManagementKey(
+    const out = await capability.grantHolderManagementKey(
       { onchainId: ONCHAINID, holder: HOLDER },
       EXEC_CONFIG
     );
 
+    // INV-3: confirmed arm returns fresh { id } — no completion leak
+    expect(out).toEqual({ id: TX_HASH });
+    expect(Object.keys(out)).toEqual(['id']);
+
+    expect(mockReadContract).toHaveBeenCalledTimes(1);
     expect(mockReadContract).toHaveBeenCalledWith(
       expect.objectContaining({
         address: ONCHAINID,
@@ -243,7 +290,7 @@ describe('grantHolderManagementKey', () => {
     );
   });
 
-  it('maps post-grant keyHasPurpose RPC failure to IdentityOperationFailed with onchainId', async () => {
+  it('INV-7 / INV-8: maps post-grant keyHasPurpose RPC failure to IdentityOperationFailed with onchainId', async () => {
     mockReadContract.mockRejectedValueOnce(new Error('rpc down'));
     const { capability } = makeCapability();
 
@@ -255,5 +302,253 @@ describe('grantHolderManagementKey', () => {
     expect(error).toBeInstanceOf(IdentityOperationFailed);
     expect((error as IdentityOperationFailed).message).toContain(ONCHAINID);
     expect((error as IdentityOperationFailed).message).toMatch(/could not verify/i);
+    // INV-19: resume text may include onchainId; must not dump runtime secrets (none passed here)
+    expect((error as IdentityOperationFailed).message).not.toContain(RUNTIME_API_KEY);
+  });
+
+  it('INV-8: confirmed-path lacks MANAGEMENT → IdentityOperationFailed (not silent { id })', async () => {
+    mockReadContract.mockResolvedValueOnce(false);
+    const { capability } = makeCapability();
+
+    await expect(
+      capability.grantHolderManagementKey({ onchainId: ONCHAINID, holder: HOLDER }, EXEC_CONFIG)
+    ).rejects.toBeInstanceOf(IdentityOperationFailed);
+
+    expect(mockReadContract).toHaveBeenCalledTimes(1);
+  });
+
+  it('INV-7: explicit completion confirmed still asserts keyHasPurpose', async () => {
+    mockReadContract.mockResolvedValueOnce(true);
+    const { capability, signAndBroadcast } = makeCapability();
+
+    const out = await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig({ completion: 'confirmed' })
+    );
+
+    expect(out).toEqual({ id: TX_HASH });
+    expect(signAndBroadcast).toHaveBeenCalledOnce();
+    expect(mockReadContract).toHaveBeenCalledTimes(1);
+  });
+
+  it('INV-12: two confirmed grants both invoke execute + assert (no outcome cache)', async () => {
+    mockReadContract.mockResolvedValue(true);
+    const { capability, signAndBroadcast } = makeCapability();
+
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      EXEC_CONFIG
+    );
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      EXEC_CONFIG
+    );
+
+    expect(signAndBroadcast).toHaveBeenCalledTimes(2);
+    expect(mockReadContract).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('grantHolderManagementKey — submit-only (SF-3)', () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.restoreAllMocks());
+
+  it('INV-2 / INV-5 / INV-6 NON-VACUITY: submit-only returns { id }, skips keyHasPurpose (thrower unused)', async () => {
+    // NON-VACUITY RED construction: always-assert would invoke this thrower and fail.
+    mockReadContract.mockRejectedValue(
+      new Error('NON-VACUITY: assert must not run on submit-only')
+    );
+    const { capability, signAndBroadcast } = makeCapability(submitOnlySignAndBroadcast());
+
+    // RED proof: confirmed path with the same thrower fails (defect class is real).
+    const confirmedCap = makeCapability().capability;
+    await expect(
+      confirmedCap.grantHolderManagementKey({ onchainId: ONCHAINID, holder: HOLDER }, EXEC_CONFIG)
+    ).rejects.toBeInstanceOf(IdentityOperationFailed);
+    expect(
+      mockReadContract.mock.calls.length,
+      'NON-VACUITY RED: confirmed path must invoke keyHasPurpose'
+    ).toBeGreaterThan(0);
+
+    mockReadContract.mockClear();
+    mockReadContract.mockRejectedValue(
+      new Error('NON-VACUITY: assert must not run on submit-only')
+    );
+
+    const out = await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig()
+    );
+
+    expect(
+      out,
+      'INV-2 violated: submit-only must return literal { id } with preferred relayer id'
+    ).toEqual({ id: RELAYER_TX_ID });
+    expect(Object.keys(out)).toEqual(['id']);
+    expect(out).not.toHaveProperty('completion');
+    expect(out).not.toHaveProperty('onchainId');
+    expect(out).not.toHaveProperty('hasManagement');
+
+    expect(
+      signAndBroadcast,
+      'INV-5 / INV-13 violated: submit-only must still submit addKey via execute'
+    ).toHaveBeenCalledOnce();
+    const action = signAndBroadcast.mock.calls[0][0];
+    expect(action.functionName).toBe('addKey');
+
+    expect(
+      mockReadContract,
+      'INV-6 / INV-10 / INV-18 NON-VACUITY GREEN: keyHasPurpose must not run on submit-only'
+    ).not.toHaveBeenCalled();
+  });
+
+  it('INV-1 / INV-6: options-only submitted (result absent) also skips keyHasPurpose', async () => {
+    mockReadContract.mockRejectedValue(new Error('must not probe'));
+    const { capability, signAndBroadcast } = makeCapability(
+      vi.fn().mockResolvedValue({ txHash: TX_HASH })
+    );
+
+    const out = await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig({ completion: 'submitted' })
+    );
+
+    expect(out).toEqual({ id: TX_HASH });
+    expect(signAndBroadcast).toHaveBeenCalledOnce();
+    expect(mockReadContract).not.toHaveBeenCalled();
+  });
+
+  it('INV-14: call order assemble→execute→skip — no keyHasPurpose before or after submit-only execute', async () => {
+    const order: string[] = [];
+    mockReadContract.mockImplementation(async () => {
+      order.push('keyHasPurpose');
+      return true;
+    });
+    const sab = vi.fn().mockImplementation(async () => {
+      order.push('execute');
+      return {
+        txHash: PLACEHOLDER_TX,
+        result: { completion: 'submitted', relayerTxId: RELAYER_TX_ID },
+      };
+    });
+    const { capability } = makeCapability(sab);
+
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig()
+    );
+
+    expect(order).toEqual(['execute']);
+  });
+
+  it('INV-14 confirmed: execute then keyHasPurpose (never reverse)', async () => {
+    const order: string[] = [];
+    mockReadContract.mockImplementation(async () => {
+      order.push('keyHasPurpose');
+      return true;
+    });
+    const sab = vi.fn().mockImplementation(async () => {
+      order.push('execute');
+      return { txHash: TX_HASH };
+    });
+    const { capability } = makeCapability(sab);
+
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      EXEC_CONFIG
+    );
+
+    expect(order).toEqual(['execute', 'keyHasPurpose']);
+  });
+
+  it('INV-9: disagreement through grant → WriteCompletionDisagreementError, not IdentityOperationFailed', async () => {
+    mockReadContract.mockResolvedValue(true);
+    const { capability } = makeCapability(
+      vi.fn().mockResolvedValue({
+        txHash: TX_HASH,
+        result: { completion: 'submitted' },
+      })
+    );
+
+    const error = await capability
+      .grantHolderManagementKey(
+        { onchainId: ONCHAINID, holder: HOLDER },
+        relayerConfig({ completion: 'confirmed' })
+      )
+      .then(() => undefined)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(WriteCompletionDisagreementError);
+    expect(error).not.toBeInstanceOf(IdentityOperationFailed);
+    expect((error as WriteCompletionDisagreementError).code).toBe('WRITE_COMPLETION_DISAGREEMENT');
+    expect(mockReadContract, 'INV-9: disagreement must abort before assert').not.toHaveBeenCalled();
+  });
+
+  it('INV-15: adapter does not re-fire onSubmitted during grant submit-only', async () => {
+    const onSubmitted = vi.fn();
+    mockReadContract.mockResolvedValue(true);
+    const { capability } = makeCapability(submitOnlySignAndBroadcast());
+
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig({ completion: 'submitted', onSubmitted })
+    );
+
+    expect(
+      onSubmitted,
+      'INV-15 violated: adapter must not re-fire onSubmitted on grant submit-only'
+    ).not.toHaveBeenCalled();
+  });
+
+  it('INV-11 / INV-18: submit-only does not auto-poll hasIdentityKeyPurpose after resolve', async () => {
+    mockReadContract.mockRejectedValue(new Error('must not probe'));
+    const { capability } = makeCapability(submitOnlySignAndBroadcast());
+
+    await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig()
+    );
+
+    // Public resume read remains available but must not have been invoked by grant.
+    expect(mockReadContract).not.toHaveBeenCalled();
+    mockReadContract.mockResolvedValueOnce(true);
+    await expect(
+      capability.hasIdentityKeyPurpose({
+        onchainId: ONCHAINID,
+        address: HOLDER,
+        purpose: IDENTITY_KEY_PURPOSE_MANAGEMENT,
+      })
+    ).resolves.toEqual({ status: 'has' });
+    expect(mockReadContract).toHaveBeenCalledTimes(1);
+  });
+
+  it('INV-19: submit-only success { id } does not embed runtimeApiKey', async () => {
+    mockReadContract.mockRejectedValue(new Error('must not probe'));
+    const { capability } = makeCapability(submitOnlySignAndBroadcast());
+
+    const out = await capability.grantHolderManagementKey(
+      { onchainId: ONCHAINID, holder: HOLDER },
+      relayerConfig(),
+      undefined,
+      RUNTIME_API_KEY
+    );
+
+    expect(JSON.stringify(out)).not.toContain(RUNTIME_API_KEY);
+    expect(out).toEqual({ id: RELAYER_TX_ID });
+  });
+
+  it('INV-4: public grant return type remains OperationResult (not a completion union)', () => {
+    expectTypeOf<
+      EvmIRSCapability['grantHolderManagementKey']
+    >().returns.resolves.toEqualTypeOf<OperationResult>();
+    expectTypeOf<OperationResult>().toEqualTypeOf<{ id: string }>();
+  });
+
+  it('INV-21: grant method remains required on capability; attachClaim/registerIdentity still present', () => {
+    const { capability } = makeCapability();
+    expect(typeof capability.grantHolderManagementKey).toBe('function');
+    expect(typeof capability.attachClaim).toBe('function');
+    expect(typeof capability.registerIdentity).toBe('function');
+    expect(typeof capability.deployOnchainId).toBe('function');
   });
 });

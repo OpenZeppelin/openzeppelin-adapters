@@ -115,7 +115,7 @@ describe('IRS writes', () => {
 
       const result = await capability.deployOnchainId({ holder: HOLDER }, EXEC_CONFIG);
 
-      expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID });
+      expect(result).toEqual({ id: TX_HASH, onchainId: ONCHAINID, completion: 'confirmed' });
       const action = signAndBroadcast.mock.calls[0][0];
       expect(action.functionName).toBe('createIdentityWithManagementKeys');
       expect(action.address.toLowerCase()).toBe(ADDRESSES.identityFactory);

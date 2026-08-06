@@ -9,6 +9,7 @@ import type {
 
 import { createEvmIRSService } from '../irs';
 import type { DeployReceiptWaitOptions, EvmIRSAddresses } from '../irs';
+import type { DeployOnchainIdOutcome } from '../irs/deploy-result';
 import type { IdentityKeyPurposeLookup } from '../irs/identity-keys';
 import { assertValidOperatorManagementKey } from '../irs/management-key';
 import type { FactoryIdentityLookup } from '../irs/onchain-reader';
@@ -49,11 +50,26 @@ export interface CreateIRSOptions {
 }
 
 export type { EvmIRSAddresses } from '../irs';
+export type {
+  DeployOnchainIdConfirmedResult,
+  DeployOnchainIdOutcome,
+  DeployOnchainIdSubmittedResult,
+} from '../irs/deploy-result';
 export type { IdentityKeyPurposeLookup } from '../irs/identity-keys';
 
 /**
- * EVM IRS capability surface, including adapter extensions not yet on the shared
- * {@link IRSCapability} contract in `@openzeppelin/ui-types`.
+ * EVM IRS capability surface.
+ *
+ * A **plain extension** of the shared `IRSCapability`: as of `@openzeppelin/ui-types` 3.5.0
+ * `IRSCapability.deployOnchainId` already returns the completion-keyed
+ * {@link DeployOnchainIdOutcome}, so submit-only is honestly typed by the shared interface
+ * itself (INV-4 / INV-6) and `onchainId` is still never optionalized.
+ *
+ * This restores two-way assignability with `IRSCapability`: the previous
+ * `Omit<IRSCapability, 'deployOnchainId'>` + local override widened the return type in a way
+ * the shared interface rejected, so an `EvmIRSCapability` could not be passed where an
+ * `IRSCapability` was expected. Locked by the INV-4 type guards in
+ * `irs.deploy-submit-only.test.ts`.
  */
 export interface EvmIRSCapability extends IRSCapability {
   getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup>;

@@ -8,6 +8,9 @@ export { createExplorer } from './explorer';
 export {
   createIRS,
   type CreateIRSOptions,
+  type DeployOnchainIdConfirmedResult,
+  type DeployOnchainIdOutcome,
+  type DeployOnchainIdSubmittedResult,
   type EvmIRSCapability,
   type IdentityKeyPurposeLookup,
 } from './irs';
