@@ -1,5 +1,13 @@
 # @openzeppelin/adapters-vite
 
+## 8.0.0
+
+### Patch Changes
+
+- Updated dependencies [[`cac12a1`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/cac12a1751e336ba3fb096f97f9e935079f0f397)]:
+  - @openzeppelin/adapter-evm@2.6.0
+  - @openzeppelin/adapter-polkadot@2.2.0
+
 ## 7.0.0
 
 ### Patch Changes
