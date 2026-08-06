@@ -98,20 +98,28 @@ switch (lookup.status) {
 **CONVENTION:** deploy does not auto-call `getFactoryIdentity` on the submit-only path.
 Resume ownership stays with the caller.
 
-## Pattern 4: Shared `IRSCapability` only (CONVENTION gap)
+## Pattern 4: Shared `IRSCapability` only
 
 ```ts
-import type { IRSCapability } from '@openzeppelin/ui-types';
+import type { DeployOnchainIdOutcome, IRSCapability } from '@openzeppelin/ui-types';
 
 async function deployViaShared(irs: IRSCapability, holder: string, cfg: ExecutionConfig) {
-  // Typed as Promise<DeployOnchainIdResult> — confirmed-only at the type boundary.
-  // Runtime may still return the submit-only shape if completion === 'submitted'.
-  // Prefer EvmIRSCapability for honest narrowing.
-  return irs.deployOnchainId({ holder }, cfg);
+  // Typed as Promise<DeployOnchainIdOutcome> on the SHARED interface (ui-types >= 3.5.0),
+  // so the submit-only arm is visible here and narrowing is enforced by the compiler.
+  const outcome: DeployOnchainIdOutcome = await irs.deployOnchainId({ holder }, cfg);
+
+  if (outcome.completion === 'confirmed') {
+    return outcome.onchainId; // required on this arm
+  }
+  // submit-only: persist outcome.id and resolve the address on resume
+  return undefined;
 }
 ```
 
-Do **not** “fix” this by shipping `onchainId?:` on ui-types `DeployOnchainIdResult`.
+No adapter-specific type is required: `EvmIRSCapability extends IRSCapability` plainly and adds
+only the EVM-specific reads, so both spellings narrow identically and are mutually assignable.
+
+Do **not** “fix” anything here by shipping `onchainId?:` on ui-types `DeployOnchainIdResult`.
 
 ## Common Mistakes
 
@@ -120,8 +128,8 @@ Do **not** “fix” this by shipping `onchainId?:` on ui-types `DeployOnchainId
 - **Waiting on the zero placeholder hash** after submit-early strategy return — reopens
   the hang / misreport class SF-2 removes.
 - **Treating submit-only `{ id }` as finality** — it is submission acknowledgement only.
-- **Typing only as `IRSCapability` then reading `completion`** — shared interface stays
-  confirmed-only (**CONVENTION** gap); use `DeployOnchainIdOutcome`.
+- **Reading `onchainId` without narrowing** — the return type is a union on both the shared
+  `IRSCapability` and `EvmIRSCapability`; check `completion === 'confirmed'` first.
 - **Optionalizing `onchainId` on a shared type** — forbidden; silently degrades confirmed
   callers (SC-006).
 - **Catching disagreement as `IdentityOperationFailed`** — use

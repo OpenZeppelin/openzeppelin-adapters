@@ -79,19 +79,29 @@ if (outcome.completion === 'submitted') {
 | No CREATE2 / fabricated identity address | **MECHANISM** | No field + no probe path on submit-only |
 | Disagreement THROW (both directions) | **MECHANISM** | **SF-1** — before deploy post-submit |
 | Prefer `relayerTxId` for submit-only `{ id }` | **MECHANISM** | **SF-1** `preferSubmissionId` |
-| ui-types `IRSCapability` still types confirmed-only `DeployOnchainIdResult` | **CONVENTION** gap | Shared-interface-only consumers; use `EvmIRSCapability` / `DeployOnchainIdOutcome` for honest submit-only |
+| Shared ui-types `IRSCapability.deployOnchainId` returns `DeployOnchainIdOutcome` | **MECHANISM** | ui-types >= 3.5.0 owns the union — consumers typed only as `IRSCapability` must narrow too |
 | Caller owns Relayer poll + `getFactoryIdentity` after submit-only | **CONVENTION** | Resume ownership — not auto-called by deploy |
 | Adapter does not re-fire `onSubmitted` | **CONVENTION** | Documented + tested; types do not prevent a second fire |
 
 **Forbidden:** shipping `onchainId?:` on one shared return type (silently degrades every
 confirmed-path caller).
 
-### Adapter-first typing
+### Shared-interface typing
 
-`EvmIRSCapability` uses `Omit<IRSCapability, 'deployOnchainId'>` +
-`Promise<DeployOnchainIdOutcome>`. Shared ui-types `DeployOnchainIdResult.onchainId`
-stays **required**. Consumers typed only as `IRSCapability` still see the confirmed-only
-shape — that gap is CONVENTION until a surgical ui-types widen (not triggered in SF-2).
+The outcome union lives in `@openzeppelin/ui-types` (>= 3.5.0), where
+`IRSCapability.deployOnchainId` already returns `Promise<DeployOnchainIdOutcome>`. So
+`EvmIRSCapability` is a **plain extension** — `EvmIRSCapability extends IRSCapability` — adding
+only the EVM-specific reads; it does not `Omit` or re-declare `deployOnchainId`.
+
+Submit-only is therefore honestly typed for **every** consumer, whether they hold an
+`EvmIRSCapability` or only the shared `IRSCapability`, and the two stay mutually assignable.
+`DeployOnchainIdResult` is unchanged and still exported as the confirmed arm's base, with
+`onchainId` **required** — the submit-only arm simply has no such property, so no `onchainId?:`
+appears anywhere.
+
+Earlier drafts widened the return type adapter-side via `Omit<IRSCapability, 'deployOnchainId'>`,
+which left shared-interface consumers on a confirmed-only shape. That gap is closed: the widening
+moved into ui-types, making this MECHANISM rather than a CONVENTION the adapter documents around.
 
 ### Resume after submit-only
 

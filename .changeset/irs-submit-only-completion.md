@@ -13,23 +13,32 @@ Requires `@openzeppelin/ui-types` >= 3.5.0 (the `WriteCompletion` vocabulary and
 existing callers are unaffected at runtime:
 
 ```ts
-const outcome = await irs.deployOnchainId({ holder }, {
-  method: 'relayer',
-  serviceUrl,
-  relayer,
-  transactionOptions: { completion: 'submitted' },
-});
+const outcome = await irs.deployOnchainId(
+  { holder },
+  {
+    method: 'relayer',
+    serviceUrl,
+    relayer,
+    transactionOptions: { completion: 'submitted' },
+  }
+);
 ```
 
 On a submit-only write the resolved `id` prefers the relayer submission id (`relayerTxId`) over
 the not-yet-meaningful tx hash; the confirmed path still resolves the mined tx hash.
 
 **New exports** from `@openzeppelin/adapter-evm-core` (and its `capabilities` / `irs` sub-paths):
-`DeployOnchainIdOutcome`, `DeployOnchainIdConfirmedResult`, `DeployOnchainIdSubmittedResult`
-(re-exported from `@openzeppelin/ui-types`), plus `WriteCompletionDisagreementError`,
-`WriteExecutionResult`, `SignAndBroadcastResultMeta`, `WriteCompletionDisagreementIds`,
-`resolveWriteCompletion`, `readOptionsCompletion`, `parseSignAndBroadcastResult` and
-`preferSubmissionId`.
+`DeployOnchainIdOutcome`, `DeployOnchainIdConfirmedResult` and `DeployOnchainIdSubmittedResult`,
+re-exported from `@openzeppelin/ui-types`.
+
+That is the whole of the added public surface. The completion machinery itself —
+`resolveWriteCompletion`, `readOptionsCompletion`, `parseSignAndBroadcastResult`,
+`preferSubmissionId`, `WriteCompletionDisagreementError`, `WriteExecutionResult`,
+`SignAndBroadcastResultMeta` — stays **internal** and is deliberately not re-exported from the
+package root or any sub-path. It is wired for you inside `createIRS` / `adaptSignAndBroadcast`,
+so opting in needs only `transactionOptions.completion` and, for deploys, narrowing on the
+returned discriminant. Consumers observe the disagreement failure through the thrown error's
+`code === 'WRITE_COMPLETION_DISAGREEMENT'` rather than by importing the error class.
 
 ### Migration: `deployOnchainId` returns a union
 
@@ -53,11 +62,12 @@ deploy from silently yielding an undefined address.
 
 ### Migration: executor return-type widening
 
-`EvmIRSExecutor` is now an alias of the shared `CapabilityExecutor`, widening its return type
-from `Promise<OperationResult>` (`{ id }`) to `Promise<WriteExecutionResult>`
-(`{ id, completion }`). This only affects callers that **implement** an executor and pass it to
-`createEvmIRSService` directly — the supported `createIRS({ signAndBroadcast })` entry point is
-unchanged, and adapting `signAndBroadcast` is handled internally.
+`EvmIRSExecutor` (exported) is now an alias of the shared `CapabilityExecutor` (also exported),
+widening its resolved value from `{ id }` to `{ id, completion }`. The result interface itself is
+internal and not importable, so declare the shape inline or rely on `EvmIRSExecutor` /
+`CapabilityExecutor` to supply it. This only affects callers that **implement** an executor and
+pass it to `createEvmIRSService` directly — the supported `createIRS({ signAndBroadcast })` entry
+point is unchanged, and adapting `signAndBroadcast` is handled internally.
 
 If you supply your own executor, add the discriminant:
 
@@ -72,8 +82,8 @@ const executor: EvmIRSExecutor = async (txData, config) => ({
 });
 ```
 
-Consumers only reading `.id` off a write result are unaffected: `WriteExecutionResult`
-structurally extends `OperationResult`.
+Consumers only reading `.id` off a write result are unaffected: the widened result structurally
+extends `OperationResult`, so `{ id }` access keeps compiling.
 
 ### Unchanged on purpose
 
@@ -84,7 +94,8 @@ discriminant — submit-only resume semantics were specified for the IRS saga on
 those results would add product surface no consumer requested.
 
 When `transactionOptions.completion` and the strategy's `result.completion` disagree, the write
-fails closed with `WriteCompletionDisagreementError` (code `WRITE_COMPLETION_DISAGREEMENT`)
-rather than guessing. The error carries `txHash` / `relayerTxId` so the already-submitted
-transaction remains identifiable, and it is never wrapped as an IRS-domain
-`IdentityOperationFailed`.
+fails closed rather than guessing. It rejects with an error whose `code` is
+`WRITE_COMPLETION_DISAGREEMENT` and whose `name` is `WriteCompletionDisagreementError`; match on
+`code` rather than importing the class, which stays internal. The error carries `txHash` /
+`relayerTxId` so the already-submitted transaction remains identifiable, and it is never wrapped
+as an IRS-domain `IdentityOperationFailed`.

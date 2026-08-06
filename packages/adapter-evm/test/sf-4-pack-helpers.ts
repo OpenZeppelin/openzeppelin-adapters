@@ -81,12 +81,25 @@ export function collectBundledJs(distDir: string): string {
   return bundleFiles.map((name) => readFileSync(join(distDir, name), 'utf8')).join('\n');
 }
 
-/** Accept single- or double-quote forms for the C-3 branch literal. */
+/**
+ * C-3 branch literal, tolerant of formatting but still pinned to the real comparison.
+ *
+ * A plain `includes` of `completion === 'submitted'` is brittle: bundlers and minifiers legally
+ * rewrite quote style, collapse or insert whitespace around `===`, and rename the local holding
+ * the value. Matching the exact source spelling would report the branch as missing on a
+ * cosmetically different but behaviourally identical bundle.
+ *
+ * So: allow any whitespace (including none) around `===`, either quote style, and an optional
+ * property access before `completion` (`x.completion`, `meta.completion`). Deliberately still
+ * requires both the `completion` identifier and the `submitted` string literal in one comparison
+ * — a bundle that dropped the branch cannot satisfy that, which is what C-5 non-vacuity checks.
+ */
+const C3_BRANCH_LITERAL = /(?:\.\s*)?\bcompletion\b\s*===\s*(['"`])submitted\1/;
+
+/** Accept formatting variants for the C-3 branch literal; exact match otherwise. */
 export function markerPresent(bundle: string, pattern: string): boolean {
   if (pattern === "completion === 'submitted'") {
-    return (
-      bundle.includes("completion === 'submitted'") || bundle.includes('completion === "submitted"')
-    );
+    return C3_BRANCH_LITERAL.test(bundle);
   }
   return bundle.includes(pattern);
 }

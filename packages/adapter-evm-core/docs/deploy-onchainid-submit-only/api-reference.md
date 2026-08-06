@@ -79,29 +79,27 @@ import type {
 ### `interface EvmIRSCapability`
 
 ```ts
-import type {
-  ExecutionConfig,
-  IRSCapability,
-  TransactionStatusUpdate,
-  TxStatus,
-} from '@openzeppelin/ui-types';
-import type { DeployOnchainIdOutcome } from '@openzeppelin/adapter-evm-core';
+import type { IRSCapability } from '@openzeppelin/ui-types';
 
-interface EvmIRSCapability extends Omit<IRSCapability, 'deployOnchainId'> {
-  deployOnchainId(
-    input: { holder: string },
-    executionConfig: ExecutionConfig,
-    onStatusChange?: (status: TxStatus, details: TransactionStatusUpdate) => void,
-    runtimeApiKey?: string,
-  ): Promise<DeployOnchainIdOutcome>;
-
+interface EvmIRSCapability extends IRSCapability {
+  // `deployOnchainId` is INHERITED, not re-declared: ui-types >= 3.5.0 already types it as
+  // (…) => Promise<DeployOnchainIdOutcome>.
   getFactoryIdentity(holder: string): Promise<FactoryIdentityLookup>;
+  hasIdentityKeyPurpose(input: {
+    onchainId: string;
+    address: string;
+    purpose: number;
+  }): Promise<IdentityKeyPurposeLookup>;
   // … other IRS methods unchanged by SF-2
 }
 ```
 
-Overrides only `deployOnchainId` so submit-only is honestly typed without optionalizing
-ui-types `DeployOnchainIdResult.onchainId`.
+A **plain extension** of the shared interface. The outcome union is owned by
+`@openzeppelin/ui-types`, so `deployOnchainId` needs no adapter-side `Omit` or override, and
+`EvmIRSCapability` ↔ `IRSCapability` stay mutually assignable — an `EvmIRSCapability` can be
+passed anywhere an `IRSCapability` is expected. `EvmIRSCapability` adds only the EVM-specific
+reads. Shared `DeployOnchainIdResult.onchainId` is still **required**: it is the confirmed arm's
+base, never optionalized.
 
 ### `deployOnchainId(…): Promise<DeployOnchainIdOutcome>`
 
@@ -159,7 +157,7 @@ whether to re-deploy.
 
 ---
 
-## ui-types (unchanged in SF-2)
+## ui-types (>= 3.5.0 owns the union)
 
 ```ts
 // @openzeppelin/ui-types — confirmed structural base; NOT optionalized
@@ -167,11 +165,23 @@ interface DeployOnchainIdResult extends OperationResult {
   onchainId: string; // REQUIRED
 }
 
-// IRSCapability.deployOnchainId → Promise<DeployOnchainIdResult>  (confirmed-only)
+interface DeployOnchainIdConfirmedResult extends DeployOnchainIdResult {
+  readonly completion: 'confirmed';
+}
+
+// Submit-only arm: no `onchainId` property at all
+interface DeployOnchainIdSubmittedResult extends OperationResult {
+  readonly completion: 'submitted';
+}
+
+type DeployOnchainIdOutcome = DeployOnchainIdConfirmedResult | DeployOnchainIdSubmittedResult;
+
+// IRSCapability.deployOnchainId → Promise<DeployOnchainIdOutcome>
 ```
 
-Consumers that only see `IRSCapability` do not get the submit-only arm at the type
-level (**CONVENTION** gap). Prefer `EvmIRSCapability` / `DeployOnchainIdOutcome`.
+Consumers that only see `IRSCapability` get the submit-only arm at the type level too — the
+union is on the shared interface, so narrowing on `completion` is required there as well. No
+adapter-specific type is needed for honest submit-only.
 
 ---
 
