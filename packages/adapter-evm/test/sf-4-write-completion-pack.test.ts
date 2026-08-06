@@ -17,6 +17,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import {
   assertCompletionMarkersPresent,
   assertDryRunDistInventory,
+  assertWorkspaceDistPresent,
   collectBundledJs,
   COMPLETION_PACK_MARKERS,
   expectMarkersAbsentOnSyntheticEmpty,
@@ -32,9 +33,15 @@ describe('SF-4 write-completion pack surface', () => {
   let dryRunPack: PackDryRunResult;
 
   beforeAll(() => {
-    execSync('pnpm run build', { cwd: ADAPTER_EVM_ROOT, stdio: 'pipe', encoding: 'utf8' });
+    // Consume the dist from the pre-test build step — never rebuild here. `tsdown` cleans
+    // `dist/` first, so a mid-suite `pnpm run build` races concurrent vitest files that read
+    // those same entries (`ri-capabilities-dist-isolation.test.ts`). See
+    // `assertWorkspaceDistPresent`. `npm pack` below is safe: this package defines no
+    // `prepack`/`prepare`, and `prepublishOnly` only fires on publish.
+    const workspaceDist = resolve(ADAPTER_EVM_ROOT, 'dist');
+    assertWorkspaceDistPresent(workspaceDist, 'SF-4 write-completion pack surface');
 
-    workspaceDistBundle = collectBundledJs(resolve(ADAPTER_EVM_ROOT, 'dist'));
+    workspaceDistBundle = collectBundledJs(workspaceDist);
 
     const dryRunRaw = execSync('npm pack --dry-run --json', {
       cwd: ADAPTER_EVM_ROOT,

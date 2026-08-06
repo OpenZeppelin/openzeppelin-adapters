@@ -2,7 +2,7 @@
  * SF-4 pack helpers — collect bundled JS and assert WriteCompletion / IRS markers.
  * Sibling to SF-5 harness; does not mutate SF-5 marker set (INV-25).
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect } from 'vitest';
 
@@ -44,8 +44,34 @@ export type PackDryRunResult = {
   files?: PackDryRunEntry[];
 };
 
+/**
+ * Fail loudly when the workspace `dist/` this suite reads is absent.
+ *
+ * Pack suites MUST consume the `dist/` produced by the build that runs before the test step
+ * (`ci.yml`, `publish.yml`), and must never invoke `pnpm run build` themselves. `tsdown` cleans
+ * `dist/` before emitting, so a mid-suite rebuild races every other file in the shared vitest
+ * run — notably `ri-capabilities-dist-isolation.test.ts`, which asserts those same
+ * `dist/<capability>.mjs` entries and sees them vanish.
+ *
+ * Same contract and failure class as that suite: a missing `dist/` fails loudly rather than
+ * skipping, because a guard that can silently no-op is the hole these suites exist to close.
+ */
+export function assertWorkspaceDistPresent(distDir: string, context: string): void {
+  expect(
+    existsSync(distDir),
+    `${distDir} is missing — run \`pnpm build\` before this suite (CI builds first). ` +
+      `${context} must consume the pre-built workspace dist; it must not rebuild during the ` +
+      `shared vitest run (that wipes dist for concurrent suites).`
+  ).toBe(true);
+}
+
 /** Concatenate packed/workspace `dist` `.mjs`/`.cjs` (SF-5 `collectBundledJs` shape). */
 export function collectBundledJs(distDir: string): string {
+  if (!existsSync(distDir)) {
+    throw new Error(
+      `SF-4 pack: ${distDir} is missing — run \`pnpm build\` before this suite (CI builds first).`
+    );
+  }
   const bundleFiles = readdirSync(distDir).filter(
     (name) => name.endsWith('.mjs') || name.endsWith('.cjs')
   );
