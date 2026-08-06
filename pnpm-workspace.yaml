@@ -19,6 +19,10 @@ overrides:
   # react-hook-form pin above. Consumers are unaffected (ui-types is a peer, resolved once in the
   # host app); this only constrains workspace dev/CI resolution.
   '@openzeppelin/ui-types': ^3.5.0
+  # Dedupe @types/node so vite@8 resolves once. Without this, 25.9.1 vs 26.1.1
+  # yields two vite instances and adapters-vite typecheck fails (TS2345 on
+  # MidnightAdapterPluginFactories). Same class as the ui-types pin above.
+  '@types/node': 25.9.1
   '@wagmi/core': ^2.20.3
   glob: ^11.1.0
   zod: ^3.25.76
