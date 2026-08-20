@@ -40,7 +40,6 @@ export const polkadotAdapterConfig: AdapterConfig = {
       },
       overrides: {
         '@paulmillr/qr': 'npm:qr@^0.5.0',
-        '@walletconnect/modal': '^2.7.1',
       },
     },
   },

@@ -13,7 +13,7 @@ vi.mock('../wallet/implementation/wagmi-implementation', () => {
   // --- Mock implementations for WagmiWalletImplementation methods ---
   const mockGetAvailableConnectors = vi.fn().mockResolvedValue([
     { id: 'injected', name: 'Browser Wallet' },
-    { id: 'walletConnect', name: 'WalletConnect' },
+    { id: 'metaMask', name: 'MetaMask' },
   ]);
 
   const mockConnect = vi.fn().mockImplementation(async (_connectorId: string) => ({

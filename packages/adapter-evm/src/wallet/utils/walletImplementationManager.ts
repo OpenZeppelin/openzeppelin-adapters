@@ -27,19 +27,15 @@ export async function getEvmWalletImplementation(): Promise<WagmiWalletImplement
   walletImplementationPromise = (async () => {
     try {
       logger.info(LOG_SYSTEM, 'Initializing WagmiWalletImplementation singleton (async)... ');
-      // Get appName and projectId from appConfigService for RainbowKit
+      // Get the UI kit config from appConfigService for RainbowKit.
       // This assumes appConfigService is initialized before this manager is first called.
       const initialUiKitConfig = appConfigService.getTypedNestedConfig<UiKitConfiguration>(
         'walletui',
         'config'
       );
 
-      const wcProjectId = appConfigService.getGlobalServiceParam('walletconnect', 'projectId') as
-        | string
-        | undefined;
-
       // Use factory function for proper EVM configuration
-      const instance = createEvmWalletImplementation(wcProjectId, initialUiKitConfig);
+      const instance = createEvmWalletImplementation(initialUiKitConfig);
       logger.info(LOG_SYSTEM, 'WagmiWalletImplementation singleton created (async).');
       walletImplementationInstance = instance;
       return instance;

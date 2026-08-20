@@ -16,9 +16,6 @@ describe('getEvmViteConfig', () => {
       '@rainbow-me/rainbowkit',
       '@metamask/sdk',
       'debug',
-      '@walletconnect/ethereum-provider',
-      '@walletconnect/universal-provider',
-      '@walletconnect/logger',
       'events',
     ]);
   });

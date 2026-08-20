@@ -7,7 +7,7 @@
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe, walletConnect)
+ * - Explicit connector setup (injected, metaMask, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods for RainbowKit integration
  */
@@ -51,7 +51,7 @@ function toWalletNetworkConfigs(): WalletNetworkConfig[] {
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe, walletConnect)
+ * - Explicit connector setup (injected, metaMask, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods
  *
@@ -63,14 +63,11 @@ function toWalletNetworkConfigs(): WalletNetworkConfig[] {
 export class PolkadotWalletImplementation extends WagmiWalletImplementation {
   /**
    * Creates a new PolkadotWalletImplementation instance.
-   *
-   * @param walletConnectProjectId - Optional WalletConnect project ID
    */
-  constructor(walletConnectProjectId?: string) {
+  constructor() {
     const config: WagmiWalletConfig = {
       chains: polkadotChains,
       networkConfigs: toWalletNetworkConfigs(),
-      walletConnectProjectId,
       logSystem: LOG_SYSTEM,
     };
 

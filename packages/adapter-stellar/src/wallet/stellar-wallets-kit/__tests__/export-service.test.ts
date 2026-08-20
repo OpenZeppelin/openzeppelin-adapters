@@ -62,7 +62,7 @@ export default config;`;
     expect(content).toContain('network: WalletNetwork.TESTNET'); // default value
   });
 
-  it('should handle WalletConnect project ID when provided', () => {
+  it('never emits WalletConnect configuration', () => {
     const uiKitConfig: UiKitConfiguration = {
       kitName: 'stellar-wallets-kit',
       kitConfig: {
@@ -72,9 +72,12 @@ export default config;`;
 
     const result = generateStellarWalletsKitExportables(uiKitConfig);
 
+    // WalletConnect support was removed outright. An unknown key in kitConfig is
+    // simply ignored, and nothing about WalletConnect is generated.
     const content = result['src/config/wallet/stellar-wallets-kit.config.ts'];
-    expect(content).toContain("walletConnectProjectId: 'my-project-id-123'");
-    expect(content).not.toContain('// walletConnectProjectId:');
+    expect(content).not.toContain('walletConnectProjectId');
+    expect(content).not.toContain('my-project-id-123');
+    expect(content).not.toContain('WalletConnect');
   });
 
   it('should respect network mainnet', () => {
