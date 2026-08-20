@@ -38,9 +38,10 @@ export function generateRainbowKitConfigFile(
   const appName = (config.appName as string) || opts.defaultAppName;
   const learnMoreUrl = (config.learnMoreUrl as string) || 'https://openzeppelin.com';
   // RainbowKit types `projectId` as required even though WalletConnect support was
-  // removed, so a placeholder is emitted. It is never used for a WalletConnect
-  // session because the wallet list below contains no WalletConnect-backed entries.
-  const projectId = (config.projectId as string) || 'WALLETCONNECT_REMOVED';
+  // removed, so a placeholder is emitted. A user-supplied projectId is deliberately
+  // NOT echoed back: it is a WalletConnect credential, the runtime adapter ignores
+  // it, and writing it into an exported app would imply it still does something.
+  const projectId = 'WALLETCONNECT_REMOVED';
 
   // Build the appInfo part conditionally
   const appInfoLines = [`appName: '${appName}'`];

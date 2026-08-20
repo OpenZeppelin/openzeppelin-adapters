@@ -21,6 +21,9 @@ const LOG_PREFIX = 'rainbowkit/config-service';
  *                             AppConfigService settings, user's native rainbowkit.config.ts, and programmatic overrides.
  *                             It is expected to contain a `wagmiParams` object for RainbowKit's getDefaultConfig
  *                             and potentially a `providerProps` object for RainbowKitProvider.
+ *                             Only `appName` is required. `projectId` is supplied by this
+ *                             adapter as a placeholder and any user-provided value is
+ *                             ignored, because WalletConnect support was removed.
  * @param chains Array of viem Chain objects - will be safely cast to wagmi's expected chain type
  * @param chainIdToNetworkIdMap Mapping of chain IDs to network IDs for RPC override lookups
  * @param getRpcEndpointOverride Function to get RPC endpoint overrides
@@ -51,7 +54,8 @@ export async function createRainbowKitWagmiConfig(
       return null;
     }
 
-    // Ensure essential appName and projectId are present in user's wagmiParams
+    // Ensure the essential appName is present in user's wagmiParams. projectId is
+    // deliberately not required -- see the note on finalConfigOptions below.
     if (typeof wagmiParams.appName !== 'string' || !wagmiParams.appName) {
       logger.warn(LOG_PREFIX, 'kitConfig.wagmiParams is missing or has invalid `appName`.');
       return null;
