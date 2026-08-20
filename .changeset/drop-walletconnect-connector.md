@@ -50,3 +50,26 @@ relied on WalletConnect must use one of those instead.
   `@wagmi/connectors` and `@walletconnect/modal` plus `sign-client` from the
   Stellar kit, so the packages leave the install tree entirely: `@reown/*` and
   `@walletconnect/*` both go to zero lockfile entries.
+
+## RainbowKit wallet list
+
+Removing our own connector was not sufficient. RainbowKit's default wallet list is
+largely WalletConnect-backed, so its modal still offered entries that would open a
+WalletConnect session — and with the provider stripped from the install tree those
+entries would throw when clicked.
+
+RainbowKit cannot be made WalletConnect-free by omission: `getDefaultConfig` types
+`projectId` as required, and its main entry statically ships
+`getWalletConnectConnector` and `walletConnectWallet`. So the wallet list is pinned:
+
+- **`wallets` now defaults to `injectedWallet` + `safeWallet`.** `injectedWallet`
+  covers every EIP-1193 browser extension (MetaMask, Rabby, Coinbase extension,
+  Brave); `safeWallet` covers the Safe app context. A caller-supplied
+  `kitConfig.wagmiParams.wallets` still wins.
+- **`projectId` is no longer requested.** `createRainbowKitWagmiConfig` previously
+  returned `null` when it was missing; it now passes a fixed placeholder to satisfy
+  RainbowKit's required field. The generated exported-app config emits the same and
+  no longer points users at cloud.walletconnect.com.
+
+Users lose the WalletConnect-backed entries in the RainbowKit modal — Rainbow,
+Coinbase mobile, Trust, and the WalletConnect QR option itself.
