@@ -20,7 +20,6 @@ const LOG_SYSTEM = 'adapter-evm-connection';
  */
 export function evmSupportsWalletConnection(): boolean {
   // For now, assume EVM always supports wallet connection if wagmi can be initialized.
-  // This might depend on walletConnectProjectId being available for WalletConnect to be viable.
   return true;
 }
 

@@ -15,7 +15,6 @@ export function generateStellarWalletsKitConfigFile(
   // Extract user-provided configuration options
   const appName = (config.appName as string) || 'My Stellar App';
   const network = (config.network as string) || 'TESTNET';
-  const walletConnectProjectId = (config.walletConnectProjectId as string) || '';
   const modalTitle = (config.modalTitle as string) || `Connect to ${appName}`;
   const buttonText = (config.buttonText as string) || 'Connect Wallet';
 
@@ -31,13 +30,15 @@ import {
 /**
  * Stellar Wallets Kit configuration wrapper
  * 
- * The kit supports multiple wallets including:
+ * allowAllModules() registers these wallets:
+ * - Albedo
  * - Freighter
- * - xBull  
- * - Ledger
- * - Trezor
- * - WalletConnect
- * - And more...
+ * - Rabet
+ * - xBull
+ * - LOBSTR
+ * - Hana
+ * - HOT Wallet
+ * - Klever
  */
 export const stellarWalletsKitConfig = {
   // App information
@@ -49,9 +50,6 @@ export const stellarWalletsKitConfig = {
   // UI customization
   buttonText: '${buttonText}',
   modalTitle: '${modalTitle}',
-  
-  // WalletConnect configuration
-  ${walletConnectProjectId ? `walletConnectProjectId: '${walletConnectProjectId}',` : "// walletConnectProjectId: 'YOUR_PROJECT_ID', // Get yours at https://cloud.walletconnect.com"}
 };
 
 /**

@@ -37,8 +37,11 @@ export function generateRainbowKitConfigFile(
   const config = (userConfig || {}) as Record<string, unknown>;
   const appName = (config.appName as string) || opts.defaultAppName;
   const learnMoreUrl = (config.learnMoreUrl as string) || 'https://openzeppelin.com';
-  // We provide a default projectId as it's required by RainbowKit for WalletConnect.
-  const projectId = (config.projectId as string) || 'YOUR_PROJECT_ID';
+  // RainbowKit types `projectId` as required even though WalletConnect support was
+  // removed, so a placeholder is emitted. A user-supplied projectId is deliberately
+  // NOT echoed back: it is a WalletConnect credential, the runtime adapter ignores
+  // it, and writing it into an exported app would imply it still does something.
+  const projectId = 'WALLETCONNECT_REMOVED';
 
   // Build the appInfo part conditionally
   const appInfoLines = [`appName: '${appName}'`];
@@ -51,15 +54,23 @@ export function generateRainbowKitConfigFile(
 
 // Uncomment imports as needed:
 // import { darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
+import { injectedWallet, safeWallet } from '@rainbow-me/rainbowkit/wallets';
 
 const rainbowKitAppConfig = {
   wagmiParams: {
     appName: '${appName}',
-    projectId: '${projectId}', // Get yours at https://cloud.walletconnect.com
-    
+    // RainbowKit requires this field, but WalletConnect support was removed, so it
+    // is a placeholder and no WalletConnect session is ever opened.
+    projectId: '${projectId}',
+
+    // Pinned to connectors that do not use WalletConnect. injectedWallet covers
+    // every EIP-1193 browser extension (MetaMask, Rabby, Coinbase extension, ...)
+    // and safeWallet covers the Safe app context. Adding WalletConnect-backed
+    // wallets here would reintroduce @reown/appkit and its Community Licence.
+    wallets: [{ groupName: 'Wallets', wallets: [injectedWallet, safeWallet] }],
+
     // Additional options:
     // ssr: true,
-    // wallets: [...],
   },
   providerProps: {
     appInfo: {

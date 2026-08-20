@@ -43,12 +43,6 @@ export interface WagmiWalletConfig {
   networkConfigs: WalletNetworkConfig[];
 
   /**
-   * Optional WalletConnect Project ID.
-   * If provided, WalletConnect connector will be added to default config.
-   */
-  walletConnectProjectId?: string;
-
-  /**
    * Optional initial UI kit configuration.
    * Used primarily for logging the anticipated kit name.
    */

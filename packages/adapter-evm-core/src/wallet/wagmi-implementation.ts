@@ -8,11 +8,11 @@
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe, walletConnect)
+ * - Explicit connector setup (injected, metaMask, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods for RainbowKit integration
  */
-import { injected, metaMask, safe, walletConnect } from '@wagmi/connectors';
+import { injected, metaMask, safe } from '@wagmi/connectors';
 import {
   connect,
   createConfig,
@@ -109,7 +109,6 @@ export type GetWagmiConfigForRainbowKitFn = (
  * const walletImpl = new WagmiWalletImplementation({
  *   chains: evmChains,
  *   networkConfigs: evmNetworks,
- *   walletConnectProjectId: 'your-project-id',
  * });
  *
  * // In adapter-polkadot:
@@ -124,7 +123,6 @@ export class WagmiWalletImplementation implements EvmWalletImplementation {
   private activeWagmiConfig: Config | null = null;
   private unsubscribe?: ReturnType<typeof watchAccount>;
   private initialized: boolean = false;
-  private walletConnectProjectId?: string;
   private rpcConfigUnsubscribe?: () => void;
 
   // Configuration from constructor
@@ -143,7 +141,6 @@ export class WagmiWalletImplementation implements EvmWalletImplementation {
    */
   constructor(config: WagmiWalletConfig) {
     this.logSystem = config.logSystem ?? 'WagmiWalletImplementation';
-    this.walletConnectProjectId = config.walletConnectProjectId;
 
     // Generate chains and mapping from network configs
     this.supportedChains =
@@ -266,23 +263,13 @@ export class WagmiWalletImplementation implements EvmWalletImplementation {
 
   /**
    * Creates a default WagmiConfig instance on demand.
-   * This configuration includes standard connectors (injected, MetaMask, Safe)
-   * and WalletConnect if a project ID is available.
+   * This configuration includes standard connectors (injected, MetaMask, Safe).
    * Used as a fallback or for 'custom' UI kit mode.
    *
    * @returns A Wagmi Config object.
    */
   private createDefaultConfig(): Config {
     const baseConnectors: WagmiCreateConnectorFn[] = [injected(), metaMask(), safe()];
-    if (this.walletConnectProjectId?.trim()) {
-      baseConnectors.push(walletConnect({ projectId: this.walletConnectProjectId }));
-      logger.info(this.logSystem, 'WalletConnect connector added to DEFAULT config.');
-    } else {
-      logger.warn(
-        this.logSystem,
-        'WalletConnect Project ID not provided; WC connector unavailable for DEFAULT config.'
-      );
-    }
 
     const transportsConfig = this.supportedChains.reduce(
       (acc, chainDefinition) => {

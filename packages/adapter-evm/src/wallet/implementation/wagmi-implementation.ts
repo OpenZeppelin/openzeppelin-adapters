@@ -33,18 +33,15 @@ const defaultSupportedChains = getSupportedChainsFromNetworks();
 /**
  * Create an EVM-configured WagmiWalletImplementation instance.
  *
- * @param walletConnectProjectId - Optional WalletConnect project ID
  * @param initialUiKitConfig - Optional initial UI kit configuration
  * @returns A configured WagmiWalletImplementation instance
  */
 export function createEvmWalletImplementation(
-  walletConnectProjectId?: string,
   initialUiKitConfig?: UiKitConfiguration
 ): CoreWagmiWalletImplementation {
   const config: WagmiWalletConfig = {
     chains: defaultSupportedChains,
     networkConfigs: evmNetworks,
-    walletConnectProjectId,
     initialUiKitConfig,
     logSystem: 'WagmiWalletImplementation',
   };
