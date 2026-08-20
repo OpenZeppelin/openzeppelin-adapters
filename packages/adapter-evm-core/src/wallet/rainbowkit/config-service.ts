@@ -34,6 +34,7 @@ export async function createRainbowKitWagmiConfig(
 ): Promise<Config | null> {
   try {
     const { getDefaultConfig } = await import('@rainbow-me/rainbowkit');
+    const { injectedWallet, safeWallet } = await import('@rainbow-me/rainbowkit/wallets');
     if (!getDefaultConfig) {
       logger.error(LOG_PREFIX, 'Failed to import getDefaultConfig from RainbowKit');
       return null;
@@ -53,10 +54,6 @@ export async function createRainbowKitWagmiConfig(
     // Ensure essential appName and projectId are present in user's wagmiParams
     if (typeof wagmiParams.appName !== 'string' || !wagmiParams.appName) {
       logger.warn(LOG_PREFIX, 'kitConfig.wagmiParams is missing or has invalid `appName`.');
-      return null;
-    }
-    if (typeof wagmiParams.projectId !== 'string' || !wagmiParams.projectId) {
-      logger.warn(LOG_PREFIX, 'kitConfig.wagmiParams is missing or has invalid `projectId`.');
       return null;
     }
 
@@ -100,9 +97,29 @@ export async function createRainbowKitWagmiConfig(
       {} as Record<number, ReturnType<typeof http>>
     );
 
-    // Spread all user-provided wagmiParams, then override chains and transports
+    // WalletConnect support was removed: its provider pulls in @reown/appkit, which
+    // moved to the Reown Community License at 1.8.3. RainbowKit's default wallet list
+    // is largely WalletConnect-backed, and getDefaultConfig types `projectId` as
+    // required, so we cannot simply omit it. Instead we pin the wallet list to
+    // connectors that do not use WalletConnect and pass a placeholder projectId that
+    // is never used for a WalletConnect session.
+    //
+    // injectedWallet covers every EIP-1193 browser extension (MetaMask, Rabby,
+    // Coinbase extension, Brave, ...), and safeWallet covers the Safe app context.
+    // A user-supplied `wallets` list still wins, but it is their responsibility not
+    // to reintroduce WalletConnect-backed entries.
+    const walletConnectFreeWallets = [
+      {
+        groupName: 'Wallets',
+        wallets: [injectedWallet, safeWallet],
+      },
+    ];
+
+    // Spread all user-provided wagmiParams, then override what the adapter controls.
     const finalConfigOptions = {
-      ...wagmiParams, // User's native params (appName, projectId, wallets, ssr, etc.)
+      ...wagmiParams, // User's native params (appName, ssr, wallets, ...)
+      wallets: wagmiParams.wallets ?? walletConnectFreeWallets,
+      projectId: 'WALLETCONNECT_REMOVED',
       chains: chains as WagmiConfigChains, // Adapter controls this
       transports: transportsConfig, // Adapter controls this
     };

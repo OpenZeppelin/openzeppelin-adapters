@@ -28,7 +28,12 @@ describe('RainbowKit Export Service', () => {
 
       // Check for wagmiParams content
       expect(generatedCode).toContain("appName: 'My Test dApp'");
-      expect(generatedCode).toContain("projectId: 'YOUR_PROJECT_ID'");
+      // WalletConnect support was removed. RainbowKit still types projectId as
+      // required, so a placeholder is emitted, and the wallet list is pinned to
+      // connectors that do not use WalletConnect.
+      expect(generatedCode).toContain("projectId: 'WALLETCONNECT_REMOVED'");
+      expect(generatedCode).toContain('injectedWallet, safeWallet');
+      expect(generatedCode).not.toContain('cloud.walletconnect.com');
 
       // Check for appInfo content
       expect(generatedCode).toContain("learnMoreUrl: 'https://test-dapp.com'");
