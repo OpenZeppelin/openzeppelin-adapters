@@ -12,7 +12,7 @@
   ],
   "author": "Aleksandr Pasevin <aleksandr.pasevin@openzeppelin.com>",
   "homepage": "https://github.com/OpenZeppelin/openzeppelin-adapters#readme",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
@@ -45,7 +45,7 @@
     "test:types": "vitest run src/contract/__tests__/complete-type-coverage.test.ts",
     "typecheck": "tsc --noEmit",
     "validate-stellar-types": "node scripts/check-stellar-sdk-types.js",
-    "postinstall": "pnpm validate-stellar-types || echo '⚠️  Stellar SDK type validation warnings detected'"
+    "postinstall": "pnpm validate-stellar-types || echo '\u26a0\ufe0f  Stellar SDK type validation warnings detected'"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.8.0",
