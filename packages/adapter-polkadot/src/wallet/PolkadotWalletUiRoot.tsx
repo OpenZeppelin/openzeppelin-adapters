@@ -59,6 +59,18 @@ export const PolkadotWalletUiRoot: React.FC<PolkadotWalletUiRootProps> = ({ chil
 
   let finalChildren = children;
 
+  // RainbowKit's provider component and CSS are imported dynamically, and
+  // uiKitManager deliberately clears kitProviderComponent / isKitAssetsLoaded and
+  // notifies listeners *before* that import resolves whenever the kit changes.
+  // During that window the kit is already 'rainbowkit' but the provider is absent,
+  // so rendering children would mount RainbowKit consumers (its ConnectButton)
+  // outside RainbowKitProvider -- which throws "Transaction hooks must be used
+  // within RainbowKitProvider" and white-screens the app. Withhold children until
+  // the provider is ready instead.
+  const needsKitProvider = currentFullUiKitConfig?.kitName === 'rainbowkit' && !error;
+  const isKitProviderReady = Boolean(kitProviderComponent) && isKitAssetsLoaded;
+  const isAwaitingKitProvider = needsKitProvider && !isKitProviderReady;
+
   if (
     currentFullUiKitConfig?.kitName === 'rainbowkit' &&
     kitProviderComponent &&
@@ -86,7 +98,7 @@ export const PolkadotWalletUiRoot: React.FC<PolkadotWalletUiRootProps> = ({ chil
     <WagmiProvider config={wagmiConfig} reconnectOnMount={true}>
       <QueryClientProvider client={queryClient}>
         <WagmiProviderInitializedContext.Provider value={!error}>
-          {finalChildren}
+          {isAwaitingKitProvider ? null : finalChildren}
         </WagmiProviderInitializedContext.Provider>
       </QueryClientProvider>
     </WagmiProvider>
