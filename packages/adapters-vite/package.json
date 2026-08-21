@@ -11,7 +11,7 @@
     "tooling"
   ],
   "author": "Aleksandr Pasevin <aleksandr.pasevin@openzeppelin.com>",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
