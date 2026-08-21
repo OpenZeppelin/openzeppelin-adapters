@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapter-polkadot",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "private": false,
   "description": "Polkadot Adapter for UI Builder",
   "keywords": [
