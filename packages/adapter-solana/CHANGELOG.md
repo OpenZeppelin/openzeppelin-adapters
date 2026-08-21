@@ -1,5 +1,20 @@
 # @openzeppelin/transaction-form-adapter-solana
 
+## 4.0.1
+
+### Patch Changes
+
+- [#79](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/79) [`d7f645e`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/d7f645e2f5294a434a23448cd6fc7b3d18d23429) Thanks [@pasevin](https://github.com/pasevin)! - Ship the AGPL-3.0 licence text inside each published package.
+
+  The repository has a root `LICENSE`, but npm does not walk up to the repository root
+  when packing, and these packages declare `files: ["dist", "src"]`. So every published
+  tarball carried an AGPL-3.0 declaration in its `package.json` with no accompanying
+  licence text — verified with `npm pack --dry-run`, which listed no `LICENSE` entry.
+
+  Each published package now has its own copy, which npm includes automatically. The
+  two private packages (`adapter-evm-core`, `adapter-runtime-utils`) are left alone
+  since they are never packed and the repository root covers them.
+
 ## 4.0.0
 
 ### Major Changes
