@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapter-stellar",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Stellar Adapter for UI Builder",
   "keywords": [
     "openzeppelin",
@@ -45,7 +45,7 @@
     "test:types": "vitest run src/contract/__tests__/complete-type-coverage.test.ts",
     "typecheck": "tsc --noEmit",
     "validate-stellar-types": "node scripts/check-stellar-sdk-types.js",
-    "postinstall": "pnpm validate-stellar-types || echo '\u26a0\ufe0f  Stellar SDK type validation warnings detected'"
+    "postinstall": "pnpm validate-stellar-types || echo '⚠️  Stellar SDK type validation warnings detected'"
   },
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.8.0",

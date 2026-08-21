@@ -1,6 +1,6 @@
 {
   "name": "@openzeppelin/adapter-midnight",
-  "version": "2.2.0",
+  "version": "4.0.0",
   "description": "Midnight Adapter for UI Builder",
   "keywords": [
     "openzeppelin",
