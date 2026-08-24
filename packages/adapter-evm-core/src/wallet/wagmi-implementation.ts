@@ -8,11 +8,11 @@
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe)
+ * - Explicit connector setup (injected, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods for RainbowKit integration
  */
-import { injected, metaMask, safe } from '@wagmi/connectors';
+import { injected, safe } from '@wagmi/connectors';
 import {
   connect,
   createConfig,
@@ -263,13 +263,23 @@ export class WagmiWalletImplementation implements EvmWalletImplementation {
 
   /**
    * Creates a default WagmiConfig instance on demand.
-   * This configuration includes standard connectors (injected, MetaMask, Safe).
+   * This configuration includes standard connectors (injected, Safe).
    * Used as a fallback or for 'custom' UI kit mode.
+   *
+   * The dedicated `metaMask()` connector is deliberately absent: it pulls in
+   * `@metamask/sdk`, which ships a proprietary ConsenSys licence restricted to
+   * Non-Commercial Use and requiring any derivative to carry that same
+   * restriction forward. We publish under AGPL-3.0, which forbids conveying the
+   * work under added restrictions, so the two cannot both be satisfied.
+   *
+   * The MetaMask browser extension still connects through `injected()` plus
+   * EIP-6963 discovery, which `createConfig` enables by default. What is lost is
+   * MetaMask *mobile* deep-link / QR pairing, which only the SDK provided.
    *
    * @returns A Wagmi Config object.
    */
   private createDefaultConfig(): Config {
-    const baseConnectors: WagmiCreateConnectorFn[] = [injected(), metaMask(), safe()];
+    const baseConnectors: WagmiCreateConnectorFn[] = [injected(), safe()];
 
     const transportsConfig = this.supportedChains.reduce(
       (acc, chainDefinition) => {

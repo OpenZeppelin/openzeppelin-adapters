@@ -45,8 +45,6 @@ overrides:
   'js-yaml@>=4.0.0 <4.2.0': ^4.2.0
   'uuid@<11.1.1': ^11.1.1
   '@babel/core@<7.29.6': ^7.29.6
-  '@metamask/sdk@<0.33.1': ^0.33.1
-  '@metamask/sdk-communication-layer@<0.33.1': ^0.33.1
   'ip-address@<=10.1.0': ^10.1.1
 # pnpm 11+ — allow dependency install/build scripts (see ui-builder pnpm-workspace.yaml)
 allowBuilds:
