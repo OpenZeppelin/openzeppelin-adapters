@@ -7,7 +7,7 @@
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe)
+ * - Explicit connector setup (injected, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods for RainbowKit integration
  */
@@ -51,7 +51,7 @@ function toWalletNetworkConfigs(): WalletNetworkConfig[] {
  * - RPC override logic with user configuration support
  * - Dynamic RPC change listener for config invalidation
  * - Chain ID to network ID mapping
- * - Explicit connector setup (injected, metaMask, safe)
+ * - Explicit connector setup (injected, safe)
  * - Sophisticated config caching with invalidation
  * - UI kit configuration methods
  *
