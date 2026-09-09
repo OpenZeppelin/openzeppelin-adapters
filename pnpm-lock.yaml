@@ -11,7 +11,7 @@ overrides:
   '@paulmillr/qr': npm:qr@^0.5.0
   '@types/react': ^19.1.8
   react-hook-form: 7.80.0
-  '@openzeppelin/ui-types': ^3.5.0
+  '@openzeppelin/ui-types': ^3.5.2
   '@types/node': 25.9.1
   '@wagmi/core': ^2.20.3
   glob: ^11.1.0
@@ -73,7 +73,7 @@ importers:
         version: 8.57.1(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
       '@vitejs/plugin-react':
         specifier: ^4.7.0
-        version: 4.7.0(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.7.0(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
       commitizen:
         specifier: ^4.3.1
         version: 4.3.1(@types/node@25.9.1)(typescript@5.9.3)
@@ -121,7 +121,7 @@ importers:
         version: 0.19.0(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(synckit@0.11.12)(typescript@5.9.3)
       vite:
         specifier: ^8.0.5
-        version: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)
+        version: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)
 
   packages/adapter-evm:
     dependencies:
@@ -151,17 +151,17 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
-        specifier: ^2.0.0
-        version: 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.9.0
+        version: 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-react':
-        specifier: ^2.0.1
-        version: 2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.3.2
+        version: 3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.8
         version: 2.2.10(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(wagmi@2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76))
@@ -209,7 +209,7 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76)
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
       wagmi:
         specifier: ^2.16.1
         version: 2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
@@ -236,17 +236,17 @@ importers:
         version: 2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76)
     devDependencies:
       '@openzeppelin/ui-components':
-        specifier: ^2.0.0
-        version: 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+        specifier: ^3.9.0
+        version: 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@openzeppelin/ui-react':
-        specifier: ^2.0.1
-        version: 2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+        specifier: ^3.3.2
+        version: 3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@rainbow-me/rainbowkit':
         specifier: ^2.0.0
         version: 2.2.10(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(wagmi@2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.14)(bufferutil@4.1.0)(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76))
@@ -279,7 +279,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
       wagmi:
         specifier: ^2.16.1
         version: 2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.14)(bufferutil@4.1.0)(react@18.3.1))(react@18.3.1)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76)
@@ -348,17 +348,17 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
-        specifier: ^2.0.0
-        version: 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.9.0
+        version: 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-react':
-        specifier: ^2.0.1
-        version: 2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.3.2
+        version: 3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -382,7 +382,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
   packages/adapter-polkadot:
     dependencies:
@@ -418,17 +418,17 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
-        specifier: ^2.0.0
-        version: 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.9.0
+        version: 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-react':
-        specifier: ^2.0.1
-        version: 2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.3.2
+        version: 3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@rainbow-me/rainbowkit':
         specifier: ^2.2.8
         version: 2.2.10(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(wagmi@2.19.5(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react@19.2.14)(bufferutil@4.1.0)(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.84.1(@babel/core@7.29.7)(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)(viem@2.44.4(bufferutil@4.1.0)(typescript@5.9.3)(zod@3.25.76))(zod@3.25.76))
@@ -461,13 +461,13 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
   packages/adapter-runtime-utils:
     devDependencies:
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@types/node':
         specifier: 25.9.1
         version: 25.9.1
@@ -476,7 +476,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
   packages/adapter-solana:
     dependencies:
@@ -509,11 +509,11 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -534,7 +534,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
   packages/adapter-stellar:
     dependencies:
@@ -567,14 +567,14 @@ importers:
         specifier: workspace:*
         version: link:../adapter-runtime-utils
       '@openzeppelin/ui-components':
-        specifier: ^2.0.0
-        version: 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^3.9.0
+        version: 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@openzeppelin/ui-types':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.5.2
+        version: 3.5.2
       '@openzeppelin/ui-utils':
-        specifier: ^2.0.0
-        version: 2.0.0
+        specifier: ^4.0.1
+        version: 4.0.1
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -601,7 +601,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
   packages/adapters-vite:
     devDependencies:
@@ -631,10 +631,10 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^8.0.5
-        version: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)
+        version: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.0
-        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
 
 packages:
 
@@ -690,6 +690,10 @@ packages:
 
   '@babel/generator@7.29.7':
     resolution: {integrity: sha512-DkXD5OJQaAQIdZ1bt3UZdEnHAn9Imd3IVBdX03UFe+ony9Ojw5pzr9YVKGDY1jt+Gcn/FnGkNf8r+Vj5NOJWtQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/generator@7.29.8':
+    resolution: {integrity: sha512-gZbepsdh3WDtgZKWL+vTPh71LSBrm/Y4/QDZBVCcYfmeTEEuoOYwlSy+G1StfJg+/Zy550u/3TATbm7qDbbMtg==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-compilation-targets@7.29.7':
@@ -753,6 +757,11 @@ packages:
 
   '@babel/parser@7.29.7':
     resolution: {integrity: sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
+
+  '@babel/parser@7.29.8':
+    resolution: {integrity: sha512-E8lTAYNB1KW+FH+VGJuZM1ioAx2E6oVlvQFRrf5P8ZZmsiJXYAD9vTFV7yyEURNzgh1dFqMZuO6tUwcARbqFCA==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -871,12 +880,20 @@ packages:
     resolution: {integrity: sha512-EhlfNQtZ+NK22w5BM61ciuiq1m58ed33Wr1Xan//ZRTy6hgjnwyCffRYwzsGXdASJSUJ1guZILsErh1eQcl+zw==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/traverse@7.29.8':
+    resolution: {integrity: sha512-I5z7H3bf/41ktsNVLtpN0wAa336HkqIHQ5BuPLEhTkt1jVSyZpeNKIzTgEWmlxjdg81R0IgUCcaE+Ok3NvrfZg==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/types@7.29.8':
+    resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
 
   '@base-org/account@2.4.0':
@@ -1349,12 +1366,16 @@ packages:
   '@metamask/safe-event-emitter@2.0.0':
     resolution: {integrity: sha512-/kSXhY692qiV1MXu6EeOZvg5nECLclxNXcKCxJ3cXQgYuRymRHpdx/t7JXfsK+JLjwA1e1c1/SBrlQYpusC29Q==}
 
-  '@metamask/safe-event-emitter@3.1.2':
-    resolution: {integrity: sha512-5yb2gMI1BDm0JybZezeoX/3XhPDOtTbcFvpTXM9kxsoZjPZFh4XciqRbpD6N86HYZqWDhEaKUDuOyR0sQHEjMA==}
+  '@metamask/safe-event-emitter@3.1.3':
+    resolution: {integrity: sha512-Pnl74ukgoOkSItBRmZ9nnhdBbRtBI1ZvpeYjKNgxjVzDWa/AtruKZc+7LjfZ0iO8iYqh7Ts3bPs2Gu7M2hSf7g==}
     engines: {node: '>=12.0.0'}
 
   '@metamask/superstruct@3.2.1':
     resolution: {integrity: sha512-fLgJnDOXFmuVlB38rUN5SmU7hAFQcCjrg3Vrxz67KTY7YHFnSNEKvX4avmEBdOI0yTCxZjwMCFEqsC8k2+Wd3g==}
+    engines: {node: '>=16.0.0'}
+
+  '@metamask/superstruct@3.4.1':
+    resolution: {integrity: sha512-caTaaBUcwBGbUNf3r0uT48upX4nECRbKhQ9pPOfW4sIkfcIUUDV4S9DZxq/5fuNPVt5KWpyd5xIIz0sP+iWLlg==}
     engines: {node: '>=16.0.0'}
 
   '@metamask/utils@11.11.0':
@@ -1545,19 +1566,23 @@ packages:
     resolution: {integrity: sha512-G3Zhg0imaT9Ej1cE9Cq5d4uQvW+DinD2GvRuiPWo3+O9KI8ivBnGJkjEGgK9Ja3/QsUNIfx8Gk5Mdw2sPXjVWA==}
     engines: {node: '>=22.14.0', npm: use pnpm, pnpm: '>=9', yarn: use pnpm}
 
-  '@openzeppelin/ui-components@2.3.1':
-    resolution: {integrity: sha512-oT2/dETEwGLlVazWbxm8WObkbra5902wQSVXPU9EVDzCEKEt8zyLHwqPx2GU7II/8QUbGYJQIYlPBCRhLWIXGQ==}
+  '@openzeppelin/ui-components@3.9.0':
+    resolution: {integrity: sha512-BGKrZSW//KiretMJss7HKdwB/YtkrUjFrGVc+9SpsDJgBIgVJSBkjPXRSlbNb0eO+L+5p/KJh/qnXrMfLnaShw==}
     peerDependencies:
+      '@pierre/trees': 1.0.0-beta.6
       react: ^19.0.0
       react-dom: ^19.0.0
+    peerDependenciesMeta:
+      '@pierre/trees':
+        optional: true
 
   '@openzeppelin/ui-dev-cli@0.6.2':
     resolution: {integrity: sha512-9vxvFidp7t+wM+8B7Kdp+EdHddMf5Q7wGK1FD1rLcNxOKBqhxAkMiXbVuPF9ZLNkGiInSJqlGu8j1OPVKKN17w==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
-  '@openzeppelin/ui-react@2.0.1':
-    resolution: {integrity: sha512-ABWehWcsy+/enH1fW7DzV8q5vT+3Jy3mLu8BNiFFWB/d7x6RrCcOolZGC1Meh0B4HweXFDOYAutzuSNdIjgBag==}
+  '@openzeppelin/ui-react@3.3.2':
+    resolution: {integrity: sha512-YjCMw3tMRaHv6IE9yIIKMT8NbmzEy7J1ZEGzrdQ3irWz7yheh3YFmPBBISuwDyrCmBT9CgH4t7FRXddQapfCvw==}
     peerDependencies:
       '@tanstack/react-query': ^5.0.0
       react: ^19.0.0
@@ -1567,11 +1592,11 @@ packages:
     resolution: {integrity: sha512-RGsMf4SARvzHJr0VesNss8JVgRGvqEINcK/e2XFXJb6QvkmaPzOoJylJGrMn5IevI0JWsyAXzhSrGRLmlBKpbg==}
     engines: {node: '>=20.19.0'}
 
-  '@openzeppelin/ui-types@3.5.0':
-    resolution: {integrity: sha512-J8q8JK3MY+8mGOXZNHGd+jXBOffrd4p/owgpCKkghCutCtvdf1KtY6bGw+xYCxSA8/Fi57RhPH/+fuqNzOV/9A==}
+  '@openzeppelin/ui-types@3.5.2':
+    resolution: {integrity: sha512-4fVfhHlzwK6MzpAGws3XJVQ5ynQRXIlJmrJdWU/Num88roe2rZ+9h7a9AM884i0BcEr0I1XPaxFuRKrj3l3qyg==}
 
-  '@openzeppelin/ui-utils@2.0.0':
-    resolution: {integrity: sha512-nOFe2H8Yeg/gGX64NDHDPg4icPCCLKo9Y4S0LJFOmucFJ7o7VhG/WYf+lXRxCgUgkShd8ctTB0hDg/vDVnWrkA==}
+  '@openzeppelin/ui-utils@4.0.1':
+    resolution: {integrity: sha512-EHw2q4ZD2hE+vbpDsmY3AV6Kb88yFHviAHlKiLxPS/cJboawtGPoexIwGE90f6uKhUmcGjax53GQTmPDnjWJxg==}
 
   '@oxc-project/types@0.107.0':
     resolution: {integrity: sha512-QFDRbYfV2LVx8tyqtyiah3jQPUj1mK2+RYwxyFWyGoys6XJnwTdlzO6rdNNHOPorHAu5Uo34oWRKcvNpbJarmQ==}
@@ -3569,8 +3594,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  acorn@8.17.0:
-    resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
+  acorn@8.18.0:
+    resolution: {integrity: sha512-lGq+9yr1/GuAWaVYIHRjvvySG5/4VfKIvC8EWxStPdcDh/Ka7FG3twP6v4d5BkravUilhIAsG4Qj83t02LWUPQ==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -4079,6 +4104,10 @@ packages:
   connect@3.7.0:
     resolution: {integrity: sha512-ZqRXc+tZukToSNmh5C2iWMSoV3X1YUcPbqEM4DkEG5tNQXrQUZCNVGGv3IuicnkMtPfGf3Xtp8WCXs295iQ1pQ==}
     engines: {node: '>= 0.10.0'}
+
+  content-type@2.1.0:
+    resolution: {integrity: sha512-mj7UPXE0jaqaOsukNZRUEfEi2AcL7C/vwmwcHV0O97eO1E1pxBZuyjlZrx5seTaNBg1U6+o35wpa35Qfcc+7ag==}
+    engines: {node: '>=18'}
 
   conventional-changelog-angular@7.0.0:
     resolution: {integrity: sha512-ROjNchA9LgfNMTTFSIWPzebCwOGFdgkEq45EnvvrmSLvCtAw0HSmrCs7/ty+wAeYUZyNay0YMUNYFTRL72PkBQ==}
@@ -5067,6 +5096,14 @@ packages:
   hermes-parser@0.35.0:
     resolution: {integrity: sha512-9JLjeHxBx8T4CAsydZR49PNZUaix+WpQJwu9p2010lu+7Kwl6D/7wYFFJxoz+aXkaaClp9Zfg6W6/zVlSJORaA==}
 
+  highlight.js@11.11.2:
+    resolution: {integrity: sha512-oaXMACAU0kzOMXBjWpNcX+vlwSBCIAiZ9BHa7gA15NOTtT2L/l8OSZDuqS2XppOhZBPJ7hm4o8ep2kyuip2uEQ==}
+    engines: {node: '>=12.0.0'}
+
+  highlight.js@11.12.0:
+    resolution: {integrity: sha512-nbfWpyRMcMrPMmDwJB+dhX/eiaPKtc2RB+0QZskqJ3WjRA/FDS0e9hZrx8EC/lbEv8gXy98FcDbNa/dspAaJMg==}
+    engines: {node: '>=12.0.0'}
+
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
@@ -5155,11 +5192,6 @@ packages:
   ignore@7.0.5:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
-
-  image-size@1.2.1:
-    resolution: {integrity: sha512-rH+46sQJ2dlwfjfhCyNx5thzrv+dtmBIhPHk0zgRUukHzZ/kRueTJXoYYsclBaKcSMBWuGbOFXtioLpzTb5euw==}
-    engines: {node: '>=16.x'}
-    hasBin: true
 
   immediate@3.0.6:
     resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
@@ -5525,8 +5557,8 @@ packages:
     resolution: {integrity: sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==}
     hasBin: true
 
-  js-yaml@3.15.0:
-    resolution: {integrity: sha512-ttBQIIQPDeLjpPOohtUdXuXUVoA2uIB6fEH9HyJ7234s5mBJ5wTx20njxplLZQgLaOfpmPQA7X2t5AX6tIPbog==}
+  js-yaml@3.15.2:
+    resolution: {integrity: sha512-6EuL879VkRA+1Cz578mKMiKvjPNEuk6+r1JaFzoSWejZmtf7xWbIyw1e3KkxlkzTIt9Taw6JBhEppG7utc1P+w==}
     hasBin: true
 
   js-yaml@4.2.0:
@@ -5813,6 +5845,9 @@ packages:
   lower-case@2.0.2:
     resolution: {integrity: sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==}
 
+  lowlight@3.3.0:
+    resolution: {integrity: sha512-0JNhgFoPvP6U6lE/UdVsSq99tn6DhjjpAj5MxG49ewd2mOBVtwWYIT8ClyABhq198aXXODMU6Ox8DrGy/CpTZQ==}
+
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -5891,61 +5926,61 @@ packages:
   merge@2.1.1:
     resolution: {integrity: sha512-jz+Cfrg9GWOZbQAnDQ4hlVnQky+341Yk5ru8bZSe6sIDTCIg8n9i/u7hSQGSVOF3C7lH6mGtqjkiT9G4wFLL0w==}
 
-  metro-babel-transformer@0.83.7:
-    resolution: {integrity: sha512-sBqBkt6kNut/88bv+Ucvm4yqdPetbvAEsHzi3MAgJEifOSYYzX5Z5Kgw3TFOrwf/mHJTOBG2ONlaMHoyfP15TA==}
+  metro-babel-transformer@0.83.8:
+    resolution: {integrity: sha512-tnn0J5wzgTgTx2OJy3Cwr1y79bJz4eNgFQd+2HENOs5Vz6QOMnt05z7J+BedIo9wIbpEa0iN9U1nerxyvMRE9g==}
     engines: {node: '>=20.19.4'}
 
-  metro-cache-key@0.83.7:
-    resolution: {integrity: sha512-W1c2Nmx8MiJTJt+eWhMO08z9VKi3kZOaz99IYGdqeqDgY9j+yZjXl62rUav4Di0heZfh4/n2s722PqRL1OODeg==}
+  metro-cache-key@0.83.8:
+    resolution: {integrity: sha512-I38PtcjT4crS5HY9UQ8i6z8S7tJ2WewtPGr/OwS6FcLKfy5T/1hlTaFw+wozUZkEtNpR6Gc0oJuvuKCbSoSN5A==}
     engines: {node: '>=20.19.4'}
 
-  metro-cache@0.83.7:
-    resolution: {integrity: sha512-E9SRePXQ1Zvlj79VcOk57q7VC7rMHMFQ+jhmPHBiq+dJ0bJB5BL87lWZF6oh5X76Cci5tpDuQNaDwwuSCToEeg==}
+  metro-cache@0.83.8:
+    resolution: {integrity: sha512-aogMG5WbKzW5000otNjYrS9hIoORzkCI1faPJK+vxQLaf2BorJKBBFe/jl2Tfsi1mZUglS2EBuBt8B3JB7MYDQ==}
     engines: {node: '>=20.19.4'}
 
-  metro-config@0.83.7:
-    resolution: {integrity: sha512-83mjWFbFOt2GeJ6pFIum5mSnc1uTsZJAtD8o4ej0s4NVsYsA7fB+pHvTfHhFrpeMONaobu2riKavkPei05Er/Q==}
+  metro-config@0.83.8:
+    resolution: {integrity: sha512-crNbNy+/B4tCne2+HjUshwvC57gNBQj+V9fFSy3lHH2RlKcLHib3Mil/SfTX8Pfh2fCY5pPuSu2OKa7YiadB+Q==}
     engines: {node: '>=20.19.4'}
 
-  metro-core@0.83.7:
-    resolution: {integrity: sha512-6yn3w1wnltT6RQl7p7YES2l95ArC+mWrOssEiH8p5/DDrJS65/szf9LsC9JrBv8c5DdvSY3V3f0GRYg0Ox7hCg==}
+  metro-core@0.83.8:
+    resolution: {integrity: sha512-NTyOUOQaQKvQgJG9VI2ymN6KTM7gHEqkVFhkPc9bK4BsHSTz/EaXuFBXtC+wtwINLeH9tbusL/jfsSmdEmuU7A==}
     engines: {node: '>=20.19.4'}
 
-  metro-file-map@0.83.7:
-    resolution: {integrity: sha512-+j0F1m+FQYVAQ6syf+mwhIPV5GoFQrkInX8bppuc50IzNsZbMrp8R5H/Sx/K2daQ3YEa9F/XwkeZT8gzJfgeCw==}
+  metro-file-map@0.83.8:
+    resolution: {integrity: sha512-+W++EUuzEXIfWQEFTWQMVThzhWbnJL4gRNJ9WSHzIAM5pT7gsprUxo9+2hrfirURm/TLvrKwhq37oCECJcDSyQ==}
     engines: {node: '>=20.19.4'}
 
-  metro-minify-terser@0.83.7:
-    resolution: {integrity: sha512-MfJar2IS4tBRuLb9svwb0Gu5l9BsH+pcRm8eGcEi/wy8MzZinfinh5dFLt2nWkocnulIgtGB5NkFDdbXqMXKhQ==}
+  metro-minify-terser@0.83.8:
+    resolution: {integrity: sha512-7tU0J5/c7LZaZJwTlOb1xq0NepTFvGzRxigDhZOq4jSE6g0BRHmBqe7XvLH3WcRiJNGy+eshcZr34RpMjb6mmg==}
     engines: {node: '>=20.19.4'}
 
-  metro-resolver@0.83.7:
-    resolution: {integrity: sha512-WSJIENlMcoSsuz66IfBHOkgfp3KJt2UW2TnEHPf1b8pIG2eEXNOVmo2+03A0H17WY2XGXWgxL0CG7FAopqgB1A==}
+  metro-resolver@0.83.8:
+    resolution: {integrity: sha512-piU0NVTI9i37YztDVF5rtn9uxP3NebVT0xZM9NKJ9z0jbigrctUQksi3NoYIeJMvL6Wn2dgAehpcmmnfn+gUwA==}
     engines: {node: '>=20.19.4'}
 
-  metro-runtime@0.83.7:
-    resolution: {integrity: sha512-9GKkJURaB2iyYoEExKnedzAHzxmKtSi+k0tsZUvMoU27tBZJElchYt7JH/Ai/XzYAI9lCAaV7u5HZSI8J5Z+wQ==}
+  metro-runtime@0.83.8:
+    resolution: {integrity: sha512-f7FfeM0pamq8vrvs8aO9KvIUabbUKe0WkHFpLt6Q9yIIIsORqNFwlgJeHGraOFPU7Cxqj5yLXkJu5bT1uwDXvw==}
     engines: {node: '>=20.19.4'}
 
-  metro-source-map@0.83.7:
-    resolution: {integrity: sha512-JgA1h7oc1a1jydBe1GhVFsUoMYo3wLPk7oRA32rjlDsq+sP2JLt9x2p2lWbNSxTm/u8NV4VRid3hvEJgcX8tKw==}
+  metro-source-map@0.83.8:
+    resolution: {integrity: sha512-60Uor7bM+KsVewLkLCcZfkPFCbqjPDdoSmeBuT3+ye+ac80BuLWbbR8DpyxWpUqQeZPdaAT5ZqFgDIs8BNEcVA==}
     engines: {node: '>=20.19.4'}
 
-  metro-symbolicate@0.83.7:
-    resolution: {integrity: sha512-g4suyxw20WOHWI680c+Kq4wC/NF+Hx5pRH9afrMp+sMTxqLeKcPR1Xf4wMhsjlbvx7LbIREdke6q928jEjvJWw==}
+  metro-symbolicate@0.83.8:
+    resolution: {integrity: sha512-ZLrbqOqQ+m+Mpv7zo65XEXkNqVYvgUbY7tIsb9e1zSSmU/4C3D6DjaJvRHqcAdl0mkg8TI/csKooAEa5xcZNwg==}
     engines: {node: '>=20.19.4'}
     hasBin: true
 
-  metro-transform-plugins@0.83.7:
-    resolution: {integrity: sha512-Ss0FpBiZDjX2kwhukMDl5sNdYK8T/06IPqxNE4H6PTlRlfs9q11cef13c/xESY/Pm4VCkp1yJUZO3kXzvMxQFA==}
+  metro-transform-plugins@0.83.8:
+    resolution: {integrity: sha512-9JRPkvi+m0QH2Y/w5RjCF9mHqOUNFpMFLDDLhKUjhcKESh8Wm3HKDdHXHVldTN1lTToCIabv81nF0zyJzKEJ5g==}
     engines: {node: '>=20.19.4'}
 
-  metro-transform-worker@0.83.7:
-    resolution: {integrity: sha512-UegCo7ygB2fT64mRK2nbAjQVJ1zSwIIHy8d96jJv2nKZFDaViYBiughEdu5HM/Ceq0WN3LZrZk3zhl9aoiLYFw==}
+  metro-transform-worker@0.83.8:
+    resolution: {integrity: sha512-Pa2hOfhUmWpI/dmkhsLq8uGyFHK2opoEK7j/YCiRtqNSe0YzzxYguXTNgg8AMiuZfc9LPcB1AhGENS10O5wcIw==}
     engines: {node: '>=20.19.4'}
 
-  metro@0.83.7:
-    resolution: {integrity: sha512-SPaPEyvTsTmd0LpT7RaZciQyDw2i/JB7+iY9L5VfBo72+psescFxBqpI1TL9dnL+pmnfkU+l/J1mEEGLeF65EQ==}
+  metro@0.83.8:
+    resolution: {integrity: sha512-ZbJDJCDlvv0O3QHVbhZkyP2/DtebfEoDZ3wVyYHgu6Uoy6DmmE/bis6lIDBYh+kWPuaueJDegyutPjkIBLtZDQ==}
     engines: {node: '>=20.19.4'}
     hasBin: true
 
@@ -6091,9 +6126,9 @@ packages:
   near-api-js@5.1.1:
     resolution: {integrity: sha512-h23BGSKxNv8ph+zU6snicstsVK1/CTXsQz4LuGGwoRE24Hj424nSe4+/1tzoiC285Ljf60kPAqRCmsfv9etF2g==}
 
-  negotiator@1.0.0:
-    resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
-    engines: {node: '>= 0.6'}
+  negotiator@1.1.0:
+    resolution: {integrity: sha512-NMPBRMJgiQHjbd8phG3Vebdx4kZ1H121rbl5IkMqeOsahptB9BKo/d7oJ3zTXqTgagn2bWlNSXkh0QUGM31RYg==}
+    engines: {node: '>=18'}
 
   next-themes@0.4.6:
     resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
@@ -6156,8 +6191,8 @@ packages:
   nwsapi@2.2.23:
     resolution: {integrity: sha512-7wfH4sLbt4M0gCDzGE6vzQBo0bfTKjU7Sfpqy/7gs1qBfYz2vEJH6vXcBKpO3+6Yu1telwd0t9HpyOoLEQQbIQ==}
 
-  ob1@0.83.7:
-    resolution: {integrity: sha512-9M5kpuOLyTPogMtZiQUIxdAZxl7Dxs6tVBbJErSumsqGMuhVSoUbkfeZ3XNPpLpwBBtqY5QDUzGwggLHX3slQg==}
+  ob1@0.83.8:
+    resolution: {integrity: sha512-pk7el+eTOzfSKMAY4QBiiwKzegXn633JQj13y+pW5E5IdS+yV2CfDJ9Hf20K/LKy8nCrP9dAmd7XOk52OJxifA==}
     engines: {node: '>=20.19.4'}
 
   object-assign@4.1.1:
@@ -6379,8 +6414,8 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  picomatch@4.0.5:
-    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+  picomatch@4.0.7:
+    resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
   pidtree@0.6.0:
@@ -6458,8 +6493,8 @@ packages:
   preact@10.29.0:
     resolution: {integrity: sha512-wSAGyk2bYR1c7t3SZ3jHcM6xy0lcBcDel6lODcs9ME6Th++Dx2KU+6D3HD8wMMKGA8Wpw7OMd3/4RGzYRpzwRg==}
 
-  preact@10.29.7:
-    resolution: {integrity: sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q==}
+  preact@10.29.8:
+    resolution: {integrity: sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==}
     peerDependencies:
       preact-render-to-string: '>=5'
     peerDependenciesMeta:
@@ -6597,9 +6632,6 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
-
-  queue@6.0.2:
-    resolution: {integrity: sha512-iHZWu+q3IdFZFX36ro/lKBkSvfkztY5Y7HMiPlOUjhupPcG2JMfst2KKEpu5XndviX/3UhFbRngUPNKtgvtZiA==}
 
   randombytes@2.1.0:
     resolution: {integrity: sha512-vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ==}
@@ -7229,8 +7261,8 @@ packages:
     resolution: {integrity: sha512-wK0Ri4fOGjv/XPy8SBHZChl8CM7uMc5VML7SqiQ0zG7+J5Vr+RMQDoHa2CNT6KHUnTGIXH34UDMkPzAUyapBZg==}
     engines: {node: '>=8'}
 
-  terser@5.49.0:
-    resolution: {integrity: sha512-SNiDnXyHSrxVcIOtVbULzcTmniUiwcV7Nwdyj1twVubeTmbjoa8p69KKDpfkdoOavuM4/GRm1+ykI8qqnavHoA==}
+  terser@5.51.2:
+    resolution: {integrity: sha512-bWnjSNscmuI+GJze6ZupnHP8G/cTcsJF+bXCeQknk2SHQsgbNJnLrqiH9jZ2W4STPVXH2mDKKRX3iwPhc9Cn/Q==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -7538,6 +7570,10 @@ packages:
     resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
 
+  uuid@14.0.2:
+    resolution: {integrity: sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ==}
+    hasBin: true
+
   validator@13.15.26:
     resolution: {integrity: sha512-spH26xU080ydGggxRyR1Yhcbgx+j3y5jbNXk/8L+iRvdIEQ4uTRH2Sgf2dokud6Q4oAtsbNvJ1Ft+9xmm6IZcA==}
     engines: {node: '>= 0.10'}
@@ -7765,8 +7801,8 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@7.5.12:
-    resolution: {integrity: sha512-1xGnbYN3zbog9CwuNDQULNRrTCLIn46/WmpR1f0w6PsCYQHkylZr5vkd6kfMZYV6pRnQkcPNRyiA8LsrNKyhpg==}
+  ws@7.5.13:
+    resolution: {integrity: sha512-rsKI6xDBFVf4r/x8XyChGK04QR/XHroxs/jUcoWvtEZM8TPU/X/uIY9B1CsSzYws9ZJb/6bbBu7dPhFW00CAoA==}
     engines: {node: '>=8.3.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -8006,6 +8042,14 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jsesc: 3.1.0
 
+  '@babel/generator@7.29.8':
+    dependencies:
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
+      '@jridgewell/gen-mapping': 0.3.13
+      '@jridgewell/trace-mapping': 0.3.31
+      jsesc: 3.1.0
+
   '@babel/helper-compilation-targets@7.29.7':
     dependencies:
       '@babel/compat-data': 7.29.7
@@ -8060,6 +8104,10 @@ snapshots:
   '@babel/parser@7.29.7':
     dependencies:
       '@babel/types': 7.29.7
+
+  '@babel/parser@7.29.8':
+    dependencies:
+      '@babel/types': 7.29.8
 
   '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@7.29.7)':
     dependencies:
@@ -8186,12 +8234,29 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@babel/traverse@7.29.8':
+    dependencies:
+      '@babel/code-frame': 7.29.7
+      '@babel/generator': 7.29.8
+      '@babel/helper-globals': 7.29.7
+      '@babel/parser': 7.29.8
+      '@babel/template': 7.29.7
+      '@babel/types': 7.29.8
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@babel/types@7.29.0':
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
   '@babel/types@7.29.7':
+    dependencies:
+      '@babel/helper-string-parser': 7.29.7
+      '@babel/helper-validator-identifier': 7.29.7
+
+  '@babel/types@7.29.8':
     dependencies:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
@@ -8447,7 +8512,7 @@ snapshots:
       eth-json-rpc-filters: 6.0.1
       eventemitter3: 5.0.4
       keccak: 3.0.4
-      preact: 10.29.7
+      preact: 10.29.8
       sha.js: 2.4.12
     transitivePeerDependencies:
       - preact-render-to-string
@@ -8907,7 +8972,7 @@ snapshots:
       camelcase: 5.3.1
       find-up: 4.1.0
       get-package-type: 0.1.0
-      js-yaml: 3.15.0
+      js-yaml: 3.15.2
       resolve-from: 5.0.0
 
   '@istanbuljs/schema@0.1.6': {}
@@ -9047,7 +9112,7 @@ snapshots:
   '@metamask/eth-json-rpc-provider@2.3.2':
     dependencies:
       '@metamask/json-rpc-engine': 7.3.3
-      '@metamask/safe-event-emitter': 3.1.2
+      '@metamask/safe-event-emitter': 3.1.3
       '@metamask/utils': 8.5.0
     transitivePeerDependencies:
       - supports-color
@@ -9055,7 +9120,7 @@ snapshots:
   '@metamask/json-rpc-engine@7.3.3':
     dependencies:
       '@metamask/rpc-errors': 6.4.0
-      '@metamask/safe-event-emitter': 3.1.2
+      '@metamask/safe-event-emitter': 3.1.3
       '@metamask/utils': 8.5.0
     transitivePeerDependencies:
       - supports-color
@@ -9076,9 +9141,11 @@ snapshots:
 
   '@metamask/safe-event-emitter@2.0.0': {}
 
-  '@metamask/safe-event-emitter@3.1.2': {}
+  '@metamask/safe-event-emitter@3.1.3': {}
 
   '@metamask/superstruct@3.2.1': {}
+
+  '@metamask/superstruct@3.4.1': {}
 
   '@metamask/utils@11.11.0':
     dependencies:
@@ -9109,7 +9176,7 @@ snapshots:
   '@metamask/utils@8.5.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.2.1
+      '@metamask/superstruct': 3.4.1
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
@@ -9123,7 +9190,7 @@ snapshots:
   '@metamask/utils@9.3.0':
     dependencies:
       '@ethereumjs/tx': 4.2.0
-      '@metamask/superstruct': 3.2.1
+      '@metamask/superstruct': 3.4.1
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
       '@types/debug': 4.1.13
@@ -9415,10 +9482,10 @@ snapshots:
       - debug
       - supports-color
 
-  '@openzeppelin/ui-components@2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
+  '@openzeppelin/ui-components@3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
     dependencies:
-      '@openzeppelin/ui-types': 3.5.0
-      '@openzeppelin/ui-utils': 2.0.0
+      '@openzeppelin/ui-types': 3.5.2
+      '@openzeppelin/ui-utils': 4.0.1
       '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-checkbox': 1.3.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@radix-ui/react-collapsible': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -9438,7 +9505,9 @@ snapshots:
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       date-fns: 4.4.0
+      highlight.js: 11.12.0
       lodash: 4.18.1
+      lowlight: 3.3.0
       lucide-react: 0.510.0(react@18.3.1)
       next-themes: 0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
@@ -9455,10 +9524,10 @@ snapshots:
       - tailwindcss
       - typescript
 
-  '@openzeppelin/ui-components@2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@openzeppelin/ui-components@3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
-      '@openzeppelin/ui-types': 3.5.0
-      '@openzeppelin/ui-utils': 2.0.0
+      '@openzeppelin/ui-types': 3.5.2
+      '@openzeppelin/ui-utils': 4.0.1
       '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@radix-ui/react-checkbox': 1.3.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@radix-ui/react-collapsible': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -9478,7 +9547,9 @@ snapshots:
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       date-fns: 4.4.0
+      highlight.js: 11.12.0
       lodash: 4.18.1
+      lowlight: 3.3.0
       lucide-react: 0.510.0(react@19.2.4)
       next-themes: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
@@ -9502,33 +9573,35 @@ snapshots:
       commander: 13.1.0
       picocolors: 1.1.1
 
-  '@openzeppelin/ui-react@2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
+  '@openzeppelin/ui-react@3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@18.3.1))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
     dependencies:
-      '@openzeppelin/ui-components': 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
-      '@openzeppelin/ui-types': 3.5.0
-      '@openzeppelin/ui-utils': 2.0.0
+      '@openzeppelin/ui-components': 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      '@openzeppelin/ui-types': 3.5.2
+      '@openzeppelin/ui-utils': 4.0.1
       '@tanstack/react-query': 5.91.2(react@18.3.1)
       lucide-react: 0.510.0(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
     transitivePeerDependencies:
       - '@babel/runtime'
+      - '@pierre/trees'
       - '@types/react'
       - '@types/react-dom'
       - tailwindcss
       - typescript
 
-  '@openzeppelin/ui-react@2.0.1(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@openzeppelin/ui-react@3.3.2(@babel/runtime@7.29.7)(@tanstack/react-query@5.91.2(react@19.2.4))(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
-      '@openzeppelin/ui-components': 2.3.1(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
-      '@openzeppelin/ui-types': 3.5.0
-      '@openzeppelin/ui-utils': 2.0.0
+      '@openzeppelin/ui-components': 3.9.0(@babel/runtime@7.29.7)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+      '@openzeppelin/ui-types': 3.5.2
+      '@openzeppelin/ui-utils': 4.0.1
       '@tanstack/react-query': 5.91.2(react@19.2.4)
       lucide-react: 0.510.0(react@19.2.4)
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
     transitivePeerDependencies:
       - '@babel/runtime'
+      - '@pierre/trees'
       - '@types/react'
       - '@types/react-dom'
       - tailwindcss
@@ -9536,14 +9609,14 @@ snapshots:
 
   '@openzeppelin/ui-tailwind-utils@0.1.1': {}
 
-  '@openzeppelin/ui-types@3.5.0': {}
+  '@openzeppelin/ui-types@3.5.2': {}
 
-  '@openzeppelin/ui-utils@2.0.0':
+  '@openzeppelin/ui-utils@4.0.1':
     dependencies:
-      '@openzeppelin/ui-types': 3.5.0
+      '@openzeppelin/ui-types': 3.5.2
       clsx: 2.1.1
       tailwind-merge: 3.5.0
-      uuid: 11.1.1
+      uuid: 14.0.2
       validator: 13.15.26
 
   '@oxc-project/types@0.107.0': {}
@@ -10634,7 +10707,7 @@ snapshots:
   '@react-native/codegen@0.84.1(@babel/core@7.29.7)':
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       hermes-parser: 0.32.0
       invariant: 2.2.4
       nullthrows: 1.1.1
@@ -10646,9 +10719,9 @@ snapshots:
       '@react-native/dev-middleware': 0.84.1(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       debug: 4.4.3
       invariant: 2.2.4
-      metro: 0.83.7(bufferutil@4.1.0)
-      metro-config: 0.83.7(bufferutil@4.1.0)
-      metro-core: 0.83.7
+      metro: 0.83.8(bufferutil@4.1.0)
+      metro-config: 0.83.8(bufferutil@4.1.0)
+      metro-core: 0.83.8
       semver: 7.8.5
     transitivePeerDependencies:
       - bufferutil
@@ -10661,9 +10734,9 @@ snapshots:
       '@react-native/dev-middleware': 0.84.1(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       debug: 4.4.3
       invariant: 2.2.4
-      metro: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      metro-config: 0.83.7(bufferutil@4.1.0)
-      metro-core: 0.83.7
+      metro: 0.83.8(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-config: 0.83.8(bufferutil@4.1.0)
+      metro-core: 0.83.8
       semver: 7.8.5
     transitivePeerDependencies:
       - bufferutil
@@ -10693,7 +10766,7 @@ snapshots:
       nullthrows: 1.1.1
       open: 7.4.2
       serve-static: 1.16.3
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -12077,7 +12150,7 @@ snapshots:
     dependencies:
       '@vanilla-extract/css': 1.17.3
 
-  '@vitejs/plugin-react@4.7.0(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))':
+  '@vitejs/plugin-react@4.7.0(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.7)
@@ -12085,7 +12158,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)
+      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -12098,13 +12171,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.8(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.8(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))':
     dependencies:
       '@vitest/spy': 4.1.8
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)
+      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.8':
     dependencies:
@@ -12352,7 +12425,7 @@ snapshots:
   accepts@2.0.0:
     dependencies:
       mime-types: 3.0.2
-      negotiator: 1.0.0
+      negotiator: 1.1.0
 
   acorn-jsx@5.3.2(acorn@8.16.0):
     dependencies:
@@ -12360,7 +12433,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  acorn@8.17.0: {}
+  acorn@8.18.0: {}
 
   agent-base@6.0.2:
     dependencies:
@@ -12574,7 +12647,7 @@ snapshots:
   babel-plugin-jest-hoist@29.6.3:
     dependencies:
       '@babel/template': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/types': 7.29.8
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.28.0
 
@@ -12926,6 +12999,8 @@ snapshots:
       utils-merge: 1.0.1
     transitivePeerDependencies:
       - supports-color
+
+  content-type@2.1.0: {}
 
   conventional-changelog-angular@7.0.0:
     dependencies:
@@ -13540,7 +13615,7 @@ snapshots:
   eth-block-tracker@7.1.0:
     dependencies:
       '@metamask/eth-json-rpc-provider': 2.3.2
-      '@metamask/safe-event-emitter': 3.1.2
+      '@metamask/safe-event-emitter': 3.1.3
       '@metamask/utils': 5.0.2
       json-rpc-random-id: 1.0.1
       pify: 3.0.0
@@ -13549,7 +13624,7 @@ snapshots:
 
   eth-json-rpc-filters@6.0.1:
     dependencies:
-      '@metamask/safe-event-emitter': 3.1.2
+      '@metamask/safe-event-emitter': 3.1.3
       async-mutex: 0.2.6
       eth-query: 2.1.2
       json-rpc-engine: 6.1.0
@@ -13653,9 +13728,9 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.4
 
-  fdir@6.5.0(picomatch@4.0.5):
+  fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
-      picomatch: 4.0.5
+      picomatch: 4.0.7
 
   feaxios@0.0.23:
     dependencies:
@@ -14023,6 +14098,10 @@ snapshots:
     dependencies:
       hermes-estree: 0.35.0
 
+  highlight.js@11.11.2: {}
+
+  highlight.js@11.12.0: {}
+
   hmac-drbg@1.0.1:
     dependencies:
       hash.js: 1.1.7
@@ -14115,10 +14194,6 @@ snapshots:
   ignore@5.3.2: {}
 
   ignore@7.0.5: {}
-
-  image-size@1.2.1:
-    dependencies:
-      queue: 6.0.2
 
   immediate@3.0.6: {}
 
@@ -14386,7 +14461,7 @@ snapshots:
   istanbul-lib-instrument@5.2.1:
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/parser': 7.29.8
       '@istanbuljs/schema': 0.1.6
       istanbul-lib-coverage: 3.2.2
       semver: 6.3.1
@@ -14513,7 +14588,7 @@ snapshots:
       argparse: 1.0.10
       esprima: 4.0.1
 
-  js-yaml@3.15.0:
+  js-yaml@3.15.2:
     dependencies:
       argparse: 1.0.10
       esprima: 4.0.1
@@ -14805,6 +14880,12 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  lowlight@3.3.0:
+    dependencies:
+      '@types/hast': 3.0.4
+      devlop: 1.1.0
+      highlight.js: 11.11.2
+
   lru-cache@10.4.3: {}
 
   lru-cache@11.2.7: {}
@@ -14883,51 +14964,51 @@ snapshots:
 
   merge@2.1.1: {}
 
-  metro-babel-transformer@0.83.7:
+  metro-babel-transformer@0.83.8:
     dependencies:
       '@babel/core': 7.29.7
       flow-enums-runtime: 0.0.6
       hermes-parser: 0.35.0
-      metro-cache-key: 0.83.7
+      metro-cache-key: 0.83.8
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  metro-cache-key@0.83.7:
+  metro-cache-key@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
 
-  metro-cache@0.83.7:
+  metro-cache@0.83.8:
     dependencies:
       exponential-backoff: 3.1.3
       flow-enums-runtime: 0.0.6
       https-proxy-agent: 7.0.6
-      metro-core: 0.83.7
+      metro-core: 0.83.8
     transitivePeerDependencies:
       - supports-color
 
-  metro-config@0.83.7(bufferutil@4.1.0):
+  metro-config@0.83.8(bufferutil@4.1.0):
     dependencies:
       connect: 3.7.0
       flow-enums-runtime: 0.0.6
       jest-validate: 29.7.0
-      metro: 0.83.7(bufferutil@4.1.0)
-      metro-cache: 0.83.7
-      metro-core: 0.83.7
-      metro-runtime: 0.83.7
+      metro: 0.83.8(bufferutil@4.1.0)
+      metro-cache: 0.83.8
+      metro-core: 0.83.8
+      metro-runtime: 0.83.8
       yaml: 2.9.0
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  metro-core@0.83.7:
+  metro-core@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
       lodash.throttle: 4.1.1
-      metro-resolver: 0.83.7
+      metro-resolver: 0.83.8
 
-  metro-file-map@0.83.7:
+  metro-file-map@0.83.8:
     dependencies:
       debug: 4.4.3
       fb-watchman: 2.0.2
@@ -14941,105 +15022,105 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  metro-minify-terser@0.83.7:
+  metro-minify-terser@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
-      terser: 5.49.0
+      terser: 5.51.2
 
-  metro-resolver@0.83.7:
+  metro-resolver@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
 
-  metro-runtime@0.83.7:
+  metro-runtime@0.83.8:
     dependencies:
       '@babel/runtime': 7.29.7
       flow-enums-runtime: 0.0.6
 
-  metro-source-map@0.83.7:
+  metro-source-map@0.83.8:
     dependencies:
-      '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/traverse': 7.29.8
+      '@babel/types': 7.29.8
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4
-      metro-symbolicate: 0.83.7
+      metro-symbolicate: 0.83.8
       nullthrows: 1.1.1
-      ob1: 0.83.7
+      ob1: 0.83.8
       source-map: 0.5.7
       vlq: 1.0.1
     transitivePeerDependencies:
       - supports-color
 
-  metro-symbolicate@0.83.7:
+  metro-symbolicate@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
       invariant: 2.2.4
-      metro-source-map: 0.83.7
+      metro-source-map: 0.83.8
       nullthrows: 1.1.1
       source-map: 0.5.7
       vlq: 1.0.1
     transitivePeerDependencies:
       - supports-color
 
-  metro-transform-plugins@0.83.7:
+  metro-transform-plugins@0.83.8:
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
+      '@babel/generator': 7.29.8
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       flow-enums-runtime: 0.0.6
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  metro-transform-worker@0.83.7(bufferutil@4.1.0):
+  metro-transform-worker@0.83.8(bufferutil@4.1.0):
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
-      '@babel/parser': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/generator': 7.29.8
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
       flow-enums-runtime: 0.0.6
-      metro: 0.83.7(bufferutil@4.1.0)
-      metro-babel-transformer: 0.83.7
-      metro-cache: 0.83.7
-      metro-cache-key: 0.83.7
-      metro-minify-terser: 0.83.7
-      metro-source-map: 0.83.7
-      metro-transform-plugins: 0.83.7
+      metro: 0.83.8(bufferutil@4.1.0)
+      metro-babel-transformer: 0.83.8
+      metro-cache: 0.83.8
+      metro-cache-key: 0.83.8
+      metro-minify-terser: 0.83.8
+      metro-source-map: 0.83.8
+      metro-transform-plugins: 0.83.8
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  metro-transform-worker@0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+  metro-transform-worker@0.83.8(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
-      '@babel/parser': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/generator': 7.29.8
+      '@babel/parser': 7.29.8
+      '@babel/types': 7.29.8
       flow-enums-runtime: 0.0.6
-      metro: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
-      metro-babel-transformer: 0.83.7
-      metro-cache: 0.83.7
-      metro-cache-key: 0.83.7
-      metro-minify-terser: 0.83.7
-      metro-source-map: 0.83.7
-      metro-transform-plugins: 0.83.7
+      metro: 0.83.8(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-babel-transformer: 0.83.8
+      metro-cache: 0.83.8
+      metro-cache-key: 0.83.8
+      metro-minify-terser: 0.83.8
+      metro-source-map: 0.83.8
+      metro-transform-plugins: 0.83.8
       nullthrows: 1.1.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  metro@0.83.7(bufferutil@4.1.0):
+  metro@0.83.8(bufferutil@4.1.0):
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/generator': 7.29.8
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/traverse': 7.29.8
+      '@babel/types': 7.29.8
       accepts: 2.0.0
       ci-info: 2.0.0
       connect: 3.7.0
@@ -15048,44 +15129,43 @@ snapshots:
       flow-enums-runtime: 0.0.6
       graceful-fs: 4.2.11
       hermes-parser: 0.35.0
-      image-size: 1.2.1
       invariant: 2.2.4
       jest-worker: 29.7.0
       jsc-safe-url: 0.2.4
       lodash.throttle: 4.1.1
-      metro-babel-transformer: 0.83.7
-      metro-cache: 0.83.7
-      metro-cache-key: 0.83.7
-      metro-config: 0.83.7(bufferutil@4.1.0)
-      metro-core: 0.83.7
-      metro-file-map: 0.83.7
-      metro-resolver: 0.83.7
-      metro-runtime: 0.83.7
-      metro-source-map: 0.83.7
-      metro-symbolicate: 0.83.7
-      metro-transform-plugins: 0.83.7
-      metro-transform-worker: 0.83.7(bufferutil@4.1.0)
+      metro-babel-transformer: 0.83.8
+      metro-cache: 0.83.8
+      metro-cache-key: 0.83.8
+      metro-config: 0.83.8(bufferutil@4.1.0)
+      metro-core: 0.83.8
+      metro-file-map: 0.83.8
+      metro-resolver: 0.83.8
+      metro-runtime: 0.83.8
+      metro-source-map: 0.83.8
+      metro-symbolicate: 0.83.8
+      metro-transform-plugins: 0.83.8
+      metro-transform-worker: 0.83.8(bufferutil@4.1.0)
       mime-types: 3.0.2
       nullthrows: 1.1.1
       serialize-error: 2.1.0
       source-map: 0.5.7
       throat: 5.0.0
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  metro@0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+  metro@0.83.8(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/core': 7.29.7
-      '@babel/generator': 7.29.7
-      '@babel/parser': 7.29.7
+      '@babel/generator': 7.29.8
+      '@babel/parser': 7.29.8
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
-      '@babel/types': 7.29.7
+      '@babel/traverse': 7.29.8
+      '@babel/types': 7.29.8
       accepts: 2.0.0
       ci-info: 2.0.0
       connect: 3.7.0
@@ -15094,29 +15174,28 @@ snapshots:
       flow-enums-runtime: 0.0.6
       graceful-fs: 4.2.11
       hermes-parser: 0.35.0
-      image-size: 1.2.1
       invariant: 2.2.4
       jest-worker: 29.7.0
       jsc-safe-url: 0.2.4
       lodash.throttle: 4.1.1
-      metro-babel-transformer: 0.83.7
-      metro-cache: 0.83.7
-      metro-cache-key: 0.83.7
-      metro-config: 0.83.7(bufferutil@4.1.0)
-      metro-core: 0.83.7
-      metro-file-map: 0.83.7
-      metro-resolver: 0.83.7
-      metro-runtime: 0.83.7
-      metro-source-map: 0.83.7
-      metro-symbolicate: 0.83.7
-      metro-transform-plugins: 0.83.7
-      metro-transform-worker: 0.83.7(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      metro-babel-transformer: 0.83.8
+      metro-cache: 0.83.8
+      metro-cache-key: 0.83.8
+      metro-config: 0.83.8(bufferutil@4.1.0)
+      metro-core: 0.83.8
+      metro-file-map: 0.83.8
+      metro-resolver: 0.83.8
+      metro-runtime: 0.83.8
+      metro-source-map: 0.83.8
+      metro-symbolicate: 0.83.8
+      metro-transform-plugins: 0.83.8
+      metro-transform-worker: 0.83.8(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       mime-types: 3.0.2
       nullthrows: 1.1.1
       serialize-error: 2.1.0
       source-map: 0.5.7
       throat: 5.0.0
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 17.7.3
     transitivePeerDependencies:
       - bufferutil
@@ -15241,7 +15320,9 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  negotiator@1.0.0: {}
+  negotiator@1.1.0:
+    dependencies:
+      content-type: 2.1.0
 
   next-themes@0.4.6(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
@@ -15293,7 +15374,7 @@ snapshots:
 
   nwsapi@2.2.23: {}
 
-  ob1@0.83.7:
+  ob1@0.83.8:
     dependencies:
       flow-enums-runtime: 0.0.6
 
@@ -15548,7 +15629,7 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  picomatch@4.0.5: {}
+  picomatch@4.0.7: {}
 
   pidtree@0.6.0: {}
 
@@ -15618,7 +15699,7 @@ snapshots:
 
   preact@10.29.0: {}
 
-  preact@10.29.7: {}
+  preact@10.29.8: {}
 
   prelude-ls@1.2.1: {}
 
@@ -15696,10 +15777,6 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  queue@6.0.2:
-    dependencies:
-      inherits: 2.0.4
-
   randombytes@2.1.0:
     dependencies:
       safe-buffer: 5.2.1
@@ -15725,7 +15802,7 @@ snapshots:
   react-devtools-core@6.1.5(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     dependencies:
       shell-quote: 1.10.0
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -15777,8 +15854,8 @@ snapshots:
       invariant: 2.2.4
       jest-environment-node: 29.7.0
       memoize-one: 5.2.1
-      metro-runtime: 0.83.7
-      metro-source-map: 0.83.7
+      metro-runtime: 0.83.8
+      metro-source-map: 0.83.8
       nullthrows: 1.1.1
       pretty-format: 29.7.0
       promise: 8.3.0
@@ -15791,7 +15868,7 @@ snapshots:
       stacktrace-parser: 0.1.11
       tinyglobby: 0.2.17
       whatwg-fetch: 3.6.20
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 17.7.3
     optionalDependencies:
       '@types/react': 19.2.14
@@ -15826,8 +15903,8 @@ snapshots:
       invariant: 2.2.4
       jest-environment-node: 29.7.0
       memoize-one: 5.2.1
-      metro-runtime: 0.83.7
-      metro-source-map: 0.83.7
+      metro-runtime: 0.83.8
+      metro-source-map: 0.83.8
       nullthrows: 1.1.1
       pretty-format: 29.7.0
       promise: 8.3.0
@@ -15840,7 +15917,7 @@ snapshots:
       stacktrace-parser: 0.1.11
       tinyglobby: 0.2.17
       whatwg-fetch: 3.6.20
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 17.7.3
     optionalDependencies:
       '@types/react': 19.2.14
@@ -15875,8 +15952,8 @@ snapshots:
       invariant: 2.2.4
       jest-environment-node: 29.7.0
       memoize-one: 5.2.1
-      metro-runtime: 0.83.7
-      metro-source-map: 0.83.7
+      metro-runtime: 0.83.8
+      metro-source-map: 0.83.8
       nullthrows: 1.1.1
       pretty-format: 29.7.0
       promise: 8.3.0
@@ -15889,7 +15966,7 @@ snapshots:
       stacktrace-parser: 0.1.11
       tinyglobby: 0.2.17
       whatwg-fetch: 3.6.20
-      ws: 7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      ws: 7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6)
       yargs: 17.7.3
     optionalDependencies:
       '@types/react': 19.2.14
@@ -16615,10 +16692,10 @@ snapshots:
 
   term-size@2.2.1: {}
 
-  terser@5.49.0:
+  terser@5.51.2:
     dependencies:
       '@jridgewell/source-map': 0.3.11
-      acorn: 8.17.0
+      acorn: 8.18.0
       commander: 2.20.3
       source-map-support: 0.5.21
 
@@ -16652,8 +16729,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
 
   tinyrainbow@3.1.0: {}
 
@@ -16957,6 +17034,8 @@ snapshots:
 
   uuid@11.1.1: {}
 
+  uuid@14.0.2: {}
+
   validator@13.15.26: {}
 
   vfile-location@5.0.3:
@@ -16991,7 +17070,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0):
+  vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
@@ -17002,16 +17081,16 @@ snapshots:
       '@types/node': 25.9.1
       fsevents: 2.3.3
       jiti: 2.6.1
-      terser: 5.49.0
+      terser: 5.51.2
       yaml: 2.9.0
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
 
-  vitest@4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)):
+  vitest@4.1.8(@types/node@25.9.1)(jsdom@26.1.0(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.8
-      '@vitest/mocker': 4.1.8(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.8(vite@8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0))
       '@vitest/pretty-format': 4.1.8
       '@vitest/runner': 4.1.8
       '@vitest/snapshot': 4.1.8
@@ -17028,7 +17107,7 @@ snapshots:
       tinyexec: 1.0.4
       tinyglobby: 0.2.16
       tinyrainbow: 3.1.0
-      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.49.0)(yaml@2.9.0)
+      vite: 8.0.5(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@25.9.1)(jiti@2.6.1)(terser@5.51.2)(yaml@2.9.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 25.9.1
@@ -17216,7 +17295,7 @@ snapshots:
       bufferutil: 4.1.0
       utf-8-validate: 6.0.6
 
-  ws@7.5.12(bufferutil@4.1.0)(utf-8-validate@6.0.6):
+  ws@7.5.13(bufferutil@4.1.0)(utf-8-validate@6.0.6):
     optionalDependencies:
       bufferutil: 4.1.0
       utf-8-validate: 6.0.6

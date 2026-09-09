@@ -46,7 +46,7 @@
     "@openzeppelin/adapter-polkadot": "^5.0.0",
     "@openzeppelin/adapter-solana": "^4.0.1",
     "@openzeppelin/adapter-stellar": "^4.0.1",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0 || ^8.0.0"
   },
   "peerDependenciesMeta": {
     "@openzeppelin/adapter-evm": {
