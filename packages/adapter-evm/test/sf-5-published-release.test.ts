@@ -10,6 +10,12 @@
  * the `WriteCompletion` vocabulary and the `DeployOnchainIdOutcome` union, both of which are
  * owned by `@openzeppelin/ui-types` >= 3.5.0. Declaring a lower floor would let a consumer
  * install ui-types 3.3.0 and hit missing-type errors.
+ *
+ * It moved again to `^3.5.2` with the UIKit v3 peer bump. `ui-components`, `ui-react` and
+ * `ui-utils` on the v3 line each depend on `@openzeppelin/ui-types` `^3.5.2`, so a lower floor
+ * lets a consumer install 3.5.0 and resolve a *second*, nested copy of ui-types. Two copies make
+ * structurally identical types nominally distinct — the TS2322/TS2345 failure mode the
+ * `@openzeppelin/ui-types` override in pnpm-workspace.yaml already exists to prevent in-repo.
  */
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
@@ -23,7 +29,7 @@ const ADAPTER_EVM_CORE_ROOT = resolve(ADAPTER_EVM_ROOT, '../adapter-evm-core');
 const REPO_ROOT = resolve(ADAPTER_EVM_ROOT, '../..');
 const CHANGESET_PATH = resolve(REPO_ROOT, '.changeset/ens-mainnet-l1-opt-in-fallback.md');
 
-const UI_TYPES_FLOOR = '^3.5.0';
+const UI_TYPES_FLOOR = '^3.5.2';
 
 /** Design V-1–V-7 markers that must appear in shipped adapter-evm dist JS. */
 const BUNDLED_DELTA_MARKERS = [
@@ -156,13 +162,13 @@ describe('SF-5 published release correctness', () => {
     }
   );
 
-  describe('FLOOR CORRECTNESS — @openzeppelin/ui-types ^3.5.0', () => {
-    it('adapter-evm declares ui-types ^3.5.0 in peerDependencies and devDependencies', () => {
+  describe('FLOOR CORRECTNESS — @openzeppelin/ui-types ^3.5.2', () => {
+    it('adapter-evm declares ui-types ^3.5.2 in peerDependencies and devDependencies', () => {
       const manifest = readJson<PackageManifest>(resolve(ADAPTER_EVM_ROOT, 'package.json'));
       assertUiTypesFloor(manifest, '@openzeppelin/adapter-evm');
     });
 
-    it('adapter-evm-core declares ui-types ^3.5.0 in peerDependencies and devDependencies', () => {
+    it('adapter-evm-core declares ui-types ^3.5.2 in peerDependencies and devDependencies', () => {
       const manifest = readJson<PackageManifest>(resolve(ADAPTER_EVM_CORE_ROOT, 'package.json'));
       assertUiTypesFloor(manifest, '@openzeppelin/adapter-evm-core');
     });
