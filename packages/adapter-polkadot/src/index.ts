@@ -7,6 +7,8 @@
  * @packageDocumentation
  */
 
+import { VERSION as UI_COMPONENTS_V } from '@openzeppelin/ui-components';
+import { VERSION as UI_REACT_V } from '@openzeppelin/ui-react';
 import { VERSION as UI_TYPES_V } from '@openzeppelin/ui-types';
 import type {
   CapabilityFactoryMap,
@@ -26,6 +28,14 @@ import { capabilityFactories, createRuntime } from './profiles';
 declare const __OZ_PEER_MINIMUMS__: Record<string, string>;
 
 validatePeerVersions('@openzeppelin/adapter-polkadot', {
+  '@openzeppelin/ui-components': {
+    installed: UI_COMPONENTS_V,
+    minimum: __OZ_PEER_MINIMUMS__['@openzeppelin/ui-components'],
+  },
+  '@openzeppelin/ui-react': {
+    installed: UI_REACT_V,
+    minimum: __OZ_PEER_MINIMUMS__['@openzeppelin/ui-react'],
+  },
   '@openzeppelin/ui-types': {
     installed: UI_TYPES_V,
     minimum: __OZ_PEER_MINIMUMS__['@openzeppelin/ui-types'],
