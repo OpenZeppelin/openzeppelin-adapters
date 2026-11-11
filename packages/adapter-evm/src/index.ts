@@ -80,6 +80,7 @@ export {
   lineaSepolia,
   scrollSepolia,
   zksyncSepoliaTestnet,
+  evmLocalhost,
 } from './networks';
 
 // Core types for public API compatibility

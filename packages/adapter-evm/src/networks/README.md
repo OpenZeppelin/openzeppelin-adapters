@@ -67,6 +67,16 @@ Network configurations for various EVM chains (mainnets and testnets) are export
 - `nativeCurrency`: Native currency information (name, symbol, decimals)
 - `viemChain`: The corresponding viem chain object (required for wagmi compatibility)
 
+## Local Development Network (`evmLocalhost`)
+
+`evmLocalhost` (id `evm-localhost`, chain `31337`, `http://127.0.0.1:8545`, flagged as a testnet, no block explorer) targets a local Anvil / Hardhat / Foundry node. Import it directly:
+
+```typescript
+import { evmLocalhost } from '@openzeppelin/adapter-evm/networks';
+```
+
+It is intentionally **not** in `evmMainnetNetworks`, `evmTestnetNetworks`, `evmNetworks` or the `networks` alias. Those lists drive the wagmi chain set, the network catalog and the ecosystem definition, so adding it would change every app. Do not append it to them. As a result, wallet connect, chain switching and wallet-signed writes are not available on this network; read-only calls work. For a different port, override the RPC with the `rpcEndpoints` entry keyed `evm-localhost`.
+
 ## Adding a New Network
 
 Follow these steps to add support for a new EVM network:
