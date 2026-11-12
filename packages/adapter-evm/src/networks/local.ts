@@ -1,3 +1,4 @@
+import { NetworkEthereum } from '@web3icons/react';
 import { foundry as viemFoundry } from 'viem/chains';
 
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
@@ -21,6 +22,7 @@ export const evmLocalhost: TypedEvmNetworkConfig = {
   network: 'localhost',
   type: 'testnet',
   isTestnet: true,
+  iconComponent: NetworkEthereum,
   chainId: viemFoundry.id,
   rpcUrl: viemFoundry.rpcUrls.default.http[0],
   nativeCurrency: {

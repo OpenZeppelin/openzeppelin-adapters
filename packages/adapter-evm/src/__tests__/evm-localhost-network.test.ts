@@ -1,3 +1,4 @@
+import { NetworkEthereum } from '@web3icons/react';
 import { describe, expect, it } from 'vitest';
 
 import { createExplorer } from '../capabilities/explorer';
@@ -42,6 +43,10 @@ describe('evmLocalhost — config content (INV-A)', () => {
     expect(evmLocalhost.id).toBe(LOCAL_ID);
     expect(evmLocalhost.chainId).toBe(LOCAL_CHAIN_ID);
     expect(evmLocalhost.viemChain?.id).toBe(LOCAL_CHAIN_ID);
+  });
+
+  it('INV-A: carries the Ethereum icon so network pickers do not fall back to a grey dot', () => {
+    expect(evmLocalhost.iconComponent).toBe(NetworkEthereum);
   });
 
   it('INV-A: is flagged as a testnet in both flag fields', () => {
