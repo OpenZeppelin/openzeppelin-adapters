@@ -118,6 +118,22 @@ Network configurations specify a `primaryExplorerApiIdentifier` (e.g., `"ethersc
 }
 ```
 
+#### Explorer-only network configs
+
+The explorer path (`createExplorer`, `resolveExplorerConfig`, `getEvmExplorerAddressUrl`, `getEvmExplorerTxUrl`) reads only the fields in `EvmExplorerNetworkConfig`: `ecosystem`, `id`, `name`, `explorerUrl`, `apiUrl`, `primaryExplorerApiIdentifier` and `supportsEtherscanV2`. It never reads `rpcUrl` or `chainId`, so callers can pass an explorer-only config instead of a full one. Any full EVM network config satisfies the type. The helpers take `EvmExplorerNetworkConfig<string>` so EVM-compatible adapters (e.g. Polkadot) keep working. `createExplorer` takes the default `'evm'` form and still rejects non-EVM configs at construction.
+
+```typescript
+import { createExplorer, type EvmExplorerNetworkConfig } from '@openzeppelin/adapter-evm-core/explorer';
+
+const config: EvmExplorerNetworkConfig = {
+  ecosystem: 'evm',
+  id: 'ethereum-mainnet',
+  name: 'Ethereum Mainnet',
+  explorerUrl: 'https://etherscan.io',
+};
+const explorer = createExplorer(config);
+```
+
 #### RPC URL Resolution
 
 The `resolveRpcUrl` function resolves RPC URLs with this priority:

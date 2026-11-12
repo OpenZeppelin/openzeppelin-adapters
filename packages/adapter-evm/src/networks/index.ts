@@ -1,5 +1,6 @@
 import type { TypedEvmNetworkConfig } from '@openzeppelin/adapter-evm-core';
 
+import { evmLocalhost } from './local';
 import {
   arbitrumMainnet,
   avalancheMainnet,
@@ -93,4 +94,6 @@ export {
   scrollSepolia,
   zksyncSepoliaTestnet,
   monadTestnet,
+  // Local development (opt-in; intentionally not in any list above)
+  evmLocalhost,
 };

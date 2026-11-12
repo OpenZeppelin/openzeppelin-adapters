@@ -10,7 +10,6 @@
   "fixed": [],
   "linked": [
     [
-      "@openzeppelin/adapter-evm",
       "@openzeppelin/adapter-midnight",
       "@openzeppelin/adapter-polkadot",
       "@openzeppelin/adapter-solana",

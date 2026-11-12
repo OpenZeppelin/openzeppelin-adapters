@@ -278,6 +278,7 @@ export {
   isEvmProviderKey,
   // Network and ABI types
   type EvmCompatibleNetworkConfig,
+  type EvmExplorerNetworkConfig,
   type TypedEvmNetworkConfig,
   type AbiItem,
   type WriteContractParameters,

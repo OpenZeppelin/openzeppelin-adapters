@@ -19,7 +19,11 @@ export {
 } from './providers';
 
 // Network configuration types
-export { type EvmCompatibleNetworkConfig, type TypedEvmNetworkConfig } from './network';
+export {
+  type EvmCompatibleNetworkConfig,
+  type EvmExplorerNetworkConfig,
+  type TypedEvmNetworkConfig,
+} from './network';
 
 // ABI types
 export { type AbiItem, type WriteContractParameters } from './abi';
