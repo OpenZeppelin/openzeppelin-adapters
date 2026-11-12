@@ -127,7 +127,7 @@ Before declaring migration complete:
 
 - Verify npm [trusted publishing](https://docs.npmjs.com/trusted-publishers) is configured for workflow filename `publish.yml` and `id-token: write` is set
 - Check npm registry connectivity
-- Ensure no version conflicts (linked packages must version together)
+- Ensure no version conflicts (Changesets computes each package version; do not hand-edit them)
 - RC prereleases are published by `publish.yml` (`workflow_dispatch`) using Changesets prerelease mode; do not reuse the stable release-PR path for RC validation
 - After any RC run, confirm `npm view @openzeppelin/adapter-evm dist-tags.rc` returns a value before treating the run as successful
 
