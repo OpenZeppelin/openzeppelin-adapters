@@ -77,6 +77,8 @@ import { evmLocalhost } from '@openzeppelin/adapter-evm/networks';
 
 It is intentionally **not** in `evmMainnetNetworks`, `evmTestnetNetworks`, `evmNetworks` or the `networks` alias. Those lists drive the wagmi chain set, the network catalog and the ecosystem definition, so adding it would change every app. Do not append it to them. As a result, wallet connect, chain switching and wallet-signed writes are not available on this network; read-only calls work. For a different port, override the RPC with the `rpcEndpoints` entry keyed `evm-localhost`.
 
+Because the chain is not in the wagmi config, do not mount `NetworkSwitchManager` and do not call `switchNetwork` for `evmLocalhost`. Wagmi throws "chain not configured" when asked to switch to chain 31337.
+
 ## Adding a New Network
 
 Follow these steps to add support for a new EVM network:
