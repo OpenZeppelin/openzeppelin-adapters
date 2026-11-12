@@ -3,7 +3,7 @@ import trimEnd from 'lodash-es/trimEnd.js';
 import { UserExplorerConfig } from '@openzeppelin/ui-types';
 import { appConfigService, logger, userNetworkServiceConfigService } from '@openzeppelin/ui-utils';
 
-import { EvmCompatibleNetworkConfig } from '../types/network';
+import { EvmCompatibleNetworkConfig, EvmExplorerNetworkConfig } from '../types/network';
 import { isValidEvmAddress } from '../utils';
 
 /**
@@ -59,11 +59,14 @@ export function resolveExplorerApiKeyFromAppConfig(
  * 3. App-configured explorer API key (from AppConfigService network service configs)
  * 4. Default network explorer (from NetworkConfig)
  *
- * @param networkConfig - EVM-compatible network configuration (works with any ecosystem).
+ * Reads only the fields declared by `EvmExplorerNetworkConfig`, so an explorer-only
+ * config (no RPC URL) resolves exactly like the full config it was taken from.
+ *
+ * @param networkConfig - EVM-compatible network configuration, or just its explorer fields (works with any ecosystem).
  * @returns The resolved explorer configuration.
  */
 export function resolveExplorerConfig(
-  networkConfig: EvmCompatibleNetworkConfig
+  networkConfig: EvmExplorerNetworkConfig<string>
 ): UserExplorerConfig {
   // Precompute app-level keys and defaults for merging
   const isV2 =
@@ -141,11 +144,12 @@ export function resolveExplorerConfig(
  * Uses the resolved explorer configuration.
  *
  * @param address - Contract or wallet address
- * @param networkConfig - EVM-compatible network configuration (works with any ecosystem)
+ * @param networkConfig - EVM-compatible network configuration, or just its explorer fields (works with any ecosystem)
+ * @returns The explorer URL, or `null` when the input is invalid or no explorer URL is configured
  */
 export function getEvmExplorerAddressUrl(
   address: string,
-  networkConfig: EvmCompatibleNetworkConfig
+  networkConfig: EvmExplorerNetworkConfig<string>
 ): string | null {
   if (!isValidEvmAddress(address)) {
     return null;
@@ -166,11 +170,12 @@ export function getEvmExplorerAddressUrl(
  * Uses the resolved explorer configuration.
  *
  * @param txHash - Transaction hash
- * @param networkConfig - EVM-compatible network configuration (works with any ecosystem)
+ * @param networkConfig - EVM-compatible network configuration, or just its explorer fields (works with any ecosystem)
+ * @returns The explorer URL, or `null` when the input is invalid or no explorer URL is configured
  */
 export function getEvmExplorerTxUrl(
   txHash: string,
-  networkConfig: EvmCompatibleNetworkConfig
+  networkConfig: EvmExplorerNetworkConfig<string>
 ): string | null {
   if (!txHash) {
     return null;

@@ -153,3 +153,26 @@ Network configurations for various EVM chains (mainnets and testnets) are export
 - Default `rpcUrl`, Chain ID, `apiUrl` for explorers, `explorerUrl`, and native currency information.
 
 For details on how explorer API keys and RPC URLs are resolved, see the [adapter-evm-core Configuration Module](../adapter-evm-core/README.md#configuration-module).
+
+### Explorer links without an RPC URL
+
+`createExplorer` also accepts an `EvmExplorerNetworkConfig`, which holds only the fields the explorer reads: `ecosystem`, `id`, `name`, `explorerUrl`, `apiUrl`, `primaryExplorerApiIdentifier` and `supportsEtherscanV2`. Apps that must not ship an RPC URL can build links from it directly:
+
+```typescript
+import { createExplorer, type EvmExplorerNetworkConfig } from '@openzeppelin/adapter-evm/explorer';
+
+const sepoliaExplorer: EvmExplorerNetworkConfig = {
+  ecosystem: 'evm',
+  id: 'ethereum-sepolia',
+  name: 'Sepolia',
+  explorerUrl: 'https://sepolia.etherscan.io',
+};
+
+const explorer = createExplorer(sepoliaExplorer);
+explorer.getExplorerUrl('0x…'); // https://sepolia.etherscan.io/address/0x…
+explorer.getExplorerTxUrl?.('0x…'); // https://sepolia.etherscan.io/tx/0x…
+```
+
+Full network configs are still accepted and produce the same links. User explorer overrides and API-key resolution key on `id` and work the same way for both shapes. Without `explorerUrl`, links are `null`. `ecosystem` must be `'evm'`; other ecosystems are rejected as before.
+
+The type only guarantees that no RPC field is needed. Whether an RPC URL ends up in your bundle depends on what you import: deriving the config from a shipped network constant (for example `ethereumSepolia`) still bundles that constant's `rpcUrl`, so define the explorer-only config inline.

@@ -86,6 +86,7 @@ export {
 // Core types for public API compatibility
 export type {
   TypedEvmNetworkConfig,
+  EvmExplorerNetworkConfig,
   WriteContractParameters,
   EvmContractArtifacts,
 } from '@openzeppelin/adapter-evm-core';
