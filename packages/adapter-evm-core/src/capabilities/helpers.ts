@@ -21,7 +21,11 @@ import {
   resolveWriteCompletion,
 } from '../shared/completion';
 import type { CapabilityExecutor } from '../shared/executor';
-import { EvmProviderKeys, type TypedEvmNetworkConfig } from '../types';
+import {
+  EvmProviderKeys,
+  type EvmExplorerNetworkConfig,
+  type TypedEvmNetworkConfig,
+} from '../types';
 import { isValidEvmAddress } from '../utils/validation';
 
 export type { CapabilityExecutor } from '../shared/executor';
@@ -126,6 +130,29 @@ export function asTypedEvmNetworkConfig(config: NetworkConfig): TypedEvmNetworkC
   }
 
   return config as TypedEvmNetworkConfig;
+}
+
+/**
+ * Explorer-path counterpart of {@link asTypedEvmNetworkConfig}: rejects non-EVM configs
+ * with the same error, but narrows only to the explorer fields so an explorer-only config
+ * is never claimed to be a full one.
+ *
+ * Internal: not exported from any package entry.
+ *
+ * @returns The same object it was given (no copy, no defaults).
+ * @throws Error `Expected an EVM network configuration, received <ecosystem>.` when
+ *   `config.ecosystem !== 'evm'`.
+ */
+export function asEvmExplorerNetworkConfig(
+  config: NetworkConfig | EvmExplorerNetworkConfig
+): EvmExplorerNetworkConfig {
+  // INV-7: message and Error class must stay identical to asTypedEvmNetworkConfig.
+  if (config.ecosystem !== 'evm') {
+    throw new Error(`Expected an EVM network configuration, received ${config.ecosystem}.`);
+  }
+
+  // INV-4: narrowed by the discriminant, returned as-is without a widening cast.
+  return config;
 }
 
 export function withRuntimeCapability(

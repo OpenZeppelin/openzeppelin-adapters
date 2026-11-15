@@ -1,6 +1,6 @@
 # Changesets
 
-This repository uses [Changesets](https://github.com/changesets/changesets) to version and publish the linked `@openzeppelin/adapter-*` packages.
+This repository uses [Changesets](https://github.com/changesets/changesets) to version and publish the `@openzeppelin/adapter-*` packages. `adapter-midnight`, `adapter-polkadot`, `adapter-solana` and `adapter-stellar` are a linked group (see `.changeset/config.json`) and share a version line. `adapter-evm` is versioned on its own.
 
 ## Day-to-day
 

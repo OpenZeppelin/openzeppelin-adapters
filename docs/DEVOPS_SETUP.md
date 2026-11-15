@@ -54,12 +54,12 @@ RC publishes use the same provenance flag where the registry accepts it; treat R
 ### Release PR (Changesets)
 
 - Merges to `main` that include new changeset files do **not** immediately bump `package.json` in that same merge unless you run the version flow locally; typically **changesets/action** opens or updates a **Version packages** PR.
-- A maintainer reviews that PR; merging it applies synchronized version bumps across the **linked** adapter set (see `.changeset/config.json`).
+- A maintainer reviews that PR; merging it applies the version bumps Changesets computes for each package (the midnight, polkadot, solana and stellar adapters are a linked group; `adapter-evm` is versioned on its own; see `.changeset/config.json`).
 - The **Release** workflow then publishes **stable** packages to the default npm dist-tag when the merge commit is processed.
 
 ### RC Publication
 
-- Run **Release** manually (`workflow_dispatch` on `publish.yml`) when you want the linked public adapters on the npm `rc` dist-tag (after the intended commits are on `main`).
+- Run **Release** manually (`workflow_dispatch` on `publish.yml`) when you want the public adapters on the npm `rc` dist-tag (after the intended commits are on `main`).
 - Use this for staging validation before promoting stable releases.
 - No downstream sync commits; consumers resolve versions from npm metadata.
 
