@@ -1,5 +1,13 @@
 # @openzeppelin/adapter-evm-core
 
+## 2.1.0
+
+### Minor Changes
+
+- [#93](https://github.com/OpenZeppelin/openzeppelin-adapters/pull/93) [`2a0f3ed`](https://github.com/OpenZeppelin/openzeppelin-adapters/commit/2a0f3edd58f8e7214acc2da694226ae75cb9c425) Thanks [@pasevin](https://github.com/pasevin)! - Add `EvmExplorerNetworkConfig`, an explorer-only network config type, and accept it in `createExplorer`.
+
+  The type holds only the fields the explorer path reads (`ecosystem`, `id`, `name`, `explorerUrl`, `apiUrl`, `primaryExplorerApiIdentifier`, `supportsEtherscanV2`), so browser apps can build explorer links without an RPC URL or a placeholder `rpcUrl: ''`. It is exported from both package roots and both `/explorer` entries. `createExplorer` still accepts every config it accepted before, produces the same links, and rejects non-EVM configs with the same error. `resolveExplorerConfig`, `getEvmExplorerAddressUrl` and `getEvmExplorerTxUrl` in `@openzeppelin/adapter-evm-core` now accept the narrower type too.
+
 ## 2.0.0
 
 ### Major Changes
